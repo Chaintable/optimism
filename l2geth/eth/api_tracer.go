@@ -17,30 +17,30 @@
 package eth
 
 import (
-	"bufio"
-	"bytes"
-	"context"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"runtime"
-	"sync"
-	"time"
+  "bufio"
+  "bytes"
+  "context"
+  "errors"
+  "fmt"
+  "io/ioutil"
+  "os"
+  "runtime"
+  "sync"
+  "time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/ethereum/go-ethereum/trie"
+  "github.com/ethereum/go-ethereum/common"
+  "github.com/ethereum/go-ethereum/common/hexutil"
+  "github.com/ethereum/go-ethereum/core"
+  "github.com/ethereum/go-ethereum/core/rawdb"
+  "github.com/ethereum/go-ethereum/core/state"
+  "github.com/ethereum/go-ethereum/core/types"
+  "github.com/ethereum/go-ethereum/core/vm"
+  "github.com/ethereum/go-ethereum/eth/tracers"
+  "github.com/ethereum/go-ethereum/internal/ethapi"
+  "github.com/ethereum/go-ethereum/log"
+  "github.com/ethereum/go-ethereum/rlp"
+  "github.com/ethereum/go-ethereum/rpc"
+  "github.com/ethereum/go-ethereum/trie"
 )
 
 const (
@@ -454,7 +454,7 @@ func (api *PrivateDebugAPI) traceBlock(ctx context.Context, block *types.Block, 
 	if config != nil && config.Reexec != nil {
 		reexec = *config.Reexec
 	}
-	statedb, err := api.computeStateDB(parent, reexec)
+	statedb, err := computeStateDB(api.eth, parent, reexec)
 	if err != nil {
 		return nil, err
 	}
@@ -542,7 +542,7 @@ func (api *PrivateDebugAPI) standardTraceBlockToFile(ctx context.Context, block 
 	if config != nil && config.Reexec != nil {
 		reexec = *config.Reexec
 	}
-	statedb, err := api.computeStateDB(parent, reexec)
+	statedb, err := computeStateDB(api.eth, parent, reexec)
 	if err != nil {
 		return nil, err
 	}
@@ -629,6 +629,74 @@ func containsTx(block *types.Block, hash common.Hash) bool {
 	}
 	return false
 }
+// computeStateDB retrieves the state database associated with a certain block.
+// If no state is locally available for the given block, a number of blocks are
+// attempted to be reexecuted to generate the desired state.
+func computeStateDB(eth *Ethereum, block *types.Block, reexec uint64) (*state.StateDB, error) {
+  // If we have the state fully available, use that
+  statedb, err := eth.blockchain.StateAt(block.Root())
+  if err == nil {
+    return statedb, nil
+  }
+  // Otherwise try to reexec blocks until we find a state or reach our limit
+  origin := block.NumberU64()
+  database := state.NewDatabaseWithCache(eth.ChainDb(), 16)
+
+  for i := uint64(0); i < reexec; i++ {
+    block = eth.blockchain.GetBlock(block.ParentHash(), block.NumberU64()-1)
+    if block == nil {
+      break
+    }
+    if statedb, err = state.New(block.Root(), database); err == nil {
+      break
+    }
+  }
+  if err != nil {
+    switch err.(type) {
+    case *trie.MissingNodeError:
+      return nil, fmt.Errorf("required historical state unavailable (reexec=%d)", reexec)
+    default:
+      return nil, err
+    }
+  }
+  // State was available at historical point, regenerate
+  var (
+    start  = time.Now()
+    logged time.Time
+    proot  common.Hash
+  )
+  for block.NumberU64() < origin {
+    // Print progress logs if long enough time elapsed
+    if time.Since(logged) > 8*time.Second {
+      log.Info("Regenerating historical state", "block", block.NumberU64()+1, "target", origin, "remaining", origin-block.NumberU64()-1, "elapsed", time.Since(start))
+      logged = time.Now()
+    }
+    // Retrieve the next block to regenerate and process it
+    if block = eth.blockchain.GetBlockByNumber(block.NumberU64() + 1); block == nil {
+      return nil, fmt.Errorf("block #%d not found", block.NumberU64()+1)
+    }
+    _, _, _, err := eth.blockchain.Processor().Process(block, statedb, vm.Config{})
+    if err != nil {
+      return nil, fmt.Errorf("processing block %d failed: %v", block.NumberU64(), err)
+    }
+    // Finalize the state so any modifications are written to the trie
+    root, err := statedb.Commit(eth.blockchain.Config().IsEIP158(block.Number()))
+    if err != nil {
+      return nil, err
+    }
+    if err := statedb.Reset(root); err != nil {
+      return nil, fmt.Errorf("state reset after block %d failed: %v", block.NumberU64(), err)
+    }
+    database.TrieDB().Reference(root, common.Hash{})
+    if proot != (common.Hash{}) {
+      database.TrieDB().Dereference(proot)
+    }
+    proot = root
+  }
+  nodes, imgs := database.TrieDB().Size()
+  log.Info("Historical state regenerated", "block", block.NumberU64(), "elapsed", time.Since(start), "nodes", nodes, "preimages", imgs)
+  return statedb, nil
+}
 
 // computeStateDB retrieves the state database associated with a certain block.
 // If no state is locally available for the given block, a number of blocks are
@@ -711,7 +779,7 @@ func (api *PrivateDebugAPI) TraceTransaction(ctx context.Context, hash common.Ha
 	if config != nil && config.Reexec != nil {
 		reexec = *config.Reexec
 	}
-	msg, vmctx, statedb, err := api.computeTxEnv(blockHash, int(index), reexec)
+	msg, vmctx, statedb, err := computeTxEnv(api.eth, blockHash, int(index), reexec)
 	if err != nil {
 		return nil, err
 	}
@@ -781,51 +849,50 @@ func (api *PrivateDebugAPI) traceTx(ctx context.Context, message core.Message, v
 }
 
 // computeTxEnv returns the execution environment of a certain transaction.
-func (api *PrivateDebugAPI) computeTxEnv(blockHash common.Hash, txIndex int, reexec uint64) (core.Message, vm.Context, *state.StateDB, error) {
-	// Create the parent state database
-	block := api.eth.blockchain.GetBlockByHash(blockHash)
-	if block == nil {
-		return nil, vm.Context{}, nil, fmt.Errorf("block %#x not found", blockHash)
-	}
-	parent := api.eth.blockchain.GetBlock(block.ParentHash(), block.NumberU64()-1)
-	if parent == nil {
-		return nil, vm.Context{}, nil, fmt.Errorf("parent %#x not found", block.ParentHash())
-	}
-	statedb, err := api.computeStateDB(parent, reexec)
-	if err != nil {
-		return nil, vm.Context{}, nil, err
-	}
+func computeTxEnv(eth *Ethereum, blockHash common.Hash, txIndex int, reexec uint64) (core.Message, vm.Context, *state.StateDB, error) {
+  block := eth.blockchain.GetBlockByHash(blockHash)
+  if block == nil {
+    return nil, vm.Context{}, nil, fmt.Errorf("block %#x not found", blockHash)
+  }
+  parent := eth.blockchain.GetBlock(block.ParentHash(), block.NumberU64()-1)
+  if parent == nil {
+    return nil, vm.Context{}, nil, fmt.Errorf("parent %#x not found", block.ParentHash())
+  }
+  statedb, err := computeStateDB(eth, parent, reexec)
+  if err != nil {
+    return nil, vm.Context{}, nil, err
+  }
 
-	if txIndex == 0 && len(block.Transactions()) == 0 {
-		return nil, vm.Context{}, statedb, nil
-	}
+  if txIndex == 0 && len(block.Transactions()) == 0 {
+    return nil, vm.Context{}, statedb, nil
+  }
 
-	// Recompute transactions up to the target index.
-	signer := types.MakeSigner(api.eth.blockchain.Config(), block.Number())
+  // Recompute transactions up to the target index.
+  signer := types.MakeSigner(eth.blockchain.Config(), block.Number())
 
-	for idx, tx := range block.Transactions() {
-		// Assemble the transaction call message and return if the requested offset
-		var msg core.Message
-		if !vm.UsingOVM {
-			msg, _ = tx.AsMessage(signer)
-		} else {
-			msg, err = core.AsOvmMessage(tx, signer, common.HexToAddress("0x4200000000000000000000000000000000000005"), block.Header().GasLimit)
-			if err != nil {
-				return nil, vm.Context{}, nil, err
-			}
-		}
-		context := core.NewEVMContext(msg, block.Header(), api.eth.blockchain, nil)
-		if idx == txIndex {
-			return msg, context, statedb, nil
-		}
-		// Not yet the searched for transaction, execute on top of the current state
-		vmenv := vm.NewEVM(context, statedb, api.eth.blockchain.Config(), vm.Config{})
-		if _, _, _, err := core.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(tx.Gas())); err != nil {
-			return nil, vm.Context{}, nil, fmt.Errorf("transaction %#x failed: %v", tx.Hash(), err)
-		}
-		// Ensure any modifications are committed to the state
-		// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
-		statedb.Finalise(vmenv.ChainConfig().IsEIP158(block.Number()))
-	}
-	return nil, vm.Context{}, nil, fmt.Errorf("transaction index %d out of range for block %#x", txIndex, blockHash)
+  for idx, tx := range block.Transactions() {
+    // Assemble the transaction call message and return if the requested offset
+    var msg core.Message
+    if !vm.UsingOVM {
+      msg, _ = tx.AsMessage(signer)
+    } else {
+      msg, err = core.AsOvmMessage(tx, signer, common.HexToAddress("0x4200000000000000000000000000000000000005"), block.Header().GasLimit)
+      if err != nil {
+        return nil, vm.Context{}, nil, err
+      }
+    }
+    context := core.NewEVMContext(msg, block.Header(), eth.blockchain, nil)
+    if idx == txIndex {
+      return msg, context, statedb, nil
+    }
+    // Not yet the searched for transaction, execute on top of the current state
+    vmenv := vm.NewEVM(context, statedb, eth.blockchain.Config(), vm.Config{})
+    if _, _, _, err := core.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(tx.Gas())); err != nil {
+      return nil, vm.Context{}, nil, fmt.Errorf("transaction %#x failed: %v", tx.Hash(), err)
+    }
+    // Ensure any modifications are committed to the state
+    // Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
+    statedb.Finalise(vmenv.ChainConfig().IsEIP158(block.Number()))
+  }
+  return nil, vm.Context{}, nil, fmt.Errorf("transaction index %d out of range for block %#x", txIndex, blockHash)
 }
