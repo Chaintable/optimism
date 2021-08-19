@@ -104,7 +104,7 @@ func (api *PublicTxTraceAPI) traceTx(ctx context.Context, message core.Message, 
 		return nil, fmt.Errorf("tracing failed: %v", err)
 	}
 	if failed {
-		log.Warn("apply message with transaction tracing failed", "txHash")
+		log.Warn("apply message with transaction tracing failed", "txHash", txctx.tx.Hash())
 	}
 
 	tracer.Finalize()
