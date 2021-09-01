@@ -4,7 +4,6 @@ import (
   "context"
   "math/big"
 
-  "github.com/DeBankDeFi/eth/txtrace"
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/common/hexutil"
   "github.com/ethereum/go-ethereum/core"
@@ -12,6 +11,8 @@ import (
   "github.com/ethereum/go-ethereum/core/types"
   "github.com/ethereum/go-ethereum/core/vm"
   "github.com/ethereum/go-ethereum/rpc"
+
+  "github.com/DeBankDeFi/eth/txtrace"
 )
 
 type PreExecAPI struct {
