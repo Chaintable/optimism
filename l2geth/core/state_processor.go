@@ -140,6 +140,8 @@ func ApplyTransactionForPreExec(config *params.ChainConfig, bc ChainContext, aut
   var err error
   // Create a new context to be used in the EVM environment
   context := NewEVMContext(msg, header, bc, author)
+  from := msg.From()
+  context.EthCallSender = &from
   if vm.UsingOVM {
     context.BlockNumber = msg.L1BlockNumber()
   }
