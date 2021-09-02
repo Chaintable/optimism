@@ -398,12 +398,12 @@ func (api *PrivateDebugAPI) AccountRange(ctx context.Context, start *common.Hash
 	block := api.eth.blockchain.CurrentBlock()
 
 	if len(block.Transactions()) == 0 {
-		statedb, err = api.computeStateDB(block, defaultTraceReexec)
+		statedb, err = computeStateDB(api.eth, block, defaultTraceReexec)
 		if err != nil {
 			return AccountRangeResult{}, err
 		}
 	} else {
-		_, _, statedb, err = api.computeTxEnv(block.Hash(), len(block.Transactions())-1, 0)
+		_, _, statedb, err = computeTxEnv(api.eth, block.Hash(), len(block.Transactions())-1, 0)
 		if err != nil {
 			return AccountRangeResult{}, err
 		}
@@ -432,7 +432,7 @@ type storageEntry struct {
 
 // StorageRangeAt returns the storage at the given block height and transaction index.
 func (api *PrivateDebugAPI) StorageRangeAt(ctx context.Context, blockHash common.Hash, txIndex int, contractAddress common.Address, keyStart hexutil.Bytes, maxResult int) (StorageRangeResult, error) {
-	_, _, statedb, err := api.computeTxEnv(blockHash, txIndex, 0)
+	_, _, statedb, err := computeTxEnv(api.eth, blockHash, txIndex, 0)
 	if err != nil {
 		return StorageRangeResult{}, err
 	}
