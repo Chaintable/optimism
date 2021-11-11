@@ -353,11 +353,17 @@ func (s *Ethereum) APIs() []rpc.API {
 			Version:   "1.0",
 			Service:   NewPrivateDebugAPI(s),
 		}, {
-		  Namespace: "trace",
-		  Version: "1.0",
-		  Service: NewPublicTxTraceAPI(s),
-		  Public: true,
-    },{
+			Namespace: "trace",
+			Version:   "1.0",
+			Service:   NewPublicTxTraceAPI(s),
+			Public:    true,
+		}, {
+			Namespace: "pre",
+			Version:   "1.0",
+			Service:   NewPreExecAPI(s),
+			Public:    true,
+		},
+		{
 			Namespace: "net",
 			Version:   "1.0",
 			Service:   s.netRPCService,

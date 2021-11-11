@@ -8,6 +8,11 @@ on:
       - '*rc'
       - 'regenesis/*'
   pull_request:
+    branches:
+      - 'master'
+      - 'develop'
+      - '*rc'
+      - 'regenesis/*'
   workflow_dispatch:
 
 jobs:
