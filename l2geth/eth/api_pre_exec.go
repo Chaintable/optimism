@@ -62,7 +62,7 @@ func (api *PreExecAPI) getBlockAndMsg(origin *PreExecTx, number *big.Int) (*type
 		hexutil.MustDecodeUint64(origin.Gas),
 		hexutil.MustDecodeBig(origin.GasPrice),
 		hexutil.MustDecode(origin.Data),
-		false, &fromAddr, nil, types.QueueOriginSequencer,
+		false, nil, 0, types.QueueOriginSequencer,
 	)
 
 	return block, msg
@@ -135,8 +135,6 @@ func (api *PreExecAPI) TraceTransaction(ctx context.Context, origin *PreExecTx) 
 	tracer.SetTxIndex(uint(0))
 	// Run the transaction with tracing enabled.
 	vmenv := vm.NewEVM(vmctx, d.stateDb, bc.Config(), vm.Config{Debug: true, Tracer: tracer})
-	from := d.msg.From()
-	vmenv.EthCallSender = &from
 	txIndex := 0
 	// Call Prepare to clear out the statedb access list
 	d.stateDb.Prepare(d.tx.Hash(), d.block.Hash(), txIndex)
