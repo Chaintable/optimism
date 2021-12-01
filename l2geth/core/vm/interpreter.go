@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rollup/rcfg"
 )
 
 // Config are the configuration options for the Interpreter
@@ -114,6 +115,10 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 				cfg.ExtraEips = append(cfg.ExtraEips[:i], cfg.ExtraEips[i+1:]...)
 				log.Error("EIP activation failed", "eip", eip, "error", err)
 			}
+		}
+		// Enable minimal eip 2929
+		if rcfg.UsingOVM {
+			enableMinimal2929(&jt)
 		}
 		cfg.JumpTable = jt
 	}
@@ -276,7 +281,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// if the operation clears the return data (e.g. it has returning data)
 		// set the last return to the result of the operation.
 		if operation.returns {
-			in.returnData = common.CopyBytes(res)
+			in.returnData = res
 		}
 
 		switch {

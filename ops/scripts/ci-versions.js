@@ -12,6 +12,8 @@ data = JSON.parse(data)
 const nonBuilders = new Set([
   'l2geth',
   'gas-oracle',
+  'proxyd',
+  'rpc-proxy',
 ])
 
 builder = false
@@ -25,6 +27,6 @@ for (const i of data) {
 }
 
 if (builder) {
-  process.stdout.write(`::set-output name=builder::true` + os.EOL)
+  process.stdout.write(`::set-output name=use_builder::true` + os.EOL)
 }
 

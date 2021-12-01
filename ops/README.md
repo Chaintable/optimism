@@ -8,6 +8,12 @@ The docker-compose project runs a local optimism stack.
 - docker-compose
 - make
 
+## Building the services
+
+```bash
+make build
+```
+
 ## Starting and stopping the project
 
 The base `docker-compose.yml` file will start the required components for a full stack.
@@ -45,6 +51,17 @@ A Makefile has been provided for convience. The following targets are available.
 - make down
 - make up-metrics
 - make down-metrics
+
+## Cross domain communication
+
+By default, the `message-relayer` service is turned off. This means that
+any tests must manually submit withdrawals. The `message-relayer` will
+automatically look for withdrawals and submit the proofs. To run with the
+`message-relayer` on, use the command:
+
+```bash
+$ docker-compose up --scale relayer=1
+```
 
 ## Authentication
 

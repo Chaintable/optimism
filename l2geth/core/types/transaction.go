@@ -27,7 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/rollup/fees"
+	"github.com/ethereum/go-ethereum/rollup/rcfg"
 )
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go
@@ -214,14 +214,12 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
-func (tx *Transaction) Data() []byte       { return common.CopyBytes(tx.data.Payload) }
-func (tx *Transaction) Gas() uint64        { return tx.data.GasLimit }
-func (tx *Transaction) L2Gas() uint64      { return fees.DecodeL2GasLimitU64(tx.data.GasLimit) }
-func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
-func (tx *Transaction) Value() *big.Int    { return new(big.Int).Set(tx.data.Amount) }
-func (tx *Transaction) Nonce() uint64      { return tx.data.AccountNonce }
-func (tx *Transaction) CheckNonce() bool   { return true }
-
+func (tx *Transaction) Data() []byte          { return common.CopyBytes(tx.data.Payload) }
+func (tx *Transaction) Gas() uint64           { return tx.data.GasLimit }
+func (tx *Transaction) GasPrice() *big.Int    { return new(big.Int).Set(tx.data.Price) }
+func (tx *Transaction) Value() *big.Int       { return new(big.Int).Set(tx.data.Amount) }
+func (tx *Transaction) Nonce() uint64         { return tx.data.AccountNonce }
+func (tx *Transaction) CheckNonce() bool      { return true }
 func (tx *Transaction) SetNonce(nonce uint64) { tx.data.AccountNonce = nonce }
 
 // To returns the recipient address of the transaction.
@@ -298,19 +296,20 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 		data:       tx.data.Payload,
 		checkNonce: true,
 
-		l1MessageSender: tx.meta.L1MessageSender,
-		l1BlockNumber:   tx.meta.L1BlockNumber,
-		queueOrigin:     tx.meta.QueueOrigin,
+		l1Timestamp:   tx.meta.L1Timestamp,
+		l1BlockNumber: tx.meta.L1BlockNumber,
+		queueOrigin:   tx.meta.QueueOrigin,
 	}
 
 	var err error
-	msg.from, err = Sender(s, tx)
-
-	if tx.meta.L1MessageSender != nil {
-		msg.l1MessageSender = tx.meta.L1MessageSender
+	if rcfg.UsingOVM {
+		if tx.meta.QueueOrigin == QueueOriginL1ToL2 && tx.meta.L1MessageSender != nil {
+			msg.from = *tx.meta.L1MessageSender
+		} else {
+			msg.from, err = Sender(s, tx)
+		}
 	} else {
-		addr := common.Address{}
-		msg.l1MessageSender = &addr
+		msg.from, err = Sender(s, tx)
 	}
 
 	return msg, err
@@ -403,44 +402,12 @@ func (s *TxByPrice) Pop() interface{} {
 	return x
 }
 
-type TxByIndexAndPrice Transactions
-
-func (s TxByIndexAndPrice) Len() int { return len(s) }
-func (s TxByIndexAndPrice) Less(i, j int) bool {
-	metai, metaj := s[i].GetMeta(), s[j].GetMeta()
-	// They should never be the same integer but they
-	// can both be nil. Sort by gasPrice in this case.
-	if metai.Index == nil && metaj.Index == nil {
-		return s[i].data.Price.Cmp(s[j].data.Price) > 0
-	}
-	// When the index is nil, it means that it is unknown. This
-	// indicates queue origin sequencer.
-	if metai.Index == nil && metaj.Index != nil {
-		return false
-	}
-	if metai.Index != nil && metaj.Index == nil {
-		return true
-	}
-	return *metai.Index < *metaj.Index
-}
-func (s TxByIndexAndPrice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s *TxByIndexAndPrice) Push(x interface{}) {
-	*s = append(*s, x.(*Transaction))
-}
-func (s *TxByIndexAndPrice) Pop() interface{} {
-	old := *s
-	n := len(old)
-	x := old[n-1]
-	*s = old[0 : n-1]
-	return x
-}
-
 // TransactionsByPriceAndNonce represents a set of transactions that can return
 // transactions in a profit-maximizing sorted order, while supporting removing
 // entire batches of transactions for non-executable accounts.
 type TransactionsByPriceAndNonce struct {
 	txs    map[common.Address]Transactions // Per account nonce-sorted list of transactions
-	heads  TxByIndexAndPrice               // Next transaction for each unique account (price heap)
+	heads  TxByPrice                       // Next transaction for each unique account (price heap)
 	signer Signer                          // Signer for the set of transactions
 }
 
@@ -451,7 +418,7 @@ type TransactionsByPriceAndNonce struct {
 // if after providing it to the constructor.
 func NewTransactionsByPriceAndNonce(signer Signer, txs map[common.Address]Transactions) *TransactionsByPriceAndNonce {
 	// Initialize a price based heap with the head transactions
-	heads := make(TxByIndexAndPrice, 0, len(txs))
+	heads := make(TxByPrice, 0, len(txs))
 	for from, accTxs := range txs {
 		// This prevents a panic, not ideal.
 		if len(accTxs) > 0 {
@@ -513,12 +480,12 @@ type Message struct {
 	data       []byte
 	checkNonce bool
 
-	l1MessageSender *common.Address
-	l1BlockNumber   *big.Int
-	queueOrigin     QueueOrigin
+	l1Timestamp   uint64
+	l1BlockNumber *big.Int
+	queueOrigin   QueueOrigin
 }
 
-func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool, l1MessageSender *common.Address, l1BlockNumber *big.Int, queueOrigin QueueOrigin) Message {
+func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool, l1BlockNumber *big.Int, l1Timestamp uint64, queueOrigin QueueOrigin) Message {
 	return Message{
 		from:       from,
 		to:         to,
@@ -529,9 +496,9 @@ func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *b
 		data:       data,
 		checkNonce: checkNonce,
 
-		l1BlockNumber:   l1BlockNumber,
-		l1MessageSender: l1MessageSender,
-		queueOrigin:     queueOrigin,
+		l1Timestamp:   l1Timestamp,
+		l1BlockNumber: l1BlockNumber,
+		queueOrigin:   queueOrigin,
 	}
 }
 
@@ -544,6 +511,6 @@ func (m Message) Nonce() uint64        { return m.nonce }
 func (m Message) Data() []byte         { return m.data }
 func (m Message) CheckNonce() bool     { return m.checkNonce }
 
-func (m Message) L1MessageSender() *common.Address { return m.l1MessageSender }
-func (m Message) L1BlockNumber() *big.Int          { return m.l1BlockNumber }
-func (m Message) QueueOrigin() QueueOrigin         { return m.queueOrigin }
+func (m Message) L1Timestamp() uint64      { return m.l1Timestamp }
+func (m Message) L1BlockNumber() *big.Int  { return m.l1BlockNumber }
+func (m Message) QueueOrigin() QueueOrigin { return m.queueOrigin }

@@ -1,5 +1,96 @@
 # Changelog
 
+## 0.5.2
+
+### Patch Changes
+
+- d141095c: Allow for unprotected transactions
+
+## 0.5.1
+
+### Patch Changes
+
+- 7f2898ba: Fixes deadlock
+
+## 0.5.0
+
+### Minor Changes
+
+- e03dcead: Start refactor to new version of the OVM
+- e4a1129c: Adds aliasing to msg.sender and tx.origin to avoid xdomain attacks
+- 299a459e: Introduces a new opcode L1BLOCKNUMBER to replace old functionality where blocknumber would return the L1 block number and the L2 block number was inaccessible.
+- 872f5976: Removes various unused OVM contracts
+- 65289e63: Add optimistic ethereum specific fields to the receipt. These fields are related to the L1 portion of the fee. Note that this is a consensus change as it will impact the blockhash through the receipts root
+- 92c9692d: Opcode tweaks. Coinbase returns SequencerFeeVault address. Difficulty returns zero.
+- 1e63ffa0: Refactors and simplifies OVM_ETH usage
+- d3cb1b86: Reintroduces the whitelist into the v2 system
+- 81ccd6e4: `regenesis/0.5.0` release
+- f38b8000: Removes ERC20 and WETH9 features from OVM_ETH
+- 3605b963: Adds refactored support for the L1MESSAGESENDER opcode
+- 3f28385a: Removes all custom genesis initialization
+
+### Patch Changes
+
+- 8988a460: Cleanup `time.Ticker`s
+- fbdd06f5: Set the latest queue index and index after the tx has been applied to the chain
+- 5c0e90aa: Handle policy/consensus race condition for balance check
+- 8c8807c0: Refactor to simplify the process of generating the genesis json file
+- 95a0d803: Remove calls to `syncBatchesToTip` in the main `sequence()` loop
+- da99cc43: Remove dead `debug_ingestTransactions` endpoint and `txType` from RPC transactions
+- 6bb040b7: Remove complex mutex logic in favor of simple mutex logic in the `SyncService`
+- 7bd88e81: Use `OVM_GasPriceOracle` based L1 base fee instead of fetching it from remote
+- b70ee70c: upgraded to solidity 0.8.9
+- 3c56126c: Handle race condition in L2 geth for fee logic
+- c39165f8: Remove dead L1 gas price fetching code
+- 95c0463c: Fix various geth tests
+- e11c3ea2: Use minimal EIP-2929 for state accessing opcodes
+
+## 0.4.15
+
+### Patch Changes
+
+- 5c9b6343: Fix execution manager run
+
+## 0.4.14
+
+### Patch Changes
+
+- 0d429564: Add ROLLUP_ENABLE_ARBITRARY_CONTRACT_DEPLOYMENT_FLAG
+
+## 0.4.13
+
+### Patch Changes
+
+- dfe3598f: Lower per tx fee overhead to more accurately represent L1 costs
+
+## 0.4.12
+
+### Patch Changes
+
+- 0e14855c: Add in min accepted L2 gas limit config flag
+
+## 0.4.11
+
+### Patch Changes
+
+- f331428f: Update the memory usage in geth
+
+## 0.4.10
+
+### Patch Changes
+
+- eb1eb327: Ensure that L2 geth doesn't reject blocks from the future
+
+## 0.4.9
+
+### Patch Changes
+
+- 3c420ec3: Reduce the geth diff
+- 9d1ff999: Allow transactions via RPC to `address(0)`
+- 101b942c: Removes `id` field from EVM and no longer logs the EVM execution id
+- 4cf68ade: Style fix in the `RollupClient`
+- 6dbb9293: Remove dead code in `blockchain.go` and `miner/worker.go`
+
 ## 0.4.8
 
 ### Patch Changes

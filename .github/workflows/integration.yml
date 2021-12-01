@@ -18,6 +18,11 @@ on:
 jobs:
   integration:
     runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     env:
         DOCKER_BUILDKIT: 1
         COMPOSE_DOCKER_CLI_BUILD: 1
@@ -37,10 +42,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - name: Build the services
-        working-directory: ./ops
-        run: ./scripts/build-ci.sh
-
       - name: Bring the stack up
         working-directory: ./ops
         run: |
@@ -59,8 +60,8 @@ jobs:
         if: failure()
         uses: jwalton/gh-docker-logs@v1
         with:
-          images: 'ethereumoptimism/builder,ethereumoptimism/hardhat,ethereumoptimism/deployer,ethereumoptimism/data-transport-layer,ethereumoptimism/l2geth,ethereumoptimism/message-relayer,ethereumoptimism/batch-submitter,ethereumoptimism/l2geth,ethereumoptimism/integration-tests'
-          dest: '~/logs'
+          images: 'ethereumoptimism/hardhat,ops_deployer,ops_dtl,ops_l2geth,ethereumoptimism/message-relayer,ops_batch_submitter,ops_replica,ops_integration_tests'
+          dest: '/home/runner/logs'
 
       - name: Tar logs
         if: failure()

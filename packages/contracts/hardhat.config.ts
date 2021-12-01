@@ -10,12 +10,14 @@ import {
 // Hardhat plugins
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
+import '@nomiclabs/hardhat-etherscan'
 import 'hardhat-deploy'
 import '@typechain/hardhat'
-import '@eth-optimism/hardhat-ovm'
 import './tasks/deploy'
 import './tasks/l2-gasprice'
 import './tasks/set-owner'
+import './tasks/validate-address-dictator'
+import './tasks/validate-chugsplash-dictator'
 import './tasks/whitelist'
 import './tasks/withdraw-fees'
 import 'hardhat-gas-reporter'
@@ -24,6 +26,7 @@ import 'hardhat-gas-reporter'
 dotenv.config()
 
 const enableGasReport = !!process.env.ENABLE_GAS_REPORT
+const privateKey = process.env.PRIVATE_KEY || '0x' + '11'.repeat(32) // this is to avoid hardhat error
 
 const config: HardhatUserConfig = {
   networks: {
@@ -33,34 +36,55 @@ const config: HardhatUserConfig = {
       live: false,
       saveDeployments: false,
       tags: ['local'],
-      hardfork: 'istanbul',
     },
-    // Add this network to your config!
     optimism: {
       url: 'http://127.0.0.1:8545',
-      ovm: true,
       saveDeployments: false,
+    },
+    'optimism-kovan': {
+      chainId: 69,
+      url: 'https://kovan.optimism.io',
+      accounts: [privateKey],
+    },
+    'optimism-mainnet': {
+      chainId: 10,
+      url: 'https://mainnet.optimism.io',
+      accounts: [privateKey],
+    },
+    'mainnet-trial': {
+      chainId: 42069,
+      url: 'http://127.0.0.1:8545',
+      accounts: [privateKey],
     },
   },
   mocha: {
     timeout: 50000,
   },
   solidity: {
-    version: '0.7.6',
+    compilers: [
+      {
+        version: '0.8.9',
+        settings: {
+          optimizer: { enabled: true, runs: 10_000 },
+        },
+      },
+      {
+        version: '0.5.17', // Required for WETH9
+        settings: {
+          optimizer: { enabled: true, runs: 10_000 },
+        },
+      },
+    ],
     settings: {
-      optimizer: { enabled: true, runs: 200 },
       metadata: {
         bytecodeHash: 'none',
       },
       outputSelection: {
         '*': {
-          '*': ['storageLayout'],
+          '*': ['metadata', 'storageLayout'],
         },
       },
     },
-  },
-  ovm: {
-    solcVersion: '0.7.6+commit.3b061308',
   },
   typechain: {
     outDir: 'dist/types',
@@ -80,6 +104,9 @@ const config: HardhatUserConfig = {
     currency: 'USD',
     gasPrice: 100,
     outputFile: process.env.CI ? 'gas-report.txt' : undefined,
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
 }
 
