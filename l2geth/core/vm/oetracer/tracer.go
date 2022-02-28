@@ -377,8 +377,7 @@ func (tr *StructLogger) PersistTrace() {
 
 	if tr.store != nil {
 		// Convert trace objects to json byte array and save it
-		var actions ActionTraces
-		actions = tr.rootTrace.Actions
+		var actions ActionTraces = tr.rootTrace.Actions
 		tracesBytes, err := rlp.EncodeToBytes(&actions)
 		if err != nil {
 			log.Error("Failed to encode tx trace", "txHash", tr.tx.String(), "err", err.Error())
@@ -465,7 +464,7 @@ const (
 
 // ActionTrace represents single interaction with blockchain
 type ActionTrace struct {
-	childTraces         []*ActionTrace     `json:"-"`
+	childTraces         []*ActionTrace
 	Action              AddressAction      `json:"action"`
 	BlockHash           common.Hash        `json:"blockHash"`
 	BlockNumber         big.Int            `json:"blockNumber"`
