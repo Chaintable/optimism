@@ -19,7 +19,7 @@ defaults:
 
 jobs:
   lint:
-    runs-on: [self-hosted, ops]
+    runs-on: [self-hosted]
 
     steps:
     - name: Install Go
@@ -29,13 +29,15 @@ jobs:
 
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Lint
       run: |
         make lint
 
   build:
-    runs-on: [self-hosted, ops]
+    runs-on: [self-hosted]
 
     needs: lint
 
@@ -47,6 +49,8 @@ jobs:
 
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
 
     - name: Docker build and push
       run: |
