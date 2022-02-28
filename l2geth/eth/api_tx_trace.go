@@ -22,14 +22,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum-optimism/optimism/l2geth/common"
+	"github.com/ethereum-optimism/optimism/l2geth/core"
+	"github.com/ethereum-optimism/optimism/l2geth/core/state"
+	"github.com/ethereum-optimism/optimism/l2geth/core/types"
+	"github.com/ethereum-optimism/optimism/l2geth/core/vm"
+	txtrace "github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
 
-	"github.com/DeBankDeFi/eth/txtrace"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // PublicTxTraceAPI provides an API to tracing transaction or block information.
