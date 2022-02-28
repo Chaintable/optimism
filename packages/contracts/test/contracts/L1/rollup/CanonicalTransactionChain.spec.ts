@@ -1,5 +1,3 @@
-import { expect } from '../../../setup'
-
 /* External Imports */
 import { ethers } from 'hardhat'
 import { Signer, ContractFactory, Contract } from 'ethers'
@@ -13,6 +11,7 @@ import { keccak256 } from 'ethers/lib/utils'
 import _ from 'lodash'
 
 /* Internal Imports */
+import { expect } from '../../../setup'
 import {
   makeAddressManager,
   setProxyTarget,
@@ -679,6 +678,16 @@ describe('CanonicalTransactionChain', () => {
             }
           )
           await res.wait()
+
+          expect(await CanonicalTransactionChain.getLastTimestamp()).to.equal(
+            timestamp
+          )
+          expect(await CanonicalTransactionChain.getLastBlockNumber()).to.equal(
+            blockNumber
+          )
+          expect(
+            await CanonicalTransactionChain.getNumPendingQueueElements()
+          ).to.equal(0)
         })
 
         it(`should return ${size}`, async () => {
@@ -686,7 +695,17 @@ describe('CanonicalTransactionChain', () => {
             size
           )
         })
+
+        it('should return zero after queue is emptied', async () => {
+          expect(await CanonicalTransactionChain.getNextQueueIndex()).to.equal(
+            0
+          )
+        })
       })
     }
+
+    it('should return zero', async () => {
+      expect(await CanonicalTransactionChain.getTotalBatches()).to.equal(0)
+    })
   })
 })

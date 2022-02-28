@@ -1,4 +1,6 @@
 /* External Imports */
+import { performance } from 'perf_hooks'
+
 import { Promise as bPromise } from 'bluebird'
 import { Signer, ethers, Contract, providers } from 'ethers'
 import { TransactionReceipt } from '@ethersproject/abstract-provider'
@@ -20,9 +22,8 @@ import {
   BatchContext,
   AppendSequencerBatchParams,
 } from '../transaction-chain-contract'
-
-import { BlockRange, BatchSubmitter } from '.'
 import { TransactionSubmitter } from '../utils'
+import { BlockRange, BatchSubmitter } from '.'
 
 export interface AutoFixBatchOptions {
   fixDoublePlayedDeposits: boolean
@@ -203,6 +204,8 @@ export class TransactionBatchSubmitter extends BatchSubmitter {
       return
     }
 
+    const batchTxBuildStart = performance.now()
+
     const params = await this._generateSequencerBatchParams(
       startBlock,
       endBlock
@@ -226,7 +229,11 @@ export class TransactionBatchSubmitter extends BatchSubmitter {
     if (!wasBatchTruncated && !this._shouldSubmitBatch(batchSizeInBytes)) {
       return
     }
-    this.metrics.numTxPerBatch.observe(endBlock - startBlock)
+
+    const batchTxBuildEnd = performance.now()
+    this.metrics.batchTxBuildTime.set(batchTxBuildEnd - batchTxBuildStart)
+
+    this.metrics.numTxPerBatch.observe(batchParams.totalElementsToAppend)
     const l1tipHeight = await this.signer.provider.getBlockNumber()
     this.logger.debug('Submitting batch.', {
       calldata: batchParams,
@@ -678,10 +685,18 @@ export class TransactionBatchSubmitter extends BatchSubmitter {
       queued: BatchElement[]
     }> = []
     for (const block of blocks) {
+      // Create a new context in certain situations
       if (
-        (lastBlockIsSequencerTx === false && block.isSequencerTx === true) ||
+        // If there are no contexts yet, create a new context.
         groupedBlocks.length === 0 ||
-        (block.timestamp !== lastTimestamp && block.isSequencerTx === true) ||
+        // If the last block was an L1 to L2 transaction, but the next block is a Sequencer
+        // transaction, create a new context.
+        (lastBlockIsSequencerTx === false && block.isSequencerTx === true) ||
+        // If the timestamp of the last block differs from the timestamp of the current block,
+        // create a new context. Applies to both L1 to L2 transactions and Sequencer transactions.
+        block.timestamp !== lastTimestamp ||
+        // If the block number of the last block differs from the block number of the current block,
+        // create a new context. ONLY applies to Sequencer transactions.
         (block.blockNumber !== lastBlockNumber && block.isSequencerTx === true)
       ) {
         groupedBlocks.push({
@@ -689,6 +704,7 @@ export class TransactionBatchSubmitter extends BatchSubmitter {
           queued: [],
         })
       }
+
       const cur = groupedBlocks.length - 1
       block.isSequencerTx
         ? groupedBlocks[cur].sequenced.push(block)

@@ -1,11 +1,10 @@
-import { expect } from '../../../setup'
-
 /* External Imports */
 import { ethers } from 'hardhat'
 import { Signer, ContractFactory, Contract, constants } from 'ethers'
 import { smockit, MockContract } from '@eth-optimism/smock'
 
 /* Internal Imports */
+import { expect } from '../../../setup'
 import {
   makeAddressManager,
   setProxyTarget,
@@ -181,6 +180,19 @@ describe('StateCommitmentChain', () => {
           })
         })
       })
+      describe('when the proposer has not previously staked at the BondManager', () => {
+        before(() => {
+          Mock__BondManager.smocked.isCollateralized.will.return.with(false)
+        })
+
+        it('should revert', async () => {
+          await expect(
+            StateCommitmentChain.appendStateBatch(batch, 0)
+          ).to.be.revertedWith(
+            'Proposer does not have enough collateral posted'
+          )
+        })
+      })
     })
   })
 
@@ -193,6 +205,10 @@ describe('StateCommitmentChain', () => {
       prevTotalElements: 0,
       extraData: ethers.constants.HashZero,
     }
+
+    before(() => {
+      Mock__BondManager.smocked.isCollateralized.will.return.with(true)
+    })
 
     beforeEach(async () => {
       Mock__CanonicalTransactionChain.smocked.getTotalElements.will.return.with(
@@ -253,6 +269,25 @@ describe('StateCommitmentChain', () => {
           })
         })
 
+        describe('when outside fraud proof window', () => {
+          beforeEach(async () => {
+            const FRAUD_PROOF_WINDOW =
+              await StateCommitmentChain.FRAUD_PROOF_WINDOW()
+            await increaseEthTime(
+              ethers.provider,
+              FRAUD_PROOF_WINDOW.toNumber() + 1
+            )
+          })
+
+          it('should revert', async () => {
+            await expect(
+              StateCommitmentChain.deleteStateBatch(batchHeader)
+            ).to.be.revertedWith(
+              'State batches can only be deleted within the fraud proof window.'
+            )
+          })
+        })
+
         describe('when the provided batch header is valid', () => {
           it('should remove the batch and all following batches', async () => {
             await expect(StateCommitmentChain.deleteStateBatch(batchHeader)).to
@@ -260,6 +295,27 @@ describe('StateCommitmentChain', () => {
           })
         })
       })
+    })
+  })
+
+  describe('insideFraudProofWindow', () => {
+    const batchHeader = {
+      batchIndex: 0,
+      batchRoot: NON_NULL_BYTES32,
+      batchSize: 1,
+      prevTotalElements: 0,
+      extraData: ethers.constants.HashZero,
+    }
+    it('should revert when timestamp is zero', async () => {
+      await expect(
+        StateCommitmentChain.insideFraudProofWindow({
+          ...batchHeader,
+          extraData: ethers.utils.defaultAbiCoder.encode(
+            ['uint256', 'address'],
+            [0, await sequencer.getAddress()]
+          ),
+        })
+      ).to.be.revertedWith('Batch header timestamp cannot be zero')
     })
   })
 

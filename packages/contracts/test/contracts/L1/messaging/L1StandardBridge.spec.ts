@@ -1,5 +1,3 @@
-import { expect } from '../../../setup'
-
 /* External Imports */
 import { ethers } from 'hardhat'
 import { Signer, ContractFactory, Contract, constants } from 'ethers'
@@ -7,6 +5,7 @@ import { Interface } from 'ethers/lib/utils'
 import { smockit, MockContract, smoddit } from '@eth-optimism/smock'
 
 /* Internal Imports */
+import { expect } from '../../../setup'
 import { NON_NULL_BYTES32, NON_ZERO_ADDRESS } from '../../../helpers'
 import { getContractInterface, predeploys } from '../../../../src'
 
@@ -242,6 +241,30 @@ describe('L1StandardBridge', () => {
           }
         )
       ).to.be.revertedWith(ERR_INVALID_X_DOMAIN_MSG_SENDER)
+    })
+
+    it('should revert in nothing to withdraw', async () => {
+      // make sure no balance at start of test
+      expect(await ethers.provider.getBalance(NON_ZERO_ADDRESS)).to.be.equal(0)
+
+      const withdrawalAmount = 100
+      Mock__L1CrossDomainMessenger.smocked.xDomainMessageSender.will.return.with(
+        () => DUMMY_L2_BRIDGE_ADDRESS
+      )
+
+      await expect(
+        L1StandardBridge.finalizeETHWithdrawal(
+          NON_ZERO_ADDRESS,
+          NON_ZERO_ADDRESS,
+          withdrawalAmount,
+          NON_NULL_BYTES32,
+          {
+            from: Mock__L1CrossDomainMessenger.address,
+          }
+        )
+      ).to.be.revertedWith(
+        'TransferHelper::safeTransferETH: ETH transfer failed'
+      )
     })
 
     it('should credit funds to the withdrawer and not use too much gas', async () => {

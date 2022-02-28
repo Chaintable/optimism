@@ -4,15 +4,16 @@
 # ### BASE: Install deps
 # We do not use Alpine because there's a regression causing it to be very slow
 # when used with typescript/hardhat: https://github.com/nomiclabs/hardhat/issues/1219
-FROM node:14.18.1-buster-slim as base
+FROM node:16.13-buster-slim as base
 
 RUN apt-get update -y && apt-get install -y git curl jq python3
 
 # copy over the needed configs to run the dep installation
 # note: this approach can be a bit unhandy to maintain, but it allows
 # us to cache the installation steps
-WORKDIR /optimism
+WORKDIR /opt/optimism
 COPY *.json yarn.lock ./
+COPY packages/sdk/package.json ./packages/sdk/package.json
 COPY packages/core-utils/package.json ./packages/core-utils/package.json
 COPY packages/common-ts/package.json ./packages/common-ts/package.json
 COPY packages/contracts/package.json ./packages/contracts/package.json
@@ -20,7 +21,6 @@ COPY packages/data-transport-layer/package.json ./packages/data-transport-layer/
 COPY packages/batch-submitter/package.json ./packages/batch-submitter/package.json
 COPY packages/message-relayer/package.json ./packages/message-relayer/package.json
 COPY packages/replica-healthcheck/package.json ./packages/replica-healthcheck/package.json
-COPY packages/regenesis-surgery/package.json ./packages/regenesis-surgery/package.json
 COPY integration-tests/package.json ./integration-tests/package.json
 
 RUN yarn install --frozen-lockfile
@@ -33,30 +33,30 @@ RUN yarn build
 
 
 FROM base as deployer
-WORKDIR /optimism/packages/contracts
+WORKDIR /opt/optimism/packages/contracts
 COPY ./ops/scripts/deployer.sh .
 CMD ["yarn", "run", "deploy"]
 
 
 FROM base as batch-submitter
-WORKDIR /optimism/packages/batch-submitter
+WORKDIR /opt/optimism/packages/batch-submitter
 COPY ./ops/scripts/batches.sh .
 CMD ["npm", "run", "start"]
 
 
 FROM base as data-transport-layer
-WORKDIR /optimism/packages/data-transport-layer
+WORKDIR /opt/optimism/packages/data-transport-layer
 COPY ./ops/scripts/dtl.sh .
 CMD ["node", "dist/src/services/run.js"]
 
 
 FROM base as integration-tests
-WORKDIR /optimism/integration-tests
+WORKDIR /opt/optimism/integration-tests
 COPY ./ops/scripts/integration-tests.sh ./
 CMD ["yarn", "test:integration"]
 
 
 FROM base as relayer
-WORKDIR /optimism/packages/message-relayer
+WORKDIR /opt/optimism/packages/message-relayer
 COPY ./ops/scripts/relayer.sh .
 CMD ["npm", "run", "start"]

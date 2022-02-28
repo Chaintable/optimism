@@ -1,5 +1,64 @@
 # @eth-optimism/proxyd
 
+## 3.8.0
+
+### Minor Changes
+
+- 527448bb: Handle nil responses better
+
+## 3.7.0
+
+### Minor Changes
+
+- 3c2926b1: Add debug cache status header to proxyd responses
+
+## 3.6.0
+
+### Minor Changes
+
+- 096c5f20: proxyd: Allow cached RPCs to be evicted by redis
+- 71d64834: Add caching for block-dependent RPCs
+- fd2e1523: proxyd: Cache block-dependent RPCs
+- 1760613c: Add integration tests and batching
+
+## 3.5.0
+
+### Minor Changes
+
+- 025a3c0d: Add request/response payload size metrics to proxyd
+- daf8db0b: cache immutable RPC responses in proxyd
+- 8aa89bf3: Add X-Forwarded-For header when proxying RPCs on proxyd
+
+## 3.4.1
+
+### Patch Changes
+
+- 415164e1: Force proxyd build
+
+## 3.4.0
+
+### Minor Changes
+
+- 4b56ed84: Various proxyd fixes
+
+## 3.3.0
+
+### Minor Changes
+
+- 7b7ffd2e: Allows string RPC ids on proxyd
+
+## 3.2.0
+
+### Minor Changes
+
+- 73484138: Adds ability to specify env vars in config
+
+## 3.1.2
+
+### Patch Changes
+
+- 1b79aa62: Release proxyd
+
 ## 3.1.1
 
 ### Patch Changes

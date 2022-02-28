@@ -2,13 +2,13 @@
 import { BaseService, Metrics } from '@eth-optimism/common-ts'
 import { LevelUp } from 'levelup'
 import level from 'level'
+import { Counter } from 'prom-client'
 
 /* Imports: Internal */
 import { L1IngestionService } from '../l1-ingestion/service'
 import { L1TransportServer } from '../server/service'
 import { validators } from '../../utils'
 import { L2IngestionService } from '../l2-ingestion/service'
-import { Counter } from 'prom-client'
 
 export interface L1DataTransportServiceOptions {
   nodeEnv: string
@@ -36,6 +36,7 @@ export interface L1DataTransportServiceOptions {
   defaultBackend: string
   l1GasPriceBackend: string
   l1StartHeight?: number
+  bssHardfork1Index?: number
 }
 
 const optionSettings = {
@@ -66,6 +67,12 @@ export class L1DataTransportService extends BaseService<L1DataTransportServiceOp
 
   protected async _init(): Promise<void> {
     this.logger.info('Initializing L1 Data Transport Service...')
+
+    if (this.options.bssHardfork1Index !== null && this.options.bssHardfork1Index !== undefined) {
+      this.logger.info(`BSS HF1 is active at block: ${this.options.bssHardfork1Index}`)
+    } else {
+      this.logger.info(`BSS HF1 is not active`)
+    }
 
     this.state.db = level(this.options.dbPath)
     await this.state.db.open()

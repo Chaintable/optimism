@@ -27,7 +27,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '16.x'
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -61,4 +61,4 @@ jobs:
         working-directory: ./packages/contracts
         shell: bash
         run: yarn test:slither
-        continue-on-error: true
+        continue-on-error: false

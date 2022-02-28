@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/urfave/cli"
 
-	batchsubmitter "github.com/ethereum-optimism/go/batch-submitter"
-	"github.com/ethereum-optimism/go/batch-submitter/flags"
+	batchsubmitter "github.com/ethereum-optimism/optimism/go/batch-submitter"
+	"github.com/ethereum-optimism/optimism/go/batch-submitter/flags"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 
 func main() {
 	// Set up logger with a default INFO level in case we fail to parse flags.
-	// Otherwise the final crtiical log won't show what the parsing error was.
+	// Otherwise the final critical log won't show what the parsing error was.
 	log.Root().SetHandler(
 		log.LvlFilterHandler(
 			log.LvlInfo,

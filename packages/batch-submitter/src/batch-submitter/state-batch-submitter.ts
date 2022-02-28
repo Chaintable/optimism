@@ -1,4 +1,6 @@
 /* External Imports */
+import { performance } from 'perf_hooks'
+
 import { Promise as bPromise } from 'bluebird'
 import { Contract, Signer, providers } from 'ethers'
 import { TransactionReceipt } from '@ethersproject/abstract-provider'
@@ -12,8 +14,8 @@ import {
 import { Logger, Metrics } from '@eth-optimism/common-ts'
 
 /* Internal Imports */
-import { BlockRange, BatchSubmitter } from '.'
 import { TransactionSubmitter } from '../utils'
+import { BlockRange, BatchSubmitter } from '.'
 
 export class StateBatchSubmitter extends BatchSubmitter {
   // TODO: Change this so that we calculate start = scc.totalElements() and end = ctc.totalElements()!
@@ -154,6 +156,8 @@ export class StateBatchSubmitter extends BatchSubmitter {
     startBlock: number,
     endBlock: number
   ): Promise<TransactionReceipt> {
+    const batchTxBuildStart = performance.now()
+
     const batch = await this._generateStateCommitmentBatch(startBlock, endBlock)
     const calldata = this.chainContract.interface.encodeFunctionData(
       'appendStateBatch',
@@ -168,6 +172,9 @@ export class StateBatchSubmitter extends BatchSubmitter {
     if (!this._shouldSubmitBatch(batchSizeInBytes)) {
       return
     }
+
+    const batchTxBuildEnd = performance.now()
+    this.metrics.batchTxBuildTime.set(batchTxBuildEnd - batchTxBuildStart)
 
     const offsetStartsAtIndex = startBlock - this.blockOffset
     this.logger.debug('Submitting batch.', { calldata })
