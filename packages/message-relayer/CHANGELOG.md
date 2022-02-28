@@ -1,5 +1,192 @@
 # @eth-optimism/message-relayer
 
+## 0.2.6
+
+### Patch Changes
+
+- 6b73a94a: Fix dockerfile
+
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies [584cbc25]
+  - @eth-optimism/core-utils@0.7.3
+  - @eth-optimism/contracts@0.5.5
+
+## 0.2.4
+
+### Patch Changes
+
+- 8e634b49: Fix package JSON issues
+- Updated dependencies [8e634b49]
+  - @eth-optimism/core-utils@0.7.2
+  - @eth-optimism/contracts@0.5.4
+
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [b9049406]
+- Updated dependencies [a8b14a7d]
+  - @eth-optimism/contracts@0.5.3
+
+## 0.2.2
+
+### Patch Changes
+
+- 243f33e5: Standardize package json file format
+- Updated dependencies [243f33e5]
+  - @eth-optimism/common-ts@0.2.1
+  - @eth-optimism/contracts@0.5.2
+  - @eth-optimism/core-utils@0.7.1
+
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [c0fc7fee]
+  - @eth-optimism/contracts@0.5.1
+
+## 0.2.0
+
+### Minor Changes
+
+- 3f590e33: Remove the "OVM" Prefix from contract names
+- 81ccd6e4: `regenesis/0.5.0` release
+
+### Patch Changes
+
+- 0a147680: Add legacy proof generation to message-relayer
+- 222a3eef: Add 'User-Agent' to the http headers for ethers providers
+- b70ee70c: upgraded to solidity 0.8.9
+- a98a1884: Fixes dependencies instead of using caret constraints
+- 8f4cb337: Removes the onlyRelayer modifier from the L1CrossDomainMessenger
+- beb6c977: Remove obsoleted contract code. Improve events usability by indexing helpful params. Switch using encoded message and use decoded message from event
+- Updated dependencies [e4a1129c]
+- Updated dependencies [64ea3ac9]
+- Updated dependencies [3ce62c81]
+- Updated dependencies [299a459e]
+- Updated dependencies [8c8807c0]
+- Updated dependencies [d7978cfc]
+- Updated dependencies [e16d41c0]
+- Updated dependencies [5db50b3d]
+- Updated dependencies [cee2a464]
+- Updated dependencies [66bf56a6]
+- Updated dependencies [2c91ca00]
+- Updated dependencies [d5036826]
+- Updated dependencies [222a3eef]
+- Updated dependencies [dfc784e8]
+- Updated dependencies [896168e2]
+- Updated dependencies [436c48fd]
+- Updated dependencies [7c352b1e]
+- Updated dependencies [2ade9a79]
+- Updated dependencies [0272a536]
+- Updated dependencies [6ee7423f]
+- Updated dependencies [3f590e33]
+- Updated dependencies [e20deca0]
+- Updated dependencies [2a731e0d]
+- Updated dependencies [199e895e]
+- Updated dependencies [872f5976]
+- Updated dependencies [9c1443a4]
+- Updated dependencies [26906518]
+- Updated dependencies [c53b3587]
+- Updated dependencies [1b917041]
+- Updated dependencies [483f561b]
+- Updated dependencies [b70ee70c]
+- Updated dependencies [c38e4b57]
+- Updated dependencies [a98a1884]
+- Updated dependencies [b744b6ea]
+- Updated dependencies [20c8969b]
+- Updated dependencies [d2eb8ae0]
+- Updated dependencies [1e63ffa0]
+- Updated dependencies [ff266e9c]
+- Updated dependencies [b56dd079]
+- Updated dependencies [56fe3793]
+- Updated dependencies [3e2aa16a]
+- Updated dependencies [d3cb1b86]
+- Updated dependencies [3e41df63]
+- Updated dependencies [973589da]
+- Updated dependencies [83a449c4]
+- Updated dependencies [9c63e9bd]
+- Updated dependencies [81ccd6e4]
+- Updated dependencies [f38b8000]
+- Updated dependencies [d5f012ab]
+- Updated dependencies [76c84f21]
+- Updated dependencies [6d32d701]
+- Updated dependencies [3605b963]
+- Updated dependencies [3f28385a]
+- Updated dependencies [280f348c]
+- Updated dependencies [a0947c3f]
+- Updated dependencies [51821d8f]
+- Updated dependencies [29f1c228]
+- Updated dependencies [8f4cb337]
+- Updated dependencies [beb6c977]
+- Updated dependencies [33abe73d]
+- Updated dependencies [71de86d6]
+  - @eth-optimism/contracts@0.5.0
+  - @eth-optimism/core-utils@0.7.0
+  - @eth-optimism/common-ts@0.2.0
+
+## 0.1.14
+
+### Patch Changes
+
+- 6d3e1d7f: Update dependencies
+- Updated dependencies [6d3e1d7f]
+- Updated dependencies [2e929aa9]
+  - @eth-optimism/common-ts@0.1.6
+  - @eth-optimism/contracts@0.4.14
+  - @eth-optimism/core-utils@0.6.1
+
+## 0.1.13
+
+### Patch Changes
+
+- e504bb47: added coverage for getMerkleTreeProof
+- Updated dependencies [e0be02e1]
+- Updated dependencies [7f7f35c3]
+- Updated dependencies [8da04505]
+  - @eth-optimism/core-utils@0.6.0
+  - @eth-optimism/contracts@0.4.13
+
+## 0.1.12
+
+### Patch Changes
+
+- 21b17edd: Added coverage for packages
+- Updated dependencies [888dafca]
+- Updated dependencies [eb0854e7]
+- Updated dependencies [21b17edd]
+- Updated dependencies [dfe3598f]
+  - @eth-optimism/contracts@0.4.11
+  - @eth-optimism/core-utils@0.5.5
+
+## 0.1.11
+
+### Patch Changes
+
+- 918c08ca: Bump ethers dependency to 5.4.x to support eip1559
+- Updated dependencies [918c08ca]
+  - @eth-optimism/contracts@0.4.10
+  - @eth-optimism/core-utils@0.5.2
+
+## 0.1.10
+
+### Patch Changes
+
+- ecc2f8c1: Patch so contracts package will correctly use the browser-compatible contract artifacts import
+- Updated dependencies [ecc2f8c1]
+  - @eth-optimism/contracts@0.4.9
+
+## 0.1.9
+
+### Patch Changes
+
+- e4fea5e0: Use latest contracts package for browser compatibility support
+- Updated dependencies [e4fea5e0]
+  - @eth-optimism/contracts@0.4.8
+
 ## 0.1.8
 
 ### Patch Changes

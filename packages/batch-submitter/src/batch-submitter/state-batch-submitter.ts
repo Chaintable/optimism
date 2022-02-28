@@ -28,7 +28,7 @@ export class StateBatchSubmitter extends BatchSubmitter {
 
   constructor(
     signer: Signer,
-    l2Provider: providers.JsonRpcProvider,
+    l2Provider: providers.StaticJsonRpcProvider,
     minTxSize: number,
     maxTxSize: number,
     maxBatchSize: number,
@@ -173,9 +173,11 @@ export class StateBatchSubmitter extends BatchSubmitter {
     this.logger.debug('Submitting batch.', { calldata })
 
     // Generate the transaction we will repeatedly submit
+    const nonce = await this.signer.getTransactionCount()
     const tx = await this.chainContract.populateTransaction.appendStateBatch(
       batch,
-      offsetStartsAtIndex
+      offsetStartsAtIndex,
+      { nonce }
     )
     const submitTransaction = (): Promise<TransactionReceipt> => {
       return this.transactionSubmitter.submitTransaction(

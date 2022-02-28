@@ -873,21 +873,13 @@ func computeTxEnv(eth *Ethereum, blockHash common.Hash, txIndex int, reexec uint
 
 	for idx, tx := range block.Transactions() {
 		// Assemble the transaction call message and return if the requested offset
-		var msg core.Message
-		if !vm.UsingOVM {
-			msg, _ = tx.AsMessage(signer)
-		} else {
-			msg, err = core.AsOvmMessage(tx, signer, common.HexToAddress("0x4200000000000000000000000000000000000005"), block.Header().GasLimit)
-			if err != nil {
-				return nil, vm.Context{}, nil, err
-			}
-		}
-		context := core.NewEVMContext(msg, block.Header(), eth.blockchain, nil)
+		msg, _ := tx.AsMessage(signer)
+		ctx := core.NewEVMContext(msg, block.Header(), eth.blockchain, nil)
 		if idx == txIndex {
-			return msg, context, statedb, nil
+			return msg, ctx, statedb, nil
 		}
 		// Not yet the searched for transaction, execute on top of the current state
-		vmenv := vm.NewEVM(context, statedb, eth.blockchain.Config(), vm.Config{})
+		vmenv := vm.NewEVM(ctx, statedb, eth.blockchain.Config(), vm.Config{})
 		if _, _, _, err := core.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(tx.Gas())); err != nil {
 			return nil, vm.Context{}, nil, fmt.Errorf("transaction %#x failed: %v", tx.Hash(), err)
 		}

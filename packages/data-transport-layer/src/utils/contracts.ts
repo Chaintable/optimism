@@ -1,12 +1,12 @@
 /* Imports: External */
 import { constants, Contract, Signer } from 'ethers'
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { BaseProvider } from '@ethersproject/providers'
 import { getContractInterface } from '@eth-optimism/contracts'
 
 export const loadContract = (
   name: string,
   address: string,
-  provider: JsonRpcProvider
+  provider: BaseProvider
 ): Contract => {
   return new Contract(address, getContractInterface(name) as any, provider)
 }
@@ -15,7 +15,7 @@ export const loadProxyFromManager = async (
   name: string,
   proxy: string,
   Lib_AddressManager: Contract,
-  provider: JsonRpcProvider
+  provider: BaseProvider
 ): Promise<Contract> => {
   const address = await Lib_AddressManager.getAddress(proxy)
 
@@ -30,13 +30,12 @@ export const loadProxyFromManager = async (
 
 export interface OptimismContracts {
   Lib_AddressManager: Contract
-  OVM_StateCommitmentChain: Contract
-  OVM_CanonicalTransactionChain: Contract
-  OVM_ExecutionManager: Contract
+  StateCommitmentChain: Contract
+  CanonicalTransactionChain: Contract
 }
 
 export const loadOptimismContracts = async (
-  l1RpcProvider: JsonRpcProvider,
+  l1RpcProvider: BaseProvider,
   addressManagerAddress: string,
   signer?: Signer
 ): Promise<OptimismContracts> => {
@@ -48,16 +47,12 @@ export const loadOptimismContracts = async (
 
   const inputs = [
     {
-      name: 'OVM_StateCommitmentChain',
-      interface: 'iOVM_StateCommitmentChain',
+      name: 'StateCommitmentChain',
+      interface: 'IStateCommitmentChain',
     },
     {
-      name: 'OVM_CanonicalTransactionChain',
-      interface: 'iOVM_CanonicalTransactionChain',
-    },
-    {
-      name: 'OVM_ExecutionManager',
-      interface: 'iOVM_ExecutionManager',
+      name: 'CanonicalTransactionChain',
+      interface: 'ICanonicalTransactionChain',
     },
   ]
 

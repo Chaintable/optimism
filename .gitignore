@@ -3,13 +3,12 @@ node_modules
 results
 temp
 .nyc_output
+coverage.json
 *.tsbuildinfo
 
 dist
 artifacts
-artifacts-ovm
 cache
-cache-ovm
 
 l2geth/build/bin
 packages/contracts/deployments/custom

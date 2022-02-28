@@ -18,8 +18,8 @@ import (
 
 var (
 	txSendCounter           = metrics.NewRegisteredCounter("tx/send", ometrics.DefaultRegistry)
-	txNotSignificantCounter = metrics.NewRegisteredCounter("tx/not-significant", ometrics.DefaultRegistry)
-	gasPriceGauge           = metrics.NewRegisteredGauge("gas-price", ometrics.DefaultRegistry)
+	txNotSignificantCounter = metrics.NewRegisteredCounter("tx/not_significant", ometrics.DefaultRegistry)
+	gasPriceGauge           = metrics.NewRegisteredGauge("gas_price", ometrics.DefaultRegistry)
 	txConfTimer             = metrics.NewRegisteredTimer("tx/confirmed", ometrics.DefaultRegistry)
 	txSendTimer             = metrics.NewRegisteredTimer("tx/send", ometrics.DefaultRegistry)
 )
@@ -38,6 +38,19 @@ func wrapGetLatestBlockNumberFn(backend bind.ContractBackend) func() (uint64, er
 	}
 }
 
+// wrapGetGasUsedByBlock is used by the GasPriceUpdater to get
+// the amount of gas used by a particular block. This is used to
+// track gas usage over time
+func wrapGetGasUsedByBlock(backend bind.ContractBackend) func(*big.Int) (uint64, error) {
+	return func(number *big.Int) (uint64, error) {
+		block, err := backend.HeaderByNumber(context.Background(), number)
+		if err != nil {
+			return 0, err
+		}
+		return block.GasUsed, nil
+	}
+}
+
 // DeployContractBackend represents the union of the
 // DeployBackend and the ContractBackend
 type DeployContractBackend interface {
@@ -53,11 +66,11 @@ func wrapUpdateL2GasPriceFn(backend DeployContractBackend, cfg *Config) (func(ui
 	if cfg.privateKey == nil {
 		return nil, errNoPrivateKey
 	}
-	if cfg.chainID == nil {
+	if cfg.l2ChainID == nil {
 		return nil, errNoChainID
 	}
 
-	opts, err := bind.NewKeyedTransactorWithChainID(cfg.privateKey, cfg.chainID)
+	opts, err := bind.NewKeyedTransactorWithChainID(cfg.privateKey, cfg.l2ChainID)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +124,8 @@ func wrapUpdateL2GasPriceFn(backend DeployContractBackend, cfg *Config) (func(ui
 
 		// Only update the gas price when it must be changed by at least
 		// a paramaterizable amount.
-		if !isDifferenceSignificant(currentPrice.Uint64(), updatedGasPrice, cfg.significanceFactor) {
-			log.Info("gas price did not significantly change", "min-factor", cfg.significanceFactor,
+		if !isDifferenceSignificant(currentPrice.Uint64(), updatedGasPrice, cfg.l2GasPriceSignificanceFactor) {
+			log.Info("gas price did not significantly change", "min-factor", cfg.l2GasPriceSignificanceFactor,
 				"current-price", currentPrice, "next-price", updatedGasPrice)
 			txNotSignificantCounter.Inc(1)
 			return nil
@@ -124,14 +137,14 @@ func wrapUpdateL2GasPriceFn(backend DeployContractBackend, cfg *Config) (func(ui
 			return err
 		}
 
-		log.Debug("sending transaction", "tx.gasPrice", tx.GasPrice(), "tx.gasLimit", tx.Gas(),
+		log.Debug("updating L2 gas price", "tx.gasPrice", tx.GasPrice(), "tx.gasLimit", tx.Gas(),
 			"tx.data", hexutil.Encode(tx.Data()), "tx.to", tx.To().Hex(), "tx.nonce", tx.Nonce())
 		pre := time.Now()
 		if err := backend.SendTransaction(context.Background(), tx); err != nil {
 			return err
 		}
 		txSendTimer.Update(time.Since(pre))
-		log.Info("transaction sent", "hash", tx.Hash().Hex())
+		log.Info("L2 gas price transaction sent", "hash", tx.Hash().Hex())
 
 		gasPriceGauge.Update(int64(updatedGasPrice))
 		txSendCounter.Inc(1)
@@ -146,7 +159,7 @@ func wrapUpdateL2GasPriceFn(backend DeployContractBackend, cfg *Config) (func(ui
 			}
 			txConfTimer.Update(time.Since(pre))
 
-			log.Info("transaction confirmed", "hash", tx.Hash().Hex(),
+			log.Info("L2 gas price transaction confirmed", "hash", tx.Hash().Hex(),
 				"gas-used", receipt.GasUsed, "blocknumber", receipt.BlockNumber)
 		}
 		return nil

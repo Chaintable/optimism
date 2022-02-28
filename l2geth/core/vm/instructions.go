@@ -767,6 +767,7 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory 
 		stack.push(interpreter.intPool.get().SetUint64(1))
 	}
 	if err == nil || err == errExecutionReverted {
+		ret = common.CopyBytes(ret)
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.Gas += returnGas
@@ -796,6 +797,7 @@ func opCallCode(pc *uint64, interpreter *EVMInterpreter, contract *Contract, mem
 		stack.push(interpreter.intPool.get().SetUint64(1))
 	}
 	if err == nil || err == errExecutionReverted {
+		ret = common.CopyBytes(ret)
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.Gas += returnGas
@@ -821,6 +823,7 @@ func opDelegateCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract,
 		stack.push(interpreter.intPool.get().SetUint64(1))
 	}
 	if err == nil || err == errExecutionReverted {
+		ret = common.CopyBytes(ret)
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.Gas += returnGas
@@ -846,6 +849,7 @@ func opStaticCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, m
 		stack.push(interpreter.intPool.get().SetUint64(1))
 	}
 	if err == nil || err == errExecutionReverted {
+		ret = common.CopyBytes(ret)
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.Gas += returnGas
@@ -893,14 +897,9 @@ func makeLog(size int) executionFunc {
 			topics[i] = common.BigToHash(stack.pop())
 		}
 
-		contractAddr := contract.Address()
-		if UsingOVM {
-			contractAddr = interpreter.evm.OvmADDRESS()
-		}
-
 		d := memory.GetCopy(mStart.Int64(), mSize.Int64())
 		interpreter.evm.StateDB.AddLog(&types.Log{
-			Address: contractAddr,
+			Address: contract.Address(),
 			Topics:  topics,
 			Data:    d,
 			// This is a non-consensus field, but assigned here because
@@ -967,4 +966,10 @@ func makeSwap(size int64) executionFunc {
 		stack.swap(int(size))
 		return nil, nil
 	}
+}
+
+// OVM opcodes
+func opL1BlockNumber(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	stack.push(math.U256(interpreter.intPool.get().Set(interpreter.evm.L1BlockNumber)))
+	return nil, nil
 }

@@ -1,5 +1,85 @@
 # @eth-optimism/core-utils
 
+## 0.7.3
+
+### Patch Changes
+
+- 584cbc25: Clean up the L1 => L2 address aliasing utilities
+
+## 0.7.2
+
+### Patch Changes
+
+- 8e634b49: Fix package JSON issues
+
+## 0.7.1
+
+### Patch Changes
+
+- 243f33e5: Standardize package json file format
+
+## 0.7.0
+
+### Minor Changes
+
+- 896168e2: Parse optimistic ethereum specific fields on transaction receipts
+- 83a449c4: Change the expectApprox interface to allow setting an absoluteexpected deviation range
+- 81ccd6e4: `regenesis/0.5.0` release
+
+### Patch Changes
+
+- 3ce62c81: Export bnToAddress
+- cee2a464: Add awaitCondition to core utils
+- 222a3eef: Add 'User-Agent' to the http headers for ethers providers
+- 7c352b1e: Add bytes32ify
+- b70ee70c: upgraded to solidity 0.8.9
+- 20c8969b: Correctly move chai into deps instead of dev deps
+- 6d32d701: Expose lower level API for tx fees
+
+## 0.6.1
+
+### Patch Changes
+
+- 6d3e1d7f: Update dependencies
+- 2e929aa9: Parse the L1 timestamp in `injectContext`
+
+## 0.6.0
+
+### Minor Changes
+
+- 8da04505: Allow a configurable L1 and L2 blocks to fetch in the watcher
+
+### Patch Changes
+
+- e0be02e1: Add fallback provider support to DTL using helper function in core-utils
+
+## 0.5.5
+
+### Patch Changes
+
+- eb0854e7: increased coverage of core-utils
+- 21b17edd: Added coverage for packages
+- dfe3598f: Lower per tx fee overhead to more accurately represent L1 costs
+
+## 0.5.4
+
+### Patch Changes
+
+- 085b35ba: Watcher: Even lower num blocks to fetch
+
+## 0.5.3
+
+### Patch Changes
+
+- 2aa4416e: Watcher: Make blocks to fetch a config option
+- 0b8180b0: Lower NUM_BLOCKS_TO_FETCH in Watcher
+
+## 0.5.2
+
+### Patch Changes
+
+- 918c08ca: Bump ethers dependency to 5.4.x to support eip1559
+
 ## 0.5.1
 
 ### Patch Changes

@@ -1,6 +1,5 @@
 name: geth unit tests
 
-
 on:
   push:
     paths:
@@ -20,7 +19,7 @@ defaults:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - name: Install Go
@@ -37,7 +36,7 @@ jobs:
         make lint
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     needs: lint
 
@@ -55,13 +54,13 @@ jobs:
         git config --global url."https://${{ secrets.GO_MODULES_TOKEN }}:x-oauth-basic@github.com/DeBankDeFi".insteadOf "https://github.com/DeBankDeFi"
         make geth
 
-    - uses: azure/docker-login@v1
-      with:
-        login-server: debank-prod-registry.cn-hangzhou.cr.aliyuncs.com
-        username: ${{ secrets.ACR_USERNAME }}
-        password: ${{ secrets.ACR_PASSWORD }}
+#    - uses: azure/docker-login@v1
+#      with:
+#        login-server: debank-prod-registry.cn-hangzhou.cr.aliyuncs.com
+#        username: ${{ secrets.ACR_USERNAME }}
+#        password: ${{ secrets.ACR_PASSWORD }}
 
     - name: Docker build and push
       run: |
-        docker build -t debank-prod-registry.cn-hangzhou.cr.aliyuncs.com/infra/op-l2geth:${GITHUB_SHA::8} -f ../ops/docker/Dockerfile.geth ..
-        docker push debank-prod-registry.cn-hangzhou.cr.aliyuncs.com/infra/op-l2geth:${GITHUB_SHA::8}
+        docker build -t 294354037686.dkr.ecr.ap-northeast-1.amazonaws.com/op-l2geth:${GITHUB_SHA::8} -f ../ops/docker/Dockerfile.geth ..
+        docker push 294354037686.dkr.ecr.ap-northeast-1.amazonaws.com/op-l2geth:${GITHUB_SHA::8}

@@ -1,5 +1,23 @@
 # @eth-optimism/common-ts
 
+## 0.2.1
+
+### Patch Changes
+
+- 243f33e5: Standardize package json file format
+
+## 0.2.0
+
+### Minor Changes
+
+- 81ccd6e4: `regenesis/0.5.0` release
+
+## 0.1.6
+
+### Patch Changes
+
+- 6d3e1d7f: Update dependencies
+
 ## 0.1.5
 
 ### Patch Changes
