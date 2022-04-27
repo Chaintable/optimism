@@ -19,7 +19,7 @@ defaults:
 
 jobs:
   lint:
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, general]
 
     steps:
     - name: Install Go
@@ -37,7 +37,7 @@ jobs:
         make lint
 
   build:
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, general]
 
     needs: lint
 

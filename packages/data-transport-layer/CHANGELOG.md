@@ -1,5 +1,85 @@
 # data transport layer
 
+## 0.5.25
+
+### Patch Changes
+
+- b57014d1: Update to typescript@4.6.2
+- Updated dependencies [d040a8d9]
+- Updated dependencies [b57014d1]
+  - @eth-optimism/contracts@0.5.20
+  - @eth-optimism/common-ts@0.2.6
+  - @eth-optimism/core-utils@0.8.3
+
+## 0.5.24
+
+### Patch Changes
+
+- 3e5b2092: Patch for Kovan DTL halting issue
+- 05894239: Add new metrics to the data-transport-layer
+- c1957126: Update Dockerfile to use Alpine
+- d9a51154: Bump to hardhat@2.9.1
+- Updated dependencies [e36b085c]
+- Updated dependencies [c1957126]
+- Updated dependencies [51673b90]
+- Updated dependencies [7a179003]
+- Updated dependencies [d9a51154]
+  - @eth-optimism/common-ts@0.2.5
+  - @eth-optimism/contracts@0.5.19
+  - @eth-optimism/core-utils@0.8.2
+
+## 0.5.23
+
+### Patch Changes
+
+- Updated dependencies [f981b8da]
+  - @eth-optimism/common-ts@0.2.4
+
+## 0.5.22
+
+### Patch Changes
+
+- 075f4b66: Removes the unused L1DataTransportClient and its dependencies
+- 88601cb7: Refactored Dockerfiles
+- 134a0966: dtl: Support basic authentication for RPC endpoints
+- Updated dependencies [88601cb7]
+- Updated dependencies [f7761058]
+- Updated dependencies [5ae15042]
+- Updated dependencies [5cd1e996]
+  - @eth-optimism/contracts@0.5.18
+  - @eth-optimism/common-ts@0.2.3
+
+## 0.5.21
+
+### Patch Changes
+
+- Updated dependencies [b3f9bdef]
+- Updated dependencies [175ae0bf]
+- Updated dependencies [e53b5783]
+  - @eth-optimism/common-ts@0.2.2
+  - @eth-optimism/contracts@0.5.17
+
+## 0.5.20
+
+### Patch Changes
+
+- 3873b696: Enable typed batch support
+- Updated dependencies [962f36e4]
+- Updated dependencies [f2179e37]
+- Updated dependencies [b6a4fa4b]
+- Updated dependencies [b7c0a5ca]
+- Updated dependencies [5a6f539c]
+- Updated dependencies [27d8942e]
+  - @eth-optimism/contracts@0.5.16
+  - @eth-optimism/core-utils@0.8.1
+
+## 0.5.19
+
+### Patch Changes
+
+- 275eb818: Include patch contexts for bss hf1
+- baece507: Hardcodes BSS HF1 block into the DTL
+
 ## 0.5.18
 
 ### Patch Changes

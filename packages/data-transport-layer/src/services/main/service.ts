@@ -9,6 +9,7 @@ import { L1IngestionService } from '../l1-ingestion/service'
 import { L1TransportServer } from '../server/service'
 import { validators } from '../../utils'
 import { L2IngestionService } from '../l2-ingestion/service'
+import { BSS_HF1_INDEX } from '../../config'
 
 export interface L1DataTransportServiceOptions {
   nodeEnv: string
@@ -19,8 +20,12 @@ export interface L1DataTransportServiceOptions {
   dangerouslyCatchAllErrors?: boolean
   hostname: string
   l1RpcProvider: string
+  l1RpcProviderUser?: string
+  l1RpcProviderPassword?: string
   l2ChainId: number
   l2RpcProvider: string
+  l2RpcProviderUser?: string
+  l2RpcProviderPassword?: string
   metrics?: Metrics
   dbPath: string
   logsPerPollingInterval: number
@@ -36,7 +41,6 @@ export interface L1DataTransportServiceOptions {
   defaultBackend: string
   l1GasPriceBackend: string
   l1StartHeight?: number
-  bssHardfork1Index?: number
 }
 
 const optionSettings = {
@@ -68,14 +72,13 @@ export class L1DataTransportService extends BaseService<L1DataTransportServiceOp
   protected async _init(): Promise<void> {
     this.logger.info('Initializing L1 Data Transport Service...')
 
-    if (this.options.bssHardfork1Index !== null && this.options.bssHardfork1Index !== undefined) {
-      this.logger.info(`BSS HF1 is active at block: ${this.options.bssHardfork1Index}`)
-    } else {
-      this.logger.info(`BSS HF1 is not active`)
-    }
-
     this.state.db = level(this.options.dbPath)
     await this.state.db.open()
+
+    // BSS HF1 activates at block 0 if not specified.
+    const bssHf1Index = BSS_HF1_INDEX[this.options.l2ChainId] || 0
+    this.logger.info(`L2 chain ID is: ${this.options.l2ChainId}`)
+    this.logger.info(`BSS HF1 will activate at: ${bssHf1Index}`)
 
     this.state.metrics = new Metrics({
       labels: {
@@ -84,6 +87,10 @@ export class L1DataTransportService extends BaseService<L1DataTransportServiceOp
         release: this.options.release,
         service: this.name,
       }
+    })
+
+    this.state.metrics.client.collectDefaultMetrics({
+      prefix: 'data_transport_layer_'
     })
 
     this.state.failureCounter = new this.state.metrics.client.Counter({

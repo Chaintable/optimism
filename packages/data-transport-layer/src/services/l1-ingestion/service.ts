@@ -1,12 +1,8 @@
 /* Imports: External */
-import {
-  fromHexString,
-  FallbackProvider,
-  sleep,
-} from '@eth-optimism/core-utils'
+import { fromHexString, sleep } from '@eth-optimism/core-utils'
 import { BaseService, Metrics } from '@eth-optimism/common-ts'
 import { TypedEvent } from '@eth-optimism/contracts/dist/types/common'
-import { BaseProvider } from '@ethersproject/providers'
+import { BaseProvider, StaticJsonRpcProvider } from '@ethersproject/providers'
 import { LevelUp } from 'levelup'
 import { constants } from 'ethers'
 import { Gauge, Counter } from 'prom-client'
@@ -108,14 +104,17 @@ export class L1IngestionService extends BaseService<L1IngestionServiceOptions> {
 
   protected async _init(): Promise<void> {
     this.state.db = new TransportDB(this.options.db, {
-      bssHardfork1Index: this.options.bssHardfork1Index,
+      l2ChainId: this.options.l2ChainId,
     })
 
     this.l1IngestionMetrics = registerMetrics(this.metrics)
 
     if (typeof this.options.l1RpcProvider === 'string') {
-      this.state.l1RpcProvider = FallbackProvider(this.options.l1RpcProvider, {
-        'User-Agent': 'data-transport-layer',
+      this.state.l1RpcProvider = new StaticJsonRpcProvider({
+        url: this.options.l1RpcProvider,
+        user: this.options.l1RpcProviderUser,
+        password: this.options.l1RpcProviderPassword,
+        headers: { 'User-Agent': 'data-transport-layer' },
       })
     } else {
       this.state.l1RpcProvider = this.options.l1RpcProvider

@@ -28,15 +28,16 @@ const stateRootSize = 32
 var bigOne = new(big.Int).SetUint64(1) //nolint:unused
 
 type Config struct {
-	Name        string
-	L1Client    *ethclient.Client
-	L2Client    *l2ethclient.Client
-	BlockOffset uint64
-	MaxTxSize   uint64
-	SCCAddr     common.Address
-	CTCAddr     common.Address
-	ChainID     *big.Int
-	PrivKey     *ecdsa.PrivateKey
+	Name                 string
+	L1Client             *ethclient.Client
+	L2Client             *l2ethclient.Client
+	BlockOffset          uint64
+	MaxStateRootElements uint64
+	MinStateRootElements uint64
+	SCCAddr              common.Address
+	CTCAddr              common.Address
+	ChainID              *big.Int
+	PrivKey              *ecdsa.PrivateKey
 }
 
 type Driver struct {
@@ -45,7 +46,7 @@ type Driver struct {
 	rawSccContract *bind.BoundContract
 	ctcContract    *ctc.CanonicalTransactionChain
 	walletAddr     common.Address
-	metrics        *metrics.Metrics
+	metrics        *metrics.Base
 }
 
 func NewDriver(cfg Config) (*Driver, error) {
@@ -82,7 +83,7 @@ func NewDriver(cfg Config) (*Driver, error) {
 		rawSccContract: rawSccContract,
 		ctcContract:    ctcContract,
 		walletAddr:     walletAddr,
-		metrics:        metrics.NewMetrics(cfg.Name),
+		metrics:        metrics.NewBase("batch_submitter", cfg.Name),
 	}, nil
 }
 
@@ -97,7 +98,7 @@ func (d *Driver) WalletAddr() common.Address {
 }
 
 // Metrics returns the subservice telemetry object.
-func (d *Driver) Metrics() *metrics.Metrics {
+func (d *Driver) Metrics() metrics.Metrics {
 	return d.metrics
 }
 
@@ -165,13 +166,10 @@ func (d *Driver) CraftBatchTx(
 	log.Info(name+" crafting batch tx", "start", start, "end", end,
 		"nonce", nonce)
 
-	var (
-		stateRoots         [][stateRootSize]byte
-		totalStateRootSize uint64
-	)
+	var stateRoots [][stateRootSize]byte
 	for i := new(big.Int).Set(start); i.Cmp(end) < 0; i.Add(i, bigOne) {
 		// Consume state roots until reach our maximum tx size.
-		if totalStateRootSize+stateRootSize > d.cfg.MaxTxSize {
+		if uint64(len(stateRoots)) > d.cfg.MaxStateRootElements {
 			break
 		}
 
@@ -180,11 +178,19 @@ func (d *Driver) CraftBatchTx(
 			return nil, err
 		}
 
-		totalStateRootSize += stateRootSize
 		stateRoots = append(stateRoots, block.Root())
 	}
 
-	d.metrics.NumElementsPerBatch.Observe(float64(len(stateRoots)))
+	// Abort if we don't have enough state roots to meet our minimum
+	// requirement.
+	if uint64(len(stateRoots)) < d.cfg.MinStateRootElements {
+		log.Info(name+" number of state roots  below minimum",
+			"num_state_roots", len(stateRoots),
+			"min_state_roots", d.cfg.MinStateRootElements)
+		return nil, nil
+	}
+
+	d.metrics.NumElementsPerBatch().Observe(float64(len(stateRoots)))
 
 	log.Info(name+" batch constructed", "num_state_roots", len(stateRoots))
 

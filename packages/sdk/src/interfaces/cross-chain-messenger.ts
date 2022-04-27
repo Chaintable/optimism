@@ -103,27 +103,30 @@ export interface ICrossChainMessenger {
     }
   ): Promise<CrossChainMessage[]>
 
-  /**
-   * Retrieves all cross chain messages sent by a particular address.
-   *
-   * @param address Address to search for messages from.
-   * @param opts Options object.
-   * @param opts.direction Direction to search for messages in. If not provided, will attempt to
-   * find all messages in both directions.
-   * @param opts.fromBlock Block to start searching for messages from. If not provided, will start
-   * from the first block (block #0).
-   * @param opts.toBlock Block to stop searching for messages at. If not provided, will stop at the
-   * latest known block ("latest").
-   * @returns All cross chain messages sent by the particular address.
-   */
-  getMessagesByAddress(
-    address: AddressLike,
-    opts?: {
-      direction?: MessageDirection
-      fromBlock?: NumberLike
-      toBlock?: NumberLike
-    }
-  ): Promise<CrossChainMessage[]>
+  // TODO: Make this function work. Likely requires indexer or the function will be prohibitively
+  // slow to query all of the necessary data.
+  //
+  // /**
+  //  * Retrieves all cross chain messages sent by a particular address.
+  //  *
+  //  * @param address Address to search for messages from.
+  //  * @param opts Options object.
+  //  * @param opts.direction Direction to search for messages in. If not provided, will attempt to
+  //  * find all messages in both directions.
+  //  * @param opts.fromBlock Block to start searching for messages from. If not provided, will start
+  //  * from the first block (block #0).
+  //  * @param opts.toBlock Block to stop searching for messages at. If not provided, will stop at the
+  //  * latest known block ("latest").
+  //  * @returns All cross chain messages sent by the particular address.
+  //  */
+  // getMessagesByAddress(
+  //   address: AddressLike,
+  //   opts?: {
+  //     direction?: MessageDirection
+  //     fromBlock?: NumberLike
+  //     toBlock?: NumberLike
+  //   }
+  // ): Promise<CrossChainMessage[]>
 
   /**
    * Finds the appropriate bridge adapter for a given L1<>L2 token pair. Will throw if no bridges
@@ -225,6 +228,27 @@ export interface ICrossChainMessenger {
       timeoutMs?: number
     }
   ): Promise<MessageReceipt>
+
+  /**
+   * Waits until the status of a given message changes to the expected status. Note that if the
+   * status of the given message changes to a status that implies the expected status, this will
+   * still return. If the status of the message changes to a status that exclues the expected
+   * status, this will throw an error.
+   *
+   * @param message Message to wait for.
+   * @param status Expected status of the message.
+   * @param opts Options to pass to the waiting function.
+   * @param opts.pollIntervalMs Number of milliseconds to wait when polling.
+   * @param opts.timeoutMs Milliseconds to wait before timing out.
+   */
+  waitForMessageStatus(
+    message: MessageLike,
+    status: MessageStatus,
+    opts?: {
+      pollIntervalMs?: number
+      timeoutMs?: number
+    }
+  ): Promise<void>
 
   /**
    * Estimates the amount of gas required to fully execute a given message on L2. Only applies to

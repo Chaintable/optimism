@@ -1,9 +1,11 @@
 /* Imports: External */
 import { LevelUp } from 'levelup'
 import { BigNumber } from 'ethers'
+import { BatchType } from '@eth-optimism/core-utils'
 
 /* Imports: Internal */
 import { SimpleDB } from './simple-db'
+import { PATCH_CONTEXTS, BSS_HF1_INDEX } from '../config'
 import {
   EnqueueEntry,
   StateRootBatchEntry,
@@ -25,6 +27,7 @@ const TRANSPORT_DB_KEYS = {
   STARTING_L1_BLOCK: `l1:starting`,
   HIGHEST_L2_BLOCK: `l2:highest`,
   HIGHEST_SYNCED_BLOCK: `synced:highest`,
+  CONSISTENCY_CHECK: `consistency:checked`,
 }
 
 interface Indexed {
@@ -32,7 +35,7 @@ interface Indexed {
 }
 
 interface ExtraTransportDBOptions {
-  bssHardfork1Index?: number
+  l2ChainId?: number
 }
 
 export class TransportDB {
@@ -126,7 +129,14 @@ export class TransportDB {
   public async getTransactionBatchByIndex(
     index: number
   ): Promise<TransactionBatchEntry> {
-    return this._getEntryByIndex(TRANSPORT_DB_KEYS.TRANSACTION_BATCH, index)
+    const entry = (await this._getEntryByIndex(
+      TRANSPORT_DB_KEYS.TRANSACTION_BATCH,
+      index
+    )) as TransactionBatchEntry
+    if (entry && typeof entry.type === 'undefined') {
+      entry.type = BatchType[BatchType.LEGACY]
+    }
+    return entry
   }
 
   public async getStateRootByIndex(index: number): Promise<StateRootEntry> {
@@ -168,7 +178,13 @@ export class TransportDB {
   }
 
   public async getLatestTransactionBatch(): Promise<TransactionBatchEntry> {
-    return this._getLatestEntry(TRANSPORT_DB_KEYS.TRANSACTION_BATCH)
+    const entry = (await this._getLatestEntry(
+      TRANSPORT_DB_KEYS.TRANSACTION_BATCH
+    )) as TransactionBatchEntry
+    if (entry && typeof entry.type === 'undefined') {
+      entry.type = BatchType[BatchType.LEGACY]
+    }
+    return entry
   }
 
   public async getLatestStateRoot(): Promise<StateRootEntry> {
@@ -185,6 +201,20 @@ export class TransportDB {
 
   public async getHighestL2BlockNumber(): Promise<number> {
     return this.db.get<number>(TRANSPORT_DB_KEYS.HIGHEST_L2_BLOCK, 0)
+  }
+
+  public async getConsistencyCheckFlag(): Promise<boolean> {
+    return this.db.get<boolean>(TRANSPORT_DB_KEYS.CONSISTENCY_CHECK, 0)
+  }
+
+  public async putConsistencyCheckFlag(flag: boolean): Promise<void> {
+    return this.db.put<boolean>([
+      {
+        key: TRANSPORT_DB_KEYS.CONSISTENCY_CHECK,
+        index: 0,
+        value: flag,
+      },
+    ])
   }
 
   public async putHighestL2BlockNumber(
@@ -300,11 +330,17 @@ export class TransportDB {
     }
 
     let timestamp = enqueue.timestamp
-    if (
-      typeof this.opts.bssHardfork1Index === 'number' &&
-      transaction.index >= this.opts.bssHardfork1Index
-    ) {
+
+    // BSS HF1 activates at block 0 if not specified.
+    const bssHf1Index = BSS_HF1_INDEX[this.opts.l2ChainId] || 0
+    if (transaction.index >= bssHf1Index) {
       timestamp = transaction.timestamp
+    }
+
+    // Override with patch contexts if necessary
+    const contexts = PATCH_CONTEXTS[this.opts.l2ChainId]
+    if (contexts && contexts[transaction.index + 1]) {
+      timestamp = contexts[transaction.index + 1]
     }
 
     return {

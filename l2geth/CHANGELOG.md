@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.5.17
+
+### Patch Changes
+
+- 13524da4: Style fix in the sync service
+- 160f4c3d: Update docker image to use golang 1.18.0
+- 1a28ba5f: Skip account cmd tests
+- 45582fcc: Skip unused tests in l2geth
+- 0c4d4e08: l2geth: Revert transaction pubsub feature
+
+## 0.5.16
+
+### Patch Changes
+
+- a01a2eb1: Skip TestWSAttachWelcome
+- 23ad6068: Skip some geth console tests that flake in CI
+- 6926b293: Adds a flag for changing the genesis fetch timeout
+
+## 0.5.15
+
+### Patch Changes
+
+- 88601cb7: Refactored Dockerfiles
+- f8348862: l2geth: Sync from Backend Queue
+
+## 0.5.14
+
+### Patch Changes
+
+- 962f36e4: Add support for system addresses
+
+## 0.5.13
+
+### Patch Changes
+
+- 0002b1df: Remove dead code in l2geth
+- 1187dc9a: Don't block read rpc requests when syncing
+- bc342ec4: Fix queue index comparison
+
 ## 0.5.12
 
 ### Patch Changes
