@@ -11,9 +11,10 @@
       "specs",
       "go/gas-oracle",
       "go/batch-submitter",
+      "go/l2geth-exporter",
       "go/proxyd",
+      "go/op-exporter",
       "ops/docker/rpc-proxy",
-      "ops/docker/builder",
       "ops/docker/hardhat"
     ],
     "nohoist": [
@@ -27,7 +28,6 @@
     "babel-eslint": "^10.1.0",
     "eslint": "^7.27.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-ban": "^1.5.2",
     "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-jsdoc": "^35.1.2",
     "eslint-plugin-prefer-arrow": "^1.2.3",
@@ -57,6 +57,8 @@
   },
   "dependencies": {
     "@changesets/cli": "^2.16.0",
+    "@openzeppelin/contracts": "^4.3.2",
+    "@openzeppelin/contracts-upgradeable": "^4.3.2",
     "@codechecks/client": "^0.1.11"
   }
 }

@@ -1,15 +1,13 @@
 [![codecov](https://codecov.io/gh/ethereum-optimism/optimism/branch/master/graph/badge.svg?token=0VTG7PG7YR&flag=contracts)](https://codecov.io/gh/ethereum-optimism/optimism)
 
-# Optimistic Ethereum Smart Contracts
+# Optimism Smart Contracts
 
-`@eth-optimism/contracts` contains the various Solidity smart contracts used within the Optimistic Ethereum system.
-Some of these contracts are deployed on Ethereum ("Layer 1"), while others are meant to be deployed to Optimistic Ethereum ("Layer 2").
+`@eth-optimism/contracts` contains the various Solidity smart contracts used within the Optimism system.
+Some of these contracts are deployed on Ethereum ("Layer 1"), while others are meant to be deployed to Optimism ("Layer 2").
 
 Within each contract file you'll find a comment that lists:
 1. The compiler with which a contract is intended to be compiled, `solc` or `optimistic-solc`.
 2. The network upon to which the contract will be deployed, `OVM` or `EVM`.
-
-A more detailed overview of these contracts can be found on the [community hub](http://community.optimism.io/docs/protocol/protocol.html#system-overview).
 
 <!-- TODO: Add link to final contract docs here when finished. -->
 

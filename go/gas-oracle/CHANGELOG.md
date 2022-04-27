@@ -1,5 +1,29 @@
 # @eth-optimism/gas-oracle
 
+## 0.1.6
+
+### Patch Changes
+
+- b3efb8b7: String update to change the system name from OE to Optimism
+
+## 0.1.5
+
+### Patch Changes
+
+- 40b6c5bd: Update the flag parsing of the average block gas limit
+
+## 0.1.4
+
+### Patch Changes
+
+- 9eed33c4: fix rounding error in average gas/epoch calculation
+
+## 0.1.3
+
+### Patch Changes
+
+- 3af7ce3f: Meter gas usage based on gas used in block instead of assuming max gas usage per block
+
 ## 0.1.2
 
 ### Patch Changes
