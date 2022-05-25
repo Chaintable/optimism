@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.5.20
+
+### Patch Changes
+
+- d040a8d9: Deleted update and helper functions/tests from Lib_MerkleTrie.sol and Lib_SecureMerkleTrie.sol
+- b57014d1: Update to typescript@4.6.2
+- Updated dependencies [b57014d1]
+  - @eth-optimism/core-utils@0.8.3
+
+## 0.5.19
+
+### Patch Changes
+
+- c1957126: Update Dockerfile to use Alpine
+- d9a51154: Bump to hardhat@2.9.1
+- Updated dependencies [c1957126]
+  - @eth-optimism/core-utils@0.8.2
+
+## 0.5.18
+
+### Patch Changes
+
+- 88601cb7: Refactored Dockerfiles
+
+## 0.5.17
+
+### Patch Changes
+
+- 175ae0bf: Minor README update
+
+## 0.5.16
+
+### Patch Changes
+
+- 962f36e4: Add support for system addresses
+- f2179e37: Add a fetch batches hardhat task
+- b6a4fa4b: Removes outdated functions and constants from the contracts package
+- b7c0a5ca: Remove yargs as a contracts dependency (unused)
+- Updated dependencies [5a6f539c]
+- Updated dependencies [27d8942e]
+  - @eth-optimism/core-utils@0.8.1
+
 ## 0.5.15
 
 ### Patch Changes

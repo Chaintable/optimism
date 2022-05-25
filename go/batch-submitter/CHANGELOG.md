@@ -1,5 +1,44 @@
 # @eth-optimism/batch-submitter-service
 
+## 0.1.9
+
+### Patch Changes
+
+- 160f4c3d: Update docker image to use golang 1.18.0
+- 0c4d4e08: l2geth: Revert transaction pubsub feature
+
+## 0.1.8
+
+### Patch Changes
+
+- 88601cb7: Refactored Dockerfiles
+- 6856b215: Count reverted transactions in failed_submissions
+- 9678b357: Add Min/MaxStateRootElements configuration
+- f8348862: l2geth: Sync from Backend Queue
+- 727b0582: Enforce min/max tx size on plaintext batch encoding
+
+## 0.1.7
+
+### Patch Changes
+
+- aca0684e: Add 20% buffer to gas estimation on tx-batch submission to prevent OOG reverts
+- 75040ca5: Adds MIN_L1_TX_SIZE configuration
+
+## 0.1.6
+
+### Patch Changes
+
+- 6af67df5: Move L2 dial logic out of bss-core to avoid l2geth dependency
+- fe680568: Enable the usage of typed batches and type 0 zlib compressed batches
+
+## 0.1.5
+
+### Patch Changes
+
+- 6f2ea193: Update to go-ethereum v1.10.16
+- 87359fd2: Refactors the bss-core service to use a metrics interface to allow
+  driver-specific metric extensions
+
 ## 0.1.4
 
 ### Patch Changes

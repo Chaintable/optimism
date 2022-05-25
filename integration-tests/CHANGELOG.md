@@ -1,5 +1,39 @@
 # @eth-optimism/integration-tests
 
+## 0.5.9
+
+### Patch Changes
+
+- 5bf390b4: Update chainid
+- c1957126: Update Dockerfile to use Alpine
+- d9a51154: Bump to hardhat@2.9.1
+
+## 0.5.8
+
+### Patch Changes
+
+- 88807f03: Add integration test for healthcheck server
+
+## 0.5.7
+
+### Patch Changes
+
+- 88601cb7: Refactored Dockerfiles
+
+## 0.5.6
+
+### Patch Changes
+
+- 962f36e4: Add support for system addresses
+- d6e309be: Add test coverage for zlib compressed batches
+- 386df4dc: Replaces contract references in integration tests with SDK CrossChainMessenger objects.
+
+## 0.5.5
+
+### Patch Changes
+
+- 45642dc8: Replaces l1Provider and l2Provider with env.l1Provider and env.l2Provider respectively.
+
 ## 0.5.4
 
 ### Patch Changes

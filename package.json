@@ -8,17 +8,16 @@
       "packages/*",
       "l2geth",
       "integration-tests",
-      "specs",
-      "go/gas-oracle",
-      "go/batch-submitter",
-      "go/l2geth-exporter",
-      "go/proxyd",
-      "go/op-exporter",
+      "go/*",
       "ops/docker/rpc-proxy",
-      "ops/docker/hardhat"
+      "ops/docker/hardhat",
+      "ops/docker/go-builder",
+      "ops/docker/js-builder"
     ],
     "nohoist": [
-      "examples/*"
+      "examples/*",
+      "**/typechain",
+      "**/@typechain/*"
     ]
   },
   "private": true,
@@ -39,7 +38,7 @@
     "lint-staged": "11.0.0",
     "patch-package": "^6.4.7",
     "prettier": "^2.3.1",
-    "typescript": "^4.3.5"
+    "typescript": "^4.6.2"
   },
   "scripts": {
     "clean": "yarn lerna run clean --parallel",
@@ -57,8 +56,9 @@
   },
   "dependencies": {
     "@changesets/cli": "^2.16.0",
+    "@codechecks/client": "^0.1.11",
+    "@ethersproject/abstract-provider": "5.5.1",
     "@openzeppelin/contracts": "^4.3.2",
-    "@openzeppelin/contracts-upgradeable": "^4.3.2",
-    "@codechecks/client": "^0.1.11"
+    "@openzeppelin/contracts-upgradeable": "^4.3.2"
   }
 }

@@ -163,6 +163,7 @@ var (
 		utils.RollupEnforceFeesFlag,
 		utils.RollupFeeThresholdDownFlag,
 		utils.RollupFeeThresholdUpFlag,
+		utils.RollupGenesisTimeoutSecondsFlag,
 		utils.SequencerClientHttpFlag,
 	}
 
