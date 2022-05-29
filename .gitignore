@@ -27,3 +27,5 @@ packages/data-transport-layer/db
 !.env.example
 *.log
 .idea/
+.vscode/settings.json
+l2geth/.vscode/settings.json

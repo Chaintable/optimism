@@ -2,17 +2,33 @@ package eth
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum-optimism/optimism/l2geth/common"
 	"github.com/ethereum-optimism/optimism/l2geth/common/hexutil"
+	"github.com/ethereum-optimism/optimism/l2geth/common/math"
 	"github.com/ethereum-optimism/optimism/l2geth/core"
-	"github.com/ethereum-optimism/optimism/l2geth/core/state"
 	"github.com/ethereum-optimism/optimism/l2geth/core/types"
-	"github.com/ethereum-optimism/optimism/l2geth/core/vm"
 	txtrace "github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
+	"github.com/ethereum-optimism/optimism/l2geth/log"
+	"github.com/ethereum-optimism/optimism/l2geth/rollup/rcfg"
 	"github.com/ethereum-optimism/optimism/l2geth/rpc"
 )
+
+type PreExecTx struct {
+	ChainId              *big.Int        `json:"chainId,omitempty"`
+	From                 *common.Address `json:"from"`
+	To                   *common.Address `json:"to"`
+	Gas                  *hexutil.Uint64 `json:"gas"`
+	GasPrice             *hexutil.Big    `json:"gasPrice"`
+	MaxFeePerGas         *hexutil.Big    `json:"maxFeePerGas"`
+	MaxPriorityFeePerGas *hexutil.Big    `json:"maxPriorityFeePerGas"`
+	Value                *hexutil.Big    `json:"value"`
+	Nonce                *hexutil.Uint64 `json:"nonce"`
+	Data                 *hexutil.Bytes  `json:"data"`
+	Input                *hexutil.Bytes  `json:"input"`
+}
 
 type PreExecAPI struct {
 	e *Ethereum
@@ -22,127 +38,177 @@ func NewPreExecAPI(e *Ethereum) *PreExecAPI {
 	return &PreExecAPI{e: e}
 }
 
-type PreExecTx struct {
-	ChainId                                     *big.Int
-	From, To, Data, Value, Gas, GasPrice, Nonce string
-}
+func (api *PreExecAPI) GetLogs(ctx context.Context, args *PreExecTx) (*types.Receipt, error) {
+	state, header, err := api.e.APIBackend.StateAndHeaderByNumberOrHash(ctx, rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
+	if state == nil || err != nil {
+		return nil, err
+	}
+	// Set sender address or use a default if none specified
+	var addr common.Address
+	if args.From == nil {
+		if !rcfg.UsingOVM {
+			if wallets := api.e.APIBackend.AccountManager().Wallets(); len(wallets) > 0 {
+				if accounts := wallets[0].Accounts(); len(accounts) > 0 {
+					addr = accounts[0].Address
+				}
+			}
+		}
+	} else {
+		addr = *args.From
+	}
+	// Set default gas & gas price if none were set
+	gas := uint64(math.MaxUint64 / 2)
+	if args.Gas != nil {
+		gas = uint64(*args.Gas)
+	}
+	gasPrice := new(big.Int)
+	if args.GasPrice != nil {
+		gasPrice = args.GasPrice.ToInt()
+	}
 
-type preData struct {
-	block   *types.Block
-	tx      *types.Transaction
-	msg     types.Message
-	stateDb *state.StateDB
-	header  *types.Header
-}
+	value := new(big.Int)
+	if args.Value != nil {
+		value = args.Value.ToInt()
+	}
 
-func (api *PreExecAPI) getBlockAndMsg(origin *PreExecTx, number *big.Int) (*types.Block, types.Message) {
-	fromAddr := common.HexToAddress(origin.From)
-	toAddr := common.HexToAddress(origin.To)
+	var data []byte
+	if args.Data != nil {
+		data = []byte(*args.Data)
+	}
 
-	tx := types.NewTransaction(
-		hexutil.MustDecodeUint64(origin.Nonce),
-		toAddr,
-		hexutil.MustDecodeBig(origin.Value),
-		hexutil.MustDecodeUint64(origin.Gas),
-		hexutil.MustDecodeBig(origin.GasPrice),
-		hexutil.MustDecode(origin.Data),
-	)
+	// Currently, the blocknumber and timestamp actually refer to the L1BlockNumber and L1Timestamp
+	// attached to each transaction. We need to modify the blocknumber and timestamp to reflect this,
+	// or else the result of `eth_call` will not be correct.
+	blockNumber := header.Number
+	timestamp := header.Time
+	if rcfg.UsingOVM {
+		block, err := api.e.APIBackend.BlockByNumber(ctx, rpc.BlockNumber(header.Number.Uint64()))
+		if err != nil {
+			return nil, err
+		}
+		if block != nil {
+			txs := block.Transactions()
+			if header.Number.Uint64() != 0 {
+				if len(txs) != 1 {
+					return nil, fmt.Errorf("block %d has more than 1 transaction", header.Number.Uint64())
+				}
+				tx := txs[0]
+				blockNumber = tx.L1BlockNumber()
+				timestamp = tx.L1Timestamp()
+			}
+		}
+	}
+	// Create new call message
+	msg := types.NewMessage(addr, args.To, 0, value, gas, gasPrice, data, false, blockNumber, timestamp, types.QueueOriginSequencer)
 
-	number.Add(number, big.NewInt(1))
-	block := types.NewBlock(
-		&types.Header{Number: number},
-		[]*types.Transaction{tx}, nil, nil)
-
-	msg := types.NewMessage(
-		fromAddr,
-		&toAddr,
-		hexutil.MustDecodeUint64(origin.Nonce),
-		hexutil.MustDecodeBig(origin.Value),
-		hexutil.MustDecodeUint64(origin.Gas),
-		hexutil.MustDecodeBig(origin.GasPrice),
-		hexutil.MustDecode(origin.Data),
-		false, nil, 0, types.QueueOriginSequencer,
-	)
-
-	return block, msg
-}
-
-func (api *PreExecAPI) prepareData(ctx context.Context, origin *PreExecTx) (*preData, error) {
-	var (
-		d   preData
-		err error
-	)
-	bc := api.e.blockchain
-	d.header, err = api.e.APIBackend.HeaderByNumber(ctx, rpc.LatestBlockNumber)
+	evm, vmError, err := api.e.APIBackend.GetEVM(ctx, msg, state, header, nil)
 	if err != nil {
 		return nil, err
 	}
-	latestNumber := d.header.Number
-	parent := api.e.blockchain.GetBlockByNumber(latestNumber.Uint64())
-	d.stateDb, err = state.New(parent.Header().Root, bc.StateCache())
-	if err != nil {
-		return nil, err
-	}
-	d.block, d.msg = api.getBlockAndMsg(origin, latestNumber)
-	d.tx = d.block.Transactions()[0]
-	return &d, nil
-}
 
-func (api *PreExecAPI) GetLogs(ctx context.Context, origin *PreExecTx) (*types.Receipt, error) {
-	var (
-		bc = api.e.blockchain
-	)
-	d, err := api.prepareData(ctx, origin)
-	if err != nil {
+	// Setup the gas pool (also for unmetered requests)
+	// and apply the message.
+	gp := new(core.GasPool).AddGas(math.MaxUint64)
+	_, gas, failed, _ := core.ApplyMessage(evm, msg, gp)
+	if err := vmError(); err != nil {
 		return nil, err
 	}
-	gas := d.tx.Gas()
-	gp := new(core.GasPool).AddGas(gas)
-
-	d.stateDb.Prepare(d.tx.Hash(), d.block.Hash(), 0)
-	receipt, err := core.ApplyTransactionForPreExec(
-		bc.Config(), bc, nil, gp, d.stateDb, d.header, d.tx, d.msg, &gas, *bc.GetVMConfig())
-	if err != nil {
-		return nil, err
-	}
+	var root []byte
+	receipt := types.NewReceipt(root, failed, gas)
+	receipt.Logs = state.Logs()
 	return receipt, nil
 }
 
 // TraceTransaction tracing pre-exec transaction object.
-func (api *PreExecAPI) TraceTransaction(ctx context.Context, origin *PreExecTx) (interface{}, error) {
-	var (
-		bc     = api.e.blockchain
-		tracer *txtrace.StructLogger
-		err    error
-	)
+func (api *PreExecAPI) TraceTransaction(ctx context.Context, args *PreExecTx) (interface{}, error) {
+	state, header, err := api.e.APIBackend.StateAndHeaderByNumberOrHash(ctx, rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
+	if state == nil || err != nil {
+		return nil, err
+	}
+	// Set sender address or use a default if none specified
+	var addr common.Address
+	if args.From == nil {
+		if !rcfg.UsingOVM {
+			if wallets := api.e.APIBackend.AccountManager().Wallets(); len(wallets) > 0 {
+				if accounts := wallets[0].Accounts(); len(accounts) > 0 {
+					addr = accounts[0].Address
+				}
+			}
+		}
+	} else {
+		addr = *args.From
+	}
+	// Set default gas & gas price if none were set
+	gas := uint64(math.MaxUint64 / 2)
+	if args.Gas != nil {
+		gas = uint64(*args.Gas)
+	}
+	gasPrice := new(big.Int)
+	if args.GasPrice != nil {
+		gasPrice = args.GasPrice.ToInt()
+	}
 
-	tracer = txtrace.NewTraceStructLogger(nil)
-	d, err := api.prepareData(ctx, origin)
+	value := new(big.Int)
+	if args.Value != nil {
+		value = args.Value.ToInt()
+	}
+
+	var data []byte
+	if args.Data != nil {
+		data = []byte(*args.Data)
+	}
+
+	// Currently, the blocknumber and timestamp actually refer to the L1BlockNumber and L1Timestamp
+	// attached to each transaction. We need to modify the blocknumber and timestamp to reflect this,
+	// or else the result of `eth_call` will not be correct.
+	blockNumber := header.Number
+	timestamp := header.Time
+	if rcfg.UsingOVM {
+		block, err := api.e.APIBackend.BlockByNumber(ctx, rpc.BlockNumber(header.Number.Uint64()))
+		if err != nil {
+			return nil, err
+		}
+		if block != nil {
+			txs := block.Transactions()
+			if header.Number.Uint64() != 0 {
+				if len(txs) != 1 {
+					return nil, fmt.Errorf("block %d has more than 1 transaction", header.Number.Uint64())
+				}
+				tx := txs[0]
+				blockNumber = tx.L1BlockNumber()
+				timestamp = tx.L1Timestamp()
+			}
+		}
+	}
+	// Create new call message
+	msg := types.NewMessage(addr, args.To, 0, value, gas, gasPrice, data, false, blockNumber, timestamp, types.QueueOriginSequencer)
+
+	tracer := txtrace.NewTraceStructLogger(nil)
+	tracer.SetFrom(msg.From())
+	tracer.SetTo(msg.To())
+	tracer.SetValue(*msg.Value())
+	tracer.SetGasUsed(msg.Gas())
+	tracer.SetBlockHash(header.Hash())
+	tracer.SetBlockNumber(header.Number)
+	tracer.SetTxIndex(0)
+	vmCfg := api.e.APIBackend.eth.blockchain.GetVMConfig()
+	vmCfg.Debug = true
+	vmCfg.Tracer = tracer
+	evm, vmError, err := api.e.APIBackend.GetEVM(ctx, msg, state, header, vmCfg)
 	if err != nil {
 		return nil, err
 	}
-	vmctx := core.NewEVMContext(d.msg, d.header, bc, nil)
 
-	// Fill essential info into logger
-	tracer.SetFrom(d.msg.From())
-	tracer.SetTo(d.msg.To())
-	tracer.SetValue(*d.msg.Value())
-	tracer.SetGasUsed(d.msg.Gas())
-	tracer.SetBlockHash(d.block.Hash())
-	tracer.SetBlockNumber(vmctx.BlockNumber)
-	tracer.SetTx(d.tx.Hash())
-	tracer.SetTxIndex(uint(0))
-	// Run the transaction with tracing enabled.
-	vmenv := vm.NewEVM(vmctx, d.stateDb, bc.Config(), vm.Config{Debug: true, Tracer: tracer})
-	txIndex := 0
-	// Call Prepare to clear out the statedb access list
-	d.stateDb.Prepare(d.tx.Hash(), d.block.Hash(), txIndex)
-
-	_, _, failed, err := core.ApplyMessage(vmenv, d.msg, new(core.GasPool).AddGas(d.msg.Gas()))
-	if err != nil || failed {
+	// Setup the gas pool (also for unmetered requests)
+	// and apply the message.
+	gp := new(core.GasPool).AddGas(math.MaxUint64)
+	_, _, failed, _ := core.ApplyMessage(evm, msg, gp)
+	if err := vmError(); err != nil {
 		return nil, err
 	}
-	// Depending on the tracer type, format and return the output.
+	if failed {
+		log.Warn("apply message with transaction tracing failed", "err", err)
+	}
 	tracer.Finalize()
 	return tracer.GetResult(), nil
 }
