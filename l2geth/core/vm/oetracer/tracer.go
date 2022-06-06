@@ -94,13 +94,13 @@ func (tr *StructLogger) CaptureStart(from common.Address, to common.Address, cre
 	blockTrace := NewActionTrace(tr.blockHash, tr.blockNumber, tr.tx, uint64(tr.txIndex), callType)
 	var txAction *AddressAction
 	if CREATE == callType {
-		txAction = NewAddressAction(tr.from, gas, tr.inputData, nil, hexutil.Big(tr.value), nil)
+		txAction = NewAddressAction(tr.from, gas, tr.inputData, nil, (*hexutil.Big)(value), nil)
 		if newAddress != nil {
 			blockTrace.Result.Address = newAddress
 			blockTrace.Result.Code = hexutil.Bytes(tr.output)
 		}
 	} else {
-		txAction = NewAddressAction(tr.from, gas, tr.inputData, tr.to, hexutil.Big(tr.value), &callType)
+		txAction = NewAddressAction(tr.from, gas, tr.inputData, tr.to, (*hexutil.Big)(value), &callType)
 		out := hexutil.Bytes(tr.output)
 		blockTrace.Result.Output = &out
 	}
@@ -221,7 +221,7 @@ func (tr *StructLogger) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, 
 		from := contract.Address()
 		addr := common.BytesToAddress(stackPeek(stack.Data(), 1).Bytes())
 		callType := strings.ToLower(op.String())
-		traceAction := NewAddressAction(&from, gas, input, &addr, hexutil.Big(*value), &callType)
+		traceAction := NewAddressAction(&from, gas, input, &addr, (*hexutil.Big)(value), &callType)
 		trace.Action = *traceAction
 		fromTrace.childTraces = append(fromTrace.childTraces, trace)
 		trace.Result.RetOffset = retOffset
@@ -478,12 +478,12 @@ type ActionTrace struct {
 }
 
 // NewAddressAction creates specific information about trace addresses
-func NewAddressAction(from *common.Address, gas uint64, data []byte, to *common.Address, value hexutil.Big, callType *string) *AddressAction {
+func NewAddressAction(from *common.Address, gas uint64, data []byte, to *common.Address, value *hexutil.Big, callType *string) *AddressAction {
 	action := AddressAction{
 		From:     from,
 		To:       to,
 		Gas:      hexutil.Uint64(gas),
-		Value:    value,
+		Value:    (*hexutil.Big)(big.NewInt(0).Set((*big.Int)(value))),
 		CallType: callType,
 	}
 	if callType == nil {
@@ -500,7 +500,7 @@ type AddressAction struct {
 	CallType      *string         `json:"callType,omitempty"`
 	From          *common.Address `json:"from"`
 	To            *common.Address `json:"to,omitempty"`
-	Value         hexutil.Big     `json:"value"`
+	Value         *hexutil.Big    `json:"value"`
 	Gas           hexutil.Uint64  `json:"gas"`
 	Init          hexutil.Bytes   `json:"init,omitempty"`
 	Input         hexutil.Bytes   `json:"input,omitempty"`
@@ -600,10 +600,10 @@ func GetErrorTrace(blockHash common.Hash, blockNumber big.Int, to *common.Addres
 
 	if to != nil {
 		blockTrace = NewActionTrace(blockHash, blockNumber, txHash, index, "empty")
-		txAction = NewAddressAction(&common.Address{}, 0, []byte{}, to, hexutil.Big{}, nil)
+		txAction = NewAddressAction(&common.Address{}, 0, []byte{}, to, &hexutil.Big{}, nil)
 	} else {
 		blockTrace = NewActionTrace(blockHash, blockNumber, txHash, index, "empty")
-		txAction = NewAddressAction(&common.Address{}, 0, []byte{}, nil, hexutil.Big{}, nil)
+		txAction = NewAddressAction(&common.Address{}, 0, []byte{}, nil, &hexutil.Big{}, nil)
 	}
 	blockTrace.Action = *txAction
 	blockTrace.Result = nil

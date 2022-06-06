@@ -126,7 +126,7 @@ func (at *ActionTrace) DecodeRLP(s *rlp.Stream) error {
 		CallType:      ft.ActionCallType,
 		From:          ft.ActionFrom,
 		To:            ft.ActionTo,
-		Value:         hexutil.Big(ft.ActionValue),
+		Value:         (*hexutil.Big)(&ft.ActionValue),
 		Gas:           hexutil.Uint64(ft.ActionGas),
 		Init:          ft.ActionInit,
 		Input:         ft.ActionInput,
