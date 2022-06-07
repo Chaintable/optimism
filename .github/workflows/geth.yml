@@ -50,6 +50,6 @@ jobs:
 
     - name: Docker build and push
       run: |
-        docker build -t 294354037686.dkr.ecr.ap-northeast-1.amazonaws.com/op-l2geth:${GITHUB_SHA::8} -f ../ops/docker/Dockerfile.geth ..
+        docker build -t 294354037686.dkr.ecr.ap-northeast-1.amazonaws.com/op-l2geth:${GITHUB_SHA::8} -f Dockerfile ..
         docker push 294354037686.dkr.ecr.ap-northeast-1.amazonaws.com/op-l2geth:${GITHUB_SHA::8}
         docker rmi 294354037686.dkr.ecr.ap-northeast-1.amazonaws.com/op-l2geth:${GITHUB_SHA::8}
