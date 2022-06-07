@@ -6,12 +6,14 @@ import * as dotenv from 'dotenv'
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
 import '@nomiclabs/hardhat-etherscan'
-import 'hardhat-deploy'
-import '@typechain/hardhat'
-import './tasks'
-import 'hardhat-gas-reporter'
 import '@primitivefi/hardhat-dodoc'
+import '@typechain/hardhat'
+import 'hardhat-deploy'
+import 'hardhat-gas-reporter'
 import 'hardhat-output-validator'
+
+// Hardhat tasks
+import './tasks'
 
 // Load environment variables from .env
 dotenv.config()
@@ -20,7 +22,7 @@ const enableGasReport = !!process.env.ENABLE_GAS_REPORT
 const privateKey = process.env.PRIVATE_KEY || '0x' + '11'.repeat(32) // this is to avoid hardhat error
 const deploy = process.env.DEPLOY_DIRECTORY || 'deploy'
 
-const config: HardhatUserConfig = {
+const config: HardhatUserConfig | any = {
   networks: {
     hardhat: {
       live: false,

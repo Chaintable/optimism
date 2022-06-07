@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  node: circleci/node@5.0.2
+
 executors:
   go-builder:
     docker:
@@ -60,7 +63,7 @@ jobs:
 
   yarn-monorepo:
     docker:
-      - image: ethereumoptimism/js-builder:latest
+      - image: ethereumoptimism/js-builder:nightly
     steps:
       - restore_cache:
           keys:
@@ -84,15 +87,19 @@ jobs:
             - node_modules
             - packages/common-ts/node_modules
             - packages/contracts/node_modules
+            - packages/contracts-bedrock/node_modules
+            - packages/contracts-periphery/node_modules
             - packages/core-utils/node_modules
             - packages/data-transport-layer/node_modules
+            - packages/fault-detector/node_modules
             - packages/message-relayer/node_modules
             - packages/replica-healthcheck/node_modules
             - packages/sdk/node_modules
             - integration-tests/node_modules
       - run:
           name: Build monorepo
-          command: yarn build
+          command: |
+            yarn build
       - save_cache:
           key: v2-cache-yarn-build-{{ .Revision }}
           paths:
@@ -110,6 +117,19 @@ jobs:
           name: Run Slither
           command: yarn test:slither
           working_directory: packages/contracts
+
+  contracts-periphery-slither:
+    docker:
+      - image: ethereumoptimism/js-builder:latest
+    steps:
+      - restore_cache:
+          keys:
+            - v2-cache-yarn-build-{{ .Revision }}
+      - checkout
+      - run:
+          name: Run Slither
+          command: yarn test:slither
+          working_directory: packages/contracts-periphery
 
   contracts-tests:
     docker:
@@ -136,6 +156,28 @@ jobs:
           name: Test
           command: yarn test:coverage
           working_directory: packages/contracts
+
+  contracts-periphery-tests:
+    docker:
+      - image: ethereumoptimism/js-builder:latest
+    resource_class: xlarge
+    steps:
+      - restore_cache:
+          keys:
+            - v2-cache-yarn-build-{{ .Revision }}
+      - checkout
+      - run:
+          name: Lint
+          command: yarn lint:check
+          working_directory: packages/contracts-periphery
+      - run:
+          name: Slither
+          command: yarn test:slither
+          working_directory: packages/contracts
+      - run:
+          name: Test
+          command: yarn test:coverage
+          working_directory: packages/contracts-periphery
 
   dtl-tests:
     docker:
@@ -175,6 +217,10 @@ jobs:
           command: npx depcheck
           working_directory: packages/contracts
       - run:
+          name: Check contracts-periphery
+          command: npx depcheck
+          working_directory: packages/contracts-periphery
+      - run:
           name: Check core-utils
           command: npx depcheck
           working_directory: packages/core-utils
@@ -199,13 +245,13 @@ jobs:
       - run:
           name: Lint
           command: golangci-lint run -E goimports -E sqlclosecheck -E bodyclose -E asciicheck ./...
-          working_directory: go/bss-core
+          working_directory: bss-core
       - run:
           name: Test
           command: |
             mkdir -p /test-results
             gotestsum --junitfile /test-results/tests.xml
-          working_directory: go/bss-core
+          working_directory: bss-core
       - store_test_results:
           path: /test-results
 
@@ -306,34 +352,174 @@ jobs:
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USERNAME" --password-stdin
             docker push <<parameters.docker_tags>>
 
+  bedrock-markdown:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - run:
+          name: markdown lint
+          command: |
+            docker run -v `pwd`:/workdir davidanson/markdownlint-cli2:0.4.0 "op-node/README.md" "./specs/**/*.md" "#**/node_modules"
+      - run:
+          name: link lint
+          command: |
+            docker run --init -it -v `pwd`:/input lycheeverse/lychee --verbose --no-progress --exclude-loopback --exclude twitter.com --exclude-mail /input/README.md "/input/specs/**/*.md" "/input/meta/**/*.md" "/input/op-node/**/*.md" || exit 0
+
+  bedrock-solidity:
+    docker:
+      - image: ethereumoptimism/js-builder:nightly
+    steps:
+      - checkout
+      - run:
+          name: install
+          command: yarn install
+          working_directory: packages/contracts-bedrock
+      - run:
+          name: lint
+          command: yarn lint:check
+          working_directory: packages/contracts-bedrock
+      - run:
+          name: slither
+          command: yarn slither || exit 0
+          working_directory: packages/contracts-bedrock
+      - run:
+          name: build
+          command: yarn build
+          working_directory: packages/contracts-bedrock
+      - run:
+          name: test
+          command: yarn test
+          working_directory: packages/contracts-bedrock
+      - run:
+          name: gas snapshot
+          command: forge snapshot && git diff --exit-code
+          working_directory: packages/contracts-bedrock
+      - run:
+          name: check go bindings
+          command: make && git diff --exit-code
+          working_directory: op-bindings
+
+  bedrock-go-tests:
+    docker:
+      - image: ethereumoptimism/go-builder:latest
+    steps:
+      - checkout
+      - run:
+          name: lint op-bindings
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-bindings
+      - run:
+          name: lint op-node
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-node
+      - run:
+          name: lint op-proposer
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-proposer
+      - run:
+          name: lint op-batcher
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-batcher
+      - run:
+          name: lint op-e2e
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-e2e
+      - run:
+          name: prep results dir
+          command: mkdir -p /test-results
+      - run:
+          name: test op-node
+          command: |
+            gotestsum --junitfile /test-results/op-node.xml -- -coverpkg=github.com/ethereum-optimism/optimism/... -coverprofile=coverage.out -covermode=atomic ./...
+          working_directory: op-node
+      - run:
+          name: test op-proposer
+          command: |
+            gotestsum --junitfile /test-results/op-proposer.xml -- -coverpkg=github.com/ethereum-optimism/optimism/... -coverprofile=coverage.out -covermode=atomic ./...
+          working_directory: op-proposer
+      - run:
+          name: test op-batcher
+          command: |
+            gotestsum --junitfile /test-results/op-batcher.xml -- -coverpkg=github.com/ethereum-optimism/optimism/... -coverprofile=coverage.out -covermode=atomic ./...
+          working_directory: op-batcher
+      - run:
+          name: test op-e2e
+          command: |
+            gotestsum --junitfile /test-results/op-e2e.xml -- -coverpkg=github.com/ethereum-optimism/optimism/... -coverprofile=coverage.out -covermode=atomic ./...
+          working_directory: op-e2e
+      - store_test_results:
+          path: /test-results
+
+  fuzz-op-node:
+    docker:
+      - image: ethereumoptimism/go-builder:latest
+    steps:
+      - checkout
+      - run:
+          name: Fuzz
+          command: make fuzz
+          working_directory: op-node
+
+  bedrock-integration-tests:
+    machine:
+      image: ethereumoptimism/js-builder:nightly
+      docker_layer_caching: true
+    steps:
+      - checkout
+      - node/install:
+          install-yarn: true
+          node-version: '16.13'
+      - run:
+          name: build typescript
+          command: make build-ts
+      - run:
+          name: start devnet
+          command: make devnet-up
+      - run:
+          name: run itests
+          command: make test-integration
+
 workflows:
   main:
     jobs:
       - yarn-monorepo
+      - bedrock-go-tests
+      - bedrock-solidity
+      - bedrock-markdown
+      - fuzz-op-node
       - go-lint-test-build:
           name: batch-submitter-tests
           binary_name: batch-submitter
-          working_directory: go/batch-submitter
+          working_directory: batch-submitter
       - go-lint-test-build:
           name: proxyd-tests
           binary_name: proxyd
-          working_directory: go/proxyd
+          working_directory: proxyd
       - go-lint-test-build:
           name: teleportr-tests
           binary_name: teleportr
-          working_directory: go/teleportr
+          working_directory: teleportr
       - go-lint-test-build:
           name: gas-oracle-tests
           binary_name: gas-oracle
-          working_directory: go/gas-oracle
+          working_directory: gas-oracle
       - go-lint-test-build:
           name: indexer-tests
           binary_name: indexer
-          working_directory: go/indexer
+          working_directory: indexer
       - go-lint-test:
           name: bss-core-tests
-          working_directory: go/bss-core
+          working_directory: bss-core
       - contracts-tests:
+          requires:
+            - yarn-monorepo
+      - contracts-periphery-tests:
           requires:
             - yarn-monorepo
       - js-lint-test:
@@ -349,6 +535,11 @@ workflows:
       - js-lint-test:
           name: sdk-tests
           package_name: sdk
+          requires:
+            - yarn-monorepo
+      - js-lint-test:
+          name: fault-detector-tests
+          package_name: fault-detector
           requires:
             - yarn-monorepo
       - js-lint-test:
@@ -379,14 +570,14 @@ workflows:
       - yarn-monorepo
       - docker-publish:
           name: l2geth-release
-          docker_file: ops/docker/Dockerfile.geth
+          docker_file: l2geth/Dockerfile
           docker_tags: ethereumoptimism/l2geth:nightly
           docker_context: .
           context:
             - optimism
       - docker-publish:
           name: gas-oracle-release
-          docker_file: ops/docker/Dockerfile.gas-oracle
+          docker_file: gas-oracle/Dockerfile
           docker_tags: ethereumoptimism/gas-oracle:nightly
           docker_context: .
           context:
@@ -414,23 +605,31 @@ workflows:
             - optimism
       - docker-publish:
           name: proxyd-release
-          docker_file: go/proxyd/Dockerfile
+          docker_file: proxyd/Dockerfile
           docker_tags: ethereumoptimism/proxyd:nightly
           docker_context: .
           context:
             - optimism
       - docker-publish:
           name: l2geth-exporter-release
-          docker_file: ops/docker/Dockerfile.l2geth-exporter
+          docker_file: l2geth-exporter/Dockerfile
           docker_tags: ethereumoptimism/l2geth-exporter:nightly
           docker_context: .
           context:
             - optimism
       - docker-publish:
           name: op-exporter-release
-          docker_file: ops/docker/Dockerfile.op-exporter
+          docker_file: op-exporter/Dockerfile
           docker_tags: ethereumoptimism/op-exporter:nightly
           docker_context: .
+          context:
+            - optimism
+      - docker-publish:
+          name: fault-detector-release
+          docker_file: ops/docker/Dockerfile.packages
+          docker_tags: ethereumoptimism/fault-detector:nightly
+          docker_context: .
+          target: fault-detector
           context:
             - optimism
       - docker-publish:
@@ -450,9 +649,9 @@ workflows:
           context:
             - optimism
       - docker-publish:
-          name: deployer-release
+          name: integration-tests-release
           docker_file: ops/docker/Dockerfile.packages
-          docker_tags: ethereumoptimism/deployer:nightly
+          docker_tags: ethereumoptimism/integration-tests:nightly
           docker_context: .
           target: integration-tests
           context:
@@ -467,21 +666,21 @@ workflows:
             - optimism
       - docker-publish:
           name: batch-submitter-service-release
-          docker_file: ops/docker/Dockerfile.batch-submitter-service
+          docker_file: batch-submitter/Dockerfile
           docker_tags: ethereumoptimism/batch-submitter-service:nightly
           docker_context: .
           context:
             - optimism
       - docker-publish:
           name: indexer-release
-          docker_file: ops/docker/Dockerfile.indexer
+          docker_file: indexer/Dockerfile
           docker_tags: ethereumoptimism/indexer:nightly
           docker_context: .
           context:
             - optimism
       - docker-publish:
           name: teleportr-release
-          docker_file: ops/docker/Dockerfile.teleportr
+          docker_file: teleportr/Dockerfile
           docker_tags: ethereumoptimism/teleportr:nightly
           docker_context: .
           context:

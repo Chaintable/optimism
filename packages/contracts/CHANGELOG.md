@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.5.26
+
+### Patch Changes
+
+- Updated dependencies [17962ca9]
+  - @eth-optimism/core-utils@0.8.6
+
+## 0.5.25
+
+### Patch Changes
+
+- d18ae135: Updates all ethers versions in response to BN.js bug
+- Updated dependencies [d18ae135]
+  - @eth-optimism/core-utils@0.8.5
+
+## 0.5.24
+
+### Patch Changes
+
+- b7a04acf: Remove unused network name parameter in contract deploy configs
+
+## 0.5.23
+
+### Patch Changes
+
+- 412688d5: Replace calls to getNetwork() with getChainId util
+
 ## 0.5.22
 
 ### Patch Changes

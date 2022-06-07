@@ -1,5 +1,24 @@
 # @eth-optimism/integration-tests
 
+## 0.5.14
+
+### Patch Changes
+
+- f688a631: integration-tests: Override default bridge adapters
+- d18ae135: Updates all ethers versions in response to BN.js bug
+
+## 0.5.13
+
+### Patch Changes
+
+- 412688d5: Replace calls to getNetwork() with getChainId util
+
+## 0.5.12
+
+### Patch Changes
+
+- 53fac1df: Facilitate actor testing on nightly
+
 ## 0.5.11
 
 ### Patch Changes
