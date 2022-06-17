@@ -1,5 +1,44 @@
 # data transport layer
 
+## 0.5.36
+
+### Patch Changes
+
+- 29ff7462: Revert es target back to 2017
+- Updated dependencies [27234f68]
+- Updated dependencies [c201f3f1]
+- Updated dependencies [29ff7462]
+- Updated dependencies [52b26878]
+  - @eth-optimism/contracts@0.5.28
+  - @eth-optimism/common-ts@0.4.0
+  - @eth-optimism/core-utils@0.8.7
+
+## 0.5.35
+
+### Patch Changes
+
+- Updated dependencies [9ba869a7]
+- Updated dependencies [050859fd]
+  - @eth-optimism/common-ts@0.3.1
+
+## 0.5.34
+
+### Patch Changes
+
+- Updated dependencies [d9e39931]
+- Updated dependencies [84a8934c]
+  - @eth-optimism/common-ts@0.3.0
+
+## 0.5.33
+
+### Patch Changes
+
+- Updated dependencies [7c5ac36f]
+- Updated dependencies [3d4d988c]
+- Updated dependencies [9ecbf3e5]
+  - @eth-optimism/contracts@0.5.27
+  - @eth-optimism/common-ts@0.2.10
+
 ## 0.5.32
 
 ### Patch Changes

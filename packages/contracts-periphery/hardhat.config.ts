@@ -2,10 +2,13 @@ import { HardhatUserConfig } from 'hardhat/types'
 import { getenv } from '@eth-optimism/core-utils'
 import * as dotenv from 'dotenv'
 
+import { configSpec } from './src/config/deploy'
+
 // Hardhat plugins
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
 import '@nomiclabs/hardhat-etherscan'
+import '@eth-optimism/hardhat-deploy-config'
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
 import 'hardhat-deploy'
@@ -27,7 +30,7 @@ const config: HardhatUserConfig = {
         },
       },
     },
-    opkovan: {
+    'optimism-kovan': {
       chainId: 69,
       url: 'https://kovan.optimism.io',
       verify: {
@@ -73,6 +76,17 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  paths: {
+    deployConfig: './config/deploy',
+  },
+  deployConfigSpec: configSpec,
+  external: {
+    contracts: [
+      {
+        artifacts: '../contracts-bedrock/artifacts',
+      },
+    ],
+  },
   mocha: {
     timeout: 50000,
   },
@@ -97,7 +111,10 @@ const config: HardhatUserConfig = {
     },
   },
   namedAccounts: {
-    deployer: `ledger://${getenv('LEDGER_ADDRESS')}`,
+    deployer: {
+      default: `ledger://${getenv('LEDGER_ADDRESS')}`,
+      hardhat: 0,
+    },
   },
 }
 

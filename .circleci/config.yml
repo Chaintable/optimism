@@ -91,6 +91,7 @@ jobs:
             - packages/contracts-periphery/node_modules
             - packages/core-utils/node_modules
             - packages/data-transport-layer/node_modules
+            - packages/drippie-mon/node_modules
             - packages/fault-detector/node_modules
             - packages/message-relayer/node_modules
             - packages/replica-healthcheck/node_modules
@@ -178,6 +179,24 @@ jobs:
           name: Test
           command: yarn test:coverage
           working_directory: packages/contracts-periphery
+
+  contracts-governance-tests:
+    docker:
+      - image: ethereumoptimism/js-builder:latest
+    resource_class: xlarge
+    steps:
+      - restore_cache:
+          keys:
+            - v2-cache-yarn-build-{{ .Revision \}\}
+      - checkout
+      - run:
+          name: Lint
+          command: yarn lint:check
+          working_directory: packages/contracts-governance
+      - run:
+          name: Test
+          command: yarn test
+          working_directory: packages/contracts-governance
 
   dtl-tests:
     docker:
@@ -366,15 +385,14 @@ jobs:
           command: |
             docker run --init -it -v `pwd`:/input lycheeverse/lychee --verbose --no-progress --exclude-loopback --exclude twitter.com --exclude-mail /input/README.md "/input/specs/**/*.md" "/input/meta/**/*.md" "/input/op-node/**/*.md" || exit 0
 
-  bedrock-solidity:
+  contracts-bedrock-tests:
     docker:
-      - image: ethereumoptimism/js-builder:nightly
+      - image: ethereumoptimism/js-builder:latest
     steps:
+      - restore_cache:
+          keys:
+            - v2-cache-yarn-build-{{ .Revision \}\}
       - checkout
-      - run:
-          name: install
-          command: yarn install
-          working_directory: packages/contracts-bedrock
       - run:
           name: lint
           command: yarn lint:check
@@ -384,16 +402,14 @@ jobs:
           command: yarn slither || exit 0
           working_directory: packages/contracts-bedrock
       - run:
-          name: build
-          command: yarn build
-          working_directory: packages/contracts-bedrock
-      - run:
           name: test
           command: yarn test
           working_directory: packages/contracts-bedrock
       - run:
           name: gas snapshot
-          command: forge snapshot && git diff --exit-code
+          command: |
+            forge --version
+            forge snapshot --check
           working_directory: packages/contracts-bedrock
       - run:
           name: check go bindings
@@ -468,7 +484,7 @@ jobs:
 
   bedrock-integration-tests:
     machine:
-      image: ethereumoptimism/js-builder:nightly
+      image: ethereumoptimism/js-builder:latest
       docker_layer_caching: true
     steps:
       - checkout
@@ -485,12 +501,51 @@ jobs:
           name: run itests
           command: make test-integration
 
+  semgrep-scan:
+    parameters:
+        diff_branch:
+          type: string
+          default: develop
+    environment:
+      TEMPORARY_BASELINE_REF: << parameters.diff_branch >>
+      SEMGREP_REPO_URL: << pipeline.project.git_url >>
+      SEMGREP_BRANCH: << pipeline.git.branch >>
+      SEMGREP_COMMIT: << pipeline.git.revision >>
+
+      # Change job timeout (default is 1800 seconds; set to 0 to disable)
+      SEMGREP_TIMEOUT: 3000
+
+    docker:
+      - image: returntocorp/semgrep
+    resource_class: xlarge
+    steps:
+      - checkout
+      - unless:
+          condition:
+            equal: [ "develop", << pipeline.git.branch >>]
+          steps:
+            - run:
+                # Scan changed files in PRs, block on new issues only (existing issues ignored)
+                # Do a full scan when scanning develop, otherwise do an incremental scan.
+                name: "Conditionally set BASELINE env var"
+                command: |
+                    echo 'export SEMGREP_BASELINE_REF=\${TEMPORARY_BASELINE_REF\}' >> \$BASH_ENV
+      - run:
+          name: "Set environment variables" # for PR comments and in-app hyperlinks to findings
+          command: |
+              echo 'export SEMGREP_PR_ID=\${CIRCLE_PULL_REQUEST##*/\}' >> \$BASH_ENV
+              echo 'export SEMGREP_JOB_URL=\$CIRCLE_BUILD_URL' >> \$BASH_ENV
+              echo 'export SEMGREP_REPO_NAME=\$CIRCLE_PROJECT_USERNAME/\$CIRCLE_PROJECT_REPONAME' >> \$BASH_ENV
+      - run:
+          name: "Semgrep scan"
+          command: semgrep ci
+
 workflows:
   main:
     jobs:
+      - semgrep-scan
       - yarn-monorepo
       - bedrock-go-tests
-      - bedrock-solidity
       - bedrock-markdown
       - fuzz-op-node
       - go-lint-test-build:
@@ -522,6 +577,12 @@ workflows:
       - contracts-periphery-tests:
           requires:
             - yarn-monorepo
+      - contracts-bedrock-tests:
+          requires:
+            - yarn-monorepo
+      - contracts-governance-tests:
+          requires:
+            - yarn-monorepo
       - js-lint-test:
           name: dtl-tests
           package_name: data-transport-layer
@@ -540,6 +601,11 @@ workflows:
       - js-lint-test:
           name: fault-detector-tests
           package_name: fault-detector
+          requires:
+            - yarn-monorepo
+      - js-lint-test:
+          name: drippie-mon-tests
+          package_name: drippie-mon
           requires:
             - yarn-monorepo
       - js-lint-test:
@@ -630,6 +696,14 @@ workflows:
           docker_tags: ethereumoptimism/fault-detector:nightly
           docker_context: .
           target: fault-detector
+          context:
+            - optimism
+      - docker-publish:
+          name: drippie-mon-release
+          docker_file: ops/docker/Dockerfile.packages
+          docker_tags: ethereumoptimism/drippie-mon:nightly
+          docker_context: .
+          target: drippie-mon
           context:
             - optimism
       - docker-publish:

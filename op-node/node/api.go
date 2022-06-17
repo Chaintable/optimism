@@ -9,9 +9,9 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-node/version"
 
+	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/l2"
-	"github.com/ethereum-optimism/optimism/op-node/predeploy"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum/go-ethereum"
@@ -50,7 +50,7 @@ func newNodeAPI(config *rollup.Config, l2Client l2EthClient, log log.Logger) *no
 	}
 }
 
-func (n *nodeAPI) OutputAtBlock(ctx context.Context, number rpc.BlockNumber) ([]l2.Bytes32, error) {
+func (n *nodeAPI) OutputAtBlock(ctx context.Context, number rpc.BlockNumber) ([]eth.Bytes32, error) {
 	// TODO: rpc.BlockNumber doesn't support the "safe" tag. Need a new type
 
 	head, err := n.client.GetBlockHeader(ctx, toBlockNumArg(number))
@@ -62,7 +62,7 @@ func (n *nodeAPI) OutputAtBlock(ctx context.Context, number rpc.BlockNumber) ([]
 		return nil, ethereum.NotFound
 	}
 
-	proof, err := n.client.GetProof(ctx, predeploy.WithdrawalContractAddress, toBlockNumArg(number))
+	proof, err := n.client.GetProof(ctx, common.HexToAddress(predeploys.L2ToL1MessagePasser), toBlockNumArg(number))
 	if err != nil {
 		n.log.Error("failed to get contract proof", "err", err)
 		return nil, err
@@ -76,10 +76,10 @@ func (n *nodeAPI) OutputAtBlock(ctx context.Context, number rpc.BlockNumber) ([]
 		return nil, fmt.Errorf("invalid withdrawal root hash")
 	}
 
-	var l2OutputRootVersion l2.Bytes32 // it's zero for now
+	var l2OutputRootVersion eth.Bytes32 // it's zero for now
 	l2OutputRoot := l2.ComputeL2OutputRoot(l2OutputRootVersion, head.Hash(), head.Root, proof.StorageHash)
 
-	return []l2.Bytes32{l2OutputRootVersion, l2OutputRoot}, nil
+	return []eth.Bytes32{l2OutputRootVersion, l2OutputRoot}, nil
 }
 
 func (n *nodeAPI) Version(ctx context.Context) (string, error) {
@@ -219,7 +219,7 @@ func (n *nodeAPI) GetBatchBundle(ctx context.Context, req *BatchBundleRequest) (
 
 	var pruneCount int
 	for {
-		if !bundleBuilder.HasNonEmptyCandidate() {
+		if !bundleBuilder.HasCandidate() {
 			return bundleBuilder.Response(nil), nil
 		}
 
@@ -236,7 +236,7 @@ func (n *nodeAPI) GetBatchBundle(ctx context.Context, req *BatchBundleRequest) (
 		// occur since our initial greedy estimate has a very small, bounded
 		// error tolerance, so simply remove the last block and try again.
 		if bundleSize > uint64(req.MaxSize) {
-			bundleBuilder.PruneLastNonEmpty()
+			bundleBuilder.PruneLast()
 			pruneCount++
 			continue
 		}

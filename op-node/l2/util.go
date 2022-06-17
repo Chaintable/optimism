@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum-optimism/optimism/op-node/eth"
+
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,13 +22,13 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 )
 
-func ComputeL2OutputRoot(l2OutputRootVersion Bytes32, blockHash common.Hash, blockRoot common.Hash, storageRoot common.Hash) Bytes32 {
+func ComputeL2OutputRoot(l2OutputRootVersion eth.Bytes32, blockHash common.Hash, blockRoot common.Hash, storageRoot common.Hash) eth.Bytes32 {
 	var buf bytes.Buffer
 	buf.Write(l2OutputRootVersion[:])
 	buf.Write(blockRoot.Bytes())
 	buf.Write(storageRoot[:])
 	buf.Write(blockHash.Bytes())
-	return Bytes32(crypto.Keccak256Hash(buf.Bytes()))
+	return eth.Bytes32(crypto.Keccak256Hash(buf.Bytes()))
 }
 
 type AccountResult struct {
@@ -82,7 +84,6 @@ func (res *AccountResult) Verify(stateRoot common.Hash) error {
 }
 
 // BlockToBatch converts a L2 block to batch-data.
-// Empty L2 blocks (i.e. only a L1 info deposit tx) return a nil batch with nil error.
 // Invalid L2 blocks may return an error.
 func BlockToBatch(config *rollup.Config, block *types.Block) (*derive.BatchData, error) {
 	txs := block.Transactions()
@@ -91,9 +92,6 @@ func BlockToBatch(config *rollup.Config, block *types.Block) (*derive.BatchData,
 	}
 	if typ := txs[0].Type(); typ != types.DepositTxType {
 		return nil, fmt.Errorf("expected first tx to be a deposit of L1 info, but got type: %d", typ)
-	}
-	if len(txs) == 1 { // the L1 info deposit tx, but empty otherwise, no batch data to submit
-		return nil, nil
 	}
 
 	// encode non-deposit transactions

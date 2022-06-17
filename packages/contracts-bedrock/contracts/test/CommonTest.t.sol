@@ -37,6 +37,9 @@ contract CommonTest is Test {
 
         vm.label(alice, "alice");
         vm.label(bob, "bob");
+
+        // Make sure we have a non-zero base fee
+        vm.fee(1000000000);
     }
 }
 contract L2OutputOracle_Initializer is CommonTest {
@@ -249,6 +252,15 @@ contract Bridge_Initializer is Messenger_Initializer {
     );
 
     event ERC20BridgeFinalized(
+        address indexed _localToken,
+        address indexed _remoteToken,
+        address indexed _from,
+        address _to,
+        uint256 _amount,
+        bytes _data
+    );
+
+    event ERC20BridgeFailed(
         address indexed _localToken,
         address indexed _remoteToken,
         address indexed _from,

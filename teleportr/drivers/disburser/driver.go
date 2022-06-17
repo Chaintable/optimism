@@ -6,8 +6,10 @@ import (
 	"errors"
 	"math/big"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	"github.com/ethereum-optimism/optimism/bss-core/metrics"
 	"github.com/ethereum-optimism/optimism/bss-core/txmgr"
 	"github.com/ethereum-optimism/optimism/teleportr/bindings/deposit"
@@ -33,7 +35,7 @@ var DisbursementFailedTopic = common.HexToHash(
 	"0x9b478c095979d3d3a7d602ffd9ee1f0843204d853558ae0882c8fcc0a5bc78cf",
 )
 
-const MaxDisbursements = 5
+const MaxDisbursements = 15
 
 type Config struct {
 	Name                 string
@@ -48,6 +50,7 @@ type Config struct {
 	DisburserAddr        common.Address
 	ChainID              *big.Int
 	PrivKey              *ecdsa.PrivateKey
+	ChainMetricsEnable   bool
 }
 
 type Driver struct {
@@ -58,10 +61,12 @@ type Driver struct {
 	walletAddr           common.Address
 	metrics              *Metrics
 
-	currentDepositIDs []uint64
+	currentDepositIDs   []uint64
+	chainMetricsEnabled bool
+	metricsMu           sync.Mutex
 }
 
-func NewDriver(cfg Config) (*Driver, error) {
+func NewDriver(cfg Config, parentCtx context.Context) (*Driver, error) {
 	if cfg.NumConfirmations == 0 {
 		panic("NumConfirmations cannot be zero")
 	}
@@ -95,15 +100,21 @@ func NewDriver(cfg Config) (*Driver, error) {
 	)
 
 	walletAddr := crypto.PubkeyToAddress(cfg.PrivKey.PublicKey)
+	metricsInst := NewMetrics(cfg.Name)
 
-	return &Driver{
+	d := &Driver{
 		cfg:                  cfg,
 		depositContract:      depositContract,
 		disburserContract:    disburserContract,
 		rawDisburserContract: rawDisburserContract,
 		walletAddr:           walletAddr,
-		metrics:              NewMetrics(cfg.Name),
-	}, nil
+		metrics:              metricsInst,
+		chainMetricsEnabled:  cfg.ChainMetricsEnable,
+	}
+	if d.chainMetricsEnabled {
+		go d.collectChainMetricsBackground(parentCtx)
+	}
+	return d, nil
 }
 
 // Name is an identifier used to prefix logs for a particular service.
@@ -140,8 +151,8 @@ func (d *Driver) ClearPendingTx(
 func (d *Driver) GetBatchBlockRange(
 	ctx context.Context) (*big.Int, *big.Int, error) {
 
-	// Update balance metrics on each iteration.
-	d.updateBalanceMetrics(ctx)
+	// Update metrics on each iteration.
+	d.collectChainMetrics(ctx)
 
 	// Clear the current deposit IDs from any prior iteration.
 	d.currentDepositIDs = nil
@@ -334,7 +345,23 @@ func (d *Driver) SendTransaction(
 		return err
 	}
 
-	return d.cfg.L2Client.SendTransaction(ctx, tx)
+	// This requires special handling - if this request fails,
+	// then teleportr will halt. Use exponential backoff here to
+	// handle expected failures (e.g., 503s, 524s, etc.).
+	return backoff.Retry(func() error {
+		subCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		err := d.cfg.L2Client.SendTransaction(subCtx, tx)
+		if err == nil {
+			return err
+		}
+		if !IsRetryableError(err) {
+			d.metrics.FailedTXSubmissions.WithLabelValues("permanent").Inc()
+			return backoff.Permanent(err)
+		}
+		d.metrics.FailedTXSubmissions.WithLabelValues("recoverable").Inc()
+		return err
+	}, DefaultBackoff)
 }
 
 // processPendingTxs is a helper method which updates Postgres with the effects
@@ -720,19 +747,63 @@ func (d *Driver) deletePendingTx(startID, endID uint64) error {
 	return nil
 }
 
-func (d *Driver) updateBalanceMetrics(ctx context.Context) {
-	disburserBal, err := d.cfg.L2Client.BalanceAt(ctx, d.walletAddr, nil)
+func (d *Driver) collectChainMetricsBackground(ctx context.Context) {
+	tick := time.NewTicker(time.Minute)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-tick.C:
+			log.Info("collecting background metrics")
+			d.collectChainMetrics(ctx)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (d *Driver) collectChainMetrics(ctx context.Context) {
+	if !d.chainMetricsEnabled {
+		return
+	}
+
+	subCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	disburserBal, err := d.cfg.L2Client.BalanceAt(subCtx, d.cfg.DisburserAddr, nil)
 	if err != nil {
 		log.Error("Error getting disburser wallet balance", "err", err)
 		disburserBal = big.NewInt(0)
 	}
 
-	depositBal, err := d.cfg.L1Client.BalanceAt(ctx, d.cfg.DepositAddr, nil)
+	depositBal, err := d.cfg.L1Client.BalanceAt(subCtx, d.cfg.DepositAddr, nil)
 	if err != nil {
 		log.Error("Error getting deposit contract balance", "err", err)
 		depositBal = big.NewInt(0)
 	}
 
+	nextDepositID, err := d.depositContract.TotalDeposits(&bind.CallOpts{
+		Context: subCtx,
+	})
+	if err != nil {
+		log.Error("Error getting deposit contract total deposits")
+		nextDepositID = big.NewInt(0)
+	}
+
+	nextDisbursementID, err := d.disburserContract.TotalDisbursements(
+		&bind.CallOpts{
+			Context: subCtx,
+		},
+	)
+	if err != nil {
+		log.Error("Error getting deposit contract total disbursements")
+		nextDisbursementID = big.NewInt(0)
+	}
+
+	d.metricsMu.Lock()
 	d.metrics.DisburserBalance.Set(float64(disburserBal.Uint64()))
 	d.metrics.DepositContractBalance.Set(float64(depositBal.Uint64()))
+	d.metrics.ContractNextDepositID.Set(float64(nextDepositID.Uint64()))
+	d.metrics.ContractNextDisbursementID.Set(float64(nextDisbursementID.Uint64()))
+	d.metricsMu.Unlock()
 }

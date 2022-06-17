@@ -1,5 +1,30 @@
 # @eth-optimism/teleportr
 
+## 0.0.11
+
+### Patch Changes
+
+- 29ff7462: Revert es target back to 2017
+
+## 0.0.10
+
+### Patch Changes
+
+- ed3a39fb: Fix panic
+
+## 0.0.9
+
+### Patch Changes
+
+- 23dcba53: Better availability endpoint + retries
+
+## 0.0.8
+
+### Patch Changes
+
+- 487a9731: Improve metrics
+- b5ee3c70: Increase max disbursements to 15
+
 ## 0.0.7
 
 ### Patch Changes

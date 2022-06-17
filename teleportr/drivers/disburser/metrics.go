@@ -66,11 +66,19 @@ type Metrics struct {
 	// the disburser contract.
 	ContractNextDisbursementID prometheus.Gauge
 
+	// ContractNextDepositID tracks the next deposit id expected by the deposit
+	// contract.
+	ContractNextDepositID prometheus.Gauge
+
 	// DisburserBalance tracks Teleportr's disburser account balance.
 	DisburserBalance prometheus.Gauge
 
 	// DepositContractBalance tracks Teleportr's deposit contract balance.
 	DepositContractBalance prometheus.Gauge
+
+	// FailedTXSubmissions tracks failed requests to eth_sendRawTransaction
+	// during transaction submission.
+	FailedTXSubmissions *prometheus.CounterVec
 }
 
 // NewMetrics initializes a new, extended metrics object.
@@ -117,6 +125,11 @@ func NewMetrics(subsystem string) *Metrics {
 			Help:      "Next disbursement id expected by the disburser contract",
 			Subsystem: base.SubsystemName(),
 		}),
+		ContractNextDepositID: promauto.NewGauge(prometheus.GaugeOpts{
+			Name:      "contract_next_deposit_id",
+			Help:      "next deposit id expected by the deposit contract",
+			Subsystem: base.SubsystemName(),
+		}),
 		DisburserBalance: promauto.NewGauge(prometheus.GaugeOpts{
 			Name:      "disburser_balance",
 			Help:      "Balance in Wei of Teleportr's disburser wallet",
@@ -126,6 +139,13 @@ func NewMetrics(subsystem string) *Metrics {
 			Name:      "deposit_contract_balance",
 			Help:      "Balance in Wei of Teleportr's deposit contract",
 			Subsystem: base.SubsystemName(),
+		}),
+		FailedTXSubmissions: promauto.NewCounterVec(prometheus.CounterOpts{
+			Name:      "failed_tx_submissions",
+			Help:      "Number of failed transaction submissions",
+			Subsystem: base.SubsystemName(),
+		}, []string{
+			"type",
 		}),
 	}
 }
