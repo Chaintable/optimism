@@ -8,7 +8,11 @@ import { expect } from '../../setup'
 
 const TOKEN_ID = 10
 const DUMMY_L1ERC721_ADDRESS: string =
+<<<<<<< HEAD
   '0x2234223412342234223422342234223422342234'
+=======
+  '0x0034223412342234223422342234223422342234'
+>>>>>>> v0.5.23
 
 describe('OptimismMintableERC721', () => {
   let l2BridgeImpersonator: Signer
@@ -18,19 +22,30 @@ describe('OptimismMintableERC721', () => {
   let l2BridgeImpersonatorAddress: string
   let aliceAddress: string
   let baseUri: string
+<<<<<<< HEAD
   let chainId: number
+=======
+  const remoteChainId = 100
+>>>>>>> v0.5.23
 
   before(async () => {
     ;[l2BridgeImpersonator, alice] = await ethers.getSigners()
     l2BridgeImpersonatorAddress = await l2BridgeImpersonator.getAddress()
     aliceAddress = await alice.getAddress()
 
+<<<<<<< HEAD
     chainId = await alice.getChainId()
+=======
+>>>>>>> v0.5.23
     baseUri = ''.concat(
       'ethereum:',
       DUMMY_L1ERC721_ADDRESS,
       '@',
+<<<<<<< HEAD
       chainId.toString(),
+=======
+      remoteChainId.toString(),
+>>>>>>> v0.5.23
       '/tokenURI?uint256='
     )
 
@@ -38,6 +53,10 @@ describe('OptimismMintableERC721', () => {
       await ethers.getContractFactory('OptimismMintableERC721')
     ).deploy(
       l2BridgeImpersonatorAddress,
+<<<<<<< HEAD
+=======
+      remoteChainId,
+>>>>>>> v0.5.23
       DUMMY_L1ERC721_ADDRESS,
       'L2ERC721',
       'ERC',
@@ -101,8 +120,13 @@ describe('OptimismMintableERC721', () => {
       expect(await OptimismMintableERC721.supportsInterface(0x01ffc9a7)).to.be
         .true
 
+<<<<<<< HEAD
       // OptimismMintablERC721
       expect(await OptimismMintableERC721.supportsInterface(0xec4fc8e3)).to.be
+=======
+      // OptimismMintableERC721
+      expect(await OptimismMintableERC721.supportsInterface(0x051e4975)).to.be
+>>>>>>> v0.5.23
         .true
 
       // ERC721

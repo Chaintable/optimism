@@ -1,6 +1,7 @@
 package node
 
 import (
+<<<<<<< HEAD
 	"bytes"
 	"context"
 	"errors"
@@ -14,6 +15,19 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/l2"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
+=======
+	"context"
+	"fmt"
+	"math/big"
+
+	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
+	"github.com/ethereum-optimism/optimism/op-node/eth"
+	"github.com/ethereum-optimism/optimism/op-node/l2"
+	"github.com/ethereum-optimism/optimism/op-node/metrics"
+	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
+	"github.com/ethereum-optimism/optimism/op-node/version"
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -22,10 +36,13 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
+<<<<<<< HEAD
 // TODO: decide on sanity limit to not keep adding more blocks when the data size is huge.
 // I.e. don't batch together the whole L2 chain
 const MaxL2BlocksPerBatchResponse = 100
 
+=======
+>>>>>>> v0.5.23
 type l2EthClient interface {
 	GetBlockHeader(ctx context.Context, blockTag string) (*types.Header, error)
 	// GetProof returns a proof of the account, it may return a nil result without error if the address was not found.
@@ -36,6 +53,7 @@ type l2EthClient interface {
 	L2BlockRefByHash(ctx context.Context, l2Hash common.Hash) (eth.L2BlockRef, error)
 }
 
+<<<<<<< HEAD
 type nodeAPI struct {
 	config *rollup.Config
 	client l2EthClient
@@ -47,10 +65,36 @@ func newNodeAPI(config *rollup.Config, l2Client l2EthClient, log log.Logger) *no
 		config: config,
 		client: l2Client,
 		log:    log,
+=======
+type driverClient interface {
+	SyncStatus(ctx context.Context) (*driver.SyncStatus, error)
+}
+
+type nodeAPI struct {
+	config *rollup.Config
+	client l2EthClient
+	dr     driverClient
+	log    log.Logger
+	m      *metrics.Metrics
+}
+
+func newNodeAPI(config *rollup.Config, l2Client l2EthClient, dr driverClient, log log.Logger, m *metrics.Metrics) *nodeAPI {
+	return &nodeAPI{
+		config: config,
+		client: l2Client,
+		dr:     dr,
+		log:    log,
+		m:      m,
+>>>>>>> v0.5.23
 	}
 }
 
 func (n *nodeAPI) OutputAtBlock(ctx context.Context, number rpc.BlockNumber) ([]eth.Bytes32, error) {
+<<<<<<< HEAD
+=======
+	recordDur := n.m.RecordRPCServerRequest("optimism_outputAtBlock")
+	defer recordDur()
+>>>>>>> v0.5.23
 	// TODO: rpc.BlockNumber doesn't support the "safe" tag. Need a new type
 
 	head, err := n.client.GetBlockHeader(ctx, toBlockNumArg(number))
@@ -62,7 +106,11 @@ func (n *nodeAPI) OutputAtBlock(ctx context.Context, number rpc.BlockNumber) ([]
 		return nil, ethereum.NotFound
 	}
 
+<<<<<<< HEAD
 	proof, err := n.client.GetProof(ctx, common.HexToAddress(predeploys.L2ToL1MessagePasser), toBlockNumArg(number))
+=======
+	proof, err := n.client.GetProof(ctx, predeploys.L2ToL1MessagePasserAddr, toBlockNumArg(number))
+>>>>>>> v0.5.23
 	if err != nil {
 		n.log.Error("failed to get contract proof", "err", err)
 		return nil, err
@@ -82,7 +130,17 @@ func (n *nodeAPI) OutputAtBlock(ctx context.Context, number rpc.BlockNumber) ([]
 	return []eth.Bytes32{l2OutputRootVersion, l2OutputRoot}, nil
 }
 
+<<<<<<< HEAD
 func (n *nodeAPI) Version(ctx context.Context) (string, error) {
+=======
+func (n *nodeAPI) SyncStatus(ctx context.Context) (*driver.SyncStatus, error) {
+	return n.dr.SyncStatus(ctx)
+}
+
+func (n *nodeAPI) Version(ctx context.Context) (string, error) {
+	recordDur := n.m.RecordRPCServerRequest("optimism_version")
+	defer recordDur()
+>>>>>>> v0.5.23
 	return version.Version + "-" + version.Meta, nil
 }
 
@@ -95,6 +153,7 @@ func toBlockNumArg(number rpc.BlockNumber) string {
 	}
 	return hexutil.EncodeUint64(uint64(number.Int64()))
 }
+<<<<<<< HEAD
 
 type BatchBundleRequest struct {
 	// L2History is a list of L2 blocks that are already in-flight or confirmed.
@@ -267,3 +326,5 @@ func (n *nodeAPI) GetBatchBundle(ctx context.Context, req *BatchBundleRequest) (
 		return bundleBuilder.Response(buf.Bytes()), nil
 	}
 }
+=======
+>>>>>>> v0.5.23

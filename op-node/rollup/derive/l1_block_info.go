@@ -6,8 +6,14 @@ import (
 	"fmt"
 	"math/big"
 
+<<<<<<< HEAD
 	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
 	"github.com/ethereum-optimism/optimism/op-node/eth"
+=======
+	"github.com/ethereum-optimism/optimism/op-node/eth"
+
+	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -17,6 +23,7 @@ var (
 	L1InfoFuncSignature    = "setL1BlockValues(uint64,uint64,uint256,bytes32,uint64)"
 	L1InfoFuncBytes4       = crypto.Keccak256([]byte(L1InfoFuncSignature))[:4]
 	L1InfoDepositerAddress = common.HexToAddress("0xdeaddeaddeaddeaddeaddeaddeaddeaddead0001")
+<<<<<<< HEAD
 	L1BlockAddress         = common.HexToAddress(predeploys.L1Block)
 )
 
@@ -34,6 +41,11 @@ type L1Info interface {
 	ReceiptHash() common.Hash
 }
 
+=======
+	L1BlockAddress         = predeploys.L1BlockAddr
+)
+
+>>>>>>> v0.5.23
 // L1BlockInfo presents the information stored in a L1Block.setL1BlockValues call
 type L1BlockInfo struct {
 	Number    uint64
@@ -98,7 +110,11 @@ func L1InfoDepositTxData(data []byte) (L1BlockInfo, error) {
 
 // L1InfoDeposit creates a L1 Info deposit transaction based on the L1 block,
 // and the L2 block-height difference with the start of the epoch.
+<<<<<<< HEAD
 func L1InfoDeposit(seqNumber uint64, block L1Info) (*types.DepositTx, error) {
+=======
+func L1InfoDeposit(seqNumber uint64, block eth.L1Info) (*types.DepositTx, error) {
+>>>>>>> v0.5.23
 	infoDat := L1BlockInfo{
 		Number:         block.NumberU64(),
 		Time:           block.Time(),
@@ -130,7 +146,11 @@ func L1InfoDeposit(seqNumber uint64, block L1Info) (*types.DepositTx, error) {
 }
 
 // L1InfoDepositBytes returns a serialized L1-info attributes transaction.
+<<<<<<< HEAD
 func L1InfoDepositBytes(seqNumber uint64, l1Info L1Info) ([]byte, error) {
+=======
+func L1InfoDepositBytes(seqNumber uint64, l1Info eth.L1Info) ([]byte, error) {
+>>>>>>> v0.5.23
 	dep, err := L1InfoDeposit(seqNumber, l1Info)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create L1 info tx: %v", err)

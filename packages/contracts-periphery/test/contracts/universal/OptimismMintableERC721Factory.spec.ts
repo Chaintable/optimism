@@ -20,7 +20,11 @@ describe('OptimismMintableERC721Factory', () => {
   let L1ERC721: MockContract<Contract>
   let OptimismMintableERC721Factory: Contract
   let baseURI: string
+<<<<<<< HEAD
   let chainId: number
+=======
+  const remoteChainId = 100
+>>>>>>> v0.5.23
 
   beforeEach(async () => {
     ;[signer] = await ethers.getSigners()
@@ -33,14 +37,23 @@ describe('OptimismMintableERC721Factory', () => {
 
     OptimismMintableERC721Factory = await (
       await ethers.getContractFactory('OptimismMintableERC721Factory')
+<<<<<<< HEAD
     ).deploy(DUMMY_L2_BRIDGE_ADDRESS)
 
     chainId = await signer.getChainId()
+=======
+    ).deploy(DUMMY_L2_BRIDGE_ADDRESS, remoteChainId)
+
+>>>>>>> v0.5.23
     baseURI = ''.concat(
       'ethereum:',
       L1ERC721.address.toLowerCase(),
       '@',
+<<<<<<< HEAD
       chainId.toString(),
+=======
+      remoteChainId.toString(),
+>>>>>>> v0.5.23
       '/tokenURI?uint256='
     )
   })

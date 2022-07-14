@@ -1,14 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+<<<<<<< HEAD
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+=======
+import {
+    IERC721Enumerable
+} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+>>>>>>> v0.5.23
 
 /**
  * @title IOptimismMintableERC721
  * @notice Interface for contracts that are compatible with the OptimismMintableERC721 standard.
  *         Tokens that follow this standard can be easily transferred across the ERC721 bridge.
  */
+<<<<<<< HEAD
 interface IOptimismMintableERC721 is IERC721 {
+=======
+interface IOptimismMintableERC721 is IERC721Enumerable {
+>>>>>>> v0.5.23
     /**
      * @notice Emitted when a token is minted.
      *
@@ -26,6 +36,14 @@ interface IOptimismMintableERC721 is IERC721 {
     event Burn(address indexed account, uint256 tokenId);
 
     /**
+<<<<<<< HEAD
+=======
+     * @notice Chain ID of the chain where the remote token is deployed.
+     */
+    function remoteChainId() external returns (uint256);
+
+    /**
+>>>>>>> v0.5.23
      * @notice Address of the token on the remote domain.
      */
     function remoteToken() external returns (address);

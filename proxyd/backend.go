@@ -623,6 +623,21 @@ func (w *WSProxier) clientPump(ctx context.Context, errC chan error) {
 				return
 			}
 			continue
+<<<<<<< HEAD:proxyd/backend.go
+=======
+		}
+
+		// Send eth_accounts requests directly to the client
+		if req.Method == "eth_accounts" {
+			msg = mustMarshalJSON(NewRPCRes(req.ID, emptyArrayResponse))
+			RecordRPCForward(ctx, BackendProxyd, "eth_accounts", RPCRequestSourceWS)
+			err = w.writeClientConn(msgType, msg)
+			if err != nil {
+				errC <- err
+				return
+			}
+			continue
+>>>>>>> v0.5.23:go/proxyd/backend.go
 		}
 
 		RecordRPCForward(ctx, w.backend.Name, req.Method, RPCRequestSourceWS)

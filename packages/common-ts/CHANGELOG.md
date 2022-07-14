@@ -1,5 +1,36 @@
 # @eth-optimism/common-ts
 
+<<<<<<< HEAD
+=======
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [f9fee446]
+  - @eth-optimism/core-utils@0.9.1
+
+## 0.6.0
+
+### Minor Changes
+
+- 3d1cb720: Add version to healthz for convenience
+
+### Patch Changes
+
+- Updated dependencies [700dcbb0]
+  - @eth-optimism/core-utils@0.9.0
+
+## 0.5.0
+
+### Minor Changes
+
+- cb71fcde: Make typescript type more permissive for MetricsV2
+
+### Patch Changes
+
+- 10e41522: Fix potential metrics DoS vector in recent commit to BSV2
+
+>>>>>>> v0.5.23
 ## 0.4.0
 
 ### Minor Changes

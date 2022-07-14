@@ -6,3 +6,7 @@ coverage.out
 .deps
 deployments
 broadcast
+<<<<<<< HEAD
+=======
+genesis.json
+>>>>>>> v0.5.23

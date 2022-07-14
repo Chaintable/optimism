@@ -1,5 +1,100 @@
 # @eth-optimism/contracts-bedrock
 
+<<<<<<< HEAD
+=======
+## 0.5.0
+
+### Minor Changes
+
+- 42a4cc30: Remove Lib* and OVM* prefixes from all contracts
+
+### Patch Changes
+
+- 0cb3929e: Move encoding and hashing into Encoding and Hashing libraries
+- 28bd76ae: Cleans up hashing and encoding library natspec and function names
+- 4279647f: Port RLPWriter tests
+- ce6cb121: Use external version of ExcessivelySafeCall
+- 8986f165: Fix solc warnings in ProxyAdmin
+- 69ee689f: Remove unnecessary DefaultValues library
+- 2e89f634: Fixes a bug that caused L2 timestamps to be computed incorrectly
+- 49d33b08: Standardizes comments, errors, and events for contracts in the /universal package
+- 821907e2: Bump typechain to 8.1.0
+- 91b31168: Clean up comments and errors for legacy contracts
+- 3c5726d4: Cleaned up enums, should be CapitalCase enums and UPPER_CASE values
+- eb11a5bb: Add comments to RLP libraries
+- 092b0901: Update to new L2 tx hash style for deposits
+- 4ea33e13: Standardizes initialization logic for L1 contracts
+- 297af083: Move contracts written by external parties into a vendor folder
+- 71800503: Reduce the number of compiler warnings
+- 611d93a1: Remove storage slot buffer in xdomain messengers
+- 75089d0a: Cleans up initialization logic everywhere
+- b9a90f32: Rename OptimismMintableTokenFactory to OptimismMintableERC20Factory
+- 50e20ea1: Fix initialization logic
+- 6f74ca9f: Clean up the PredeployAddresses library
+- c031ec95: Tests for RLPReader
+- 9c8b1f00: Bump forge-std to 62caef29b0f87a2c6aaaf634b2ca4c09b6867c92
+- 89d01f2e: Add semver to L2 contracts
+- 7d9820b6: Resolve compiler warnings in Proxy.sol
+- f9fee446: Move the `DepositTx` type to `core-utils`. This way it can be more easily used across projects
+- 5050e0fb: Remove "not implemented" errors in virtual functions
+- 78d7c2ec: Update typechain pipeline
+- 89d01f2e: Update dev deps
+- Updated dependencies [f9fee446]
+  - @eth-optimism/core-utils@0.9.1
+
+## 0.4.1
+
+### Patch Changes
+
+- 5c3b4bfa: Enable hardhat style buildinfo
+- ef29d8a5: Make the Portal upgradeable
+- 5bb6f2c7: Add `OptimismPortal.isOutputFinalized`
+- 79f31007: correct l33t sp34k in toCodeAddrr
+- 5a12c635: Add deployer docker image
+- 8460865f: Optimize buildinfo support, only build through hardhat interface
+
+## 0.4.0
+
+### Minor Changes
+
+- a828da9f: Add separate sequencer role to Oracle
+
+### Patch Changes
+
+- a828da9f: Separate the owner and sequencer roles in the OutputOracle
+- 347fd37c: Fix bug in bedrock deploy scripts
+- 700dcbb0: Add genesis script
+- 931e517b: Fix order of args to L2OO constructor
+- 93e2f750: Fix for incorrect constructor args in deploy config
+- ddf515cb: Make the output oracle upgradeable.
+- Updated dependencies [700dcbb0]
+  - @eth-optimism/core-utils@0.9.0
+
+## 0.3.0
+
+### Minor Changes
+
+- 35757456: Replaces L2 timestamps with block numbers as the key in mapping(uint => OutputProposal).
+
+### Patch Changes
+
+- f23bae0b: bedrock: ProxyAdmin rename OpenZeppelin proxy to ERC1967
+- fadb1a93: OZ Audit fixes with a Low or informational severity:
+
+  - Hardcode constant values
+  - Require that msg.value == \_amount on ETH withdrawals
+  - use \_from in place of msg.sender when applicable in internal functions
+
+- f23bae0b: bedrock: Simplify ProxyAdmin static calls
+- 650ca6d4: Fixes to medium severity OZ findings
+
+  - Disallow reentrant withdrawals
+  - remove donateEth
+  - Correct ordering of \_from and \_to arguments on refunds of failed deposits
+
+- 9aa8049c: Have contracts-bedrock properly include contract sources in npm package
+
+>>>>>>> v0.5.23
 ## 0.2.0
 
 ### Minor Changes

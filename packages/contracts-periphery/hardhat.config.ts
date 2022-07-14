@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 import { HardhatUserConfig } from 'hardhat/types'
+=======
+import { HardhatUserConfig, subtask } from 'hardhat/config'
+import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/task-names'
+>>>>>>> v0.5.23
 import { getenv } from '@eth-optimism/core-utils'
 import * as dotenv from 'dotenv'
 
@@ -9,6 +14,10 @@ import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
 import '@nomiclabs/hardhat-etherscan'
 import '@eth-optimism/hardhat-deploy-config'
+<<<<<<< HEAD
+=======
+import '@typechain/hardhat'
+>>>>>>> v0.5.23
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
 import 'hardhat-deploy'
@@ -19,6 +28,17 @@ import './tasks'
 // Load environment variables from .env
 dotenv.config()
 
+<<<<<<< HEAD
+=======
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
+  async (_, __, runSuper) => {
+    const paths = await runSuper()
+
+    return paths.filter((p: string) => !p.endsWith('.t.sol'))
+  }
+)
+
+>>>>>>> v0.5.23
 const config: HardhatUserConfig = {
   networks: {
     optimism: {
@@ -80,6 +100,7 @@ const config: HardhatUserConfig = {
     deployConfig: './config/deploy',
   },
   deployConfigSpec: configSpec,
+<<<<<<< HEAD
   external: {
     contracts: [
       {
@@ -90,6 +111,15 @@ const config: HardhatUserConfig = {
   mocha: {
     timeout: 50000,
   },
+=======
+  mocha: {
+    timeout: 50000,
+  },
+  typechain: {
+    outDir: 'dist/types',
+    target: 'ethers-v5',
+  },
+>>>>>>> v0.5.23
   solidity: {
     compilers: [
       {

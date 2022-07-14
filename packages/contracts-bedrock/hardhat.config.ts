@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 import { HardhatUserConfig, task, subtask } from 'hardhat/config'
 import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/task-names'
+<<<<<<< HEAD
 import '@nomiclabs/hardhat-waffle'
 import '@typechain/hardhat'
 import 'solidity-coverage'
@@ -9,6 +10,21 @@ import '@foundry-rs/hardhat-forge'
 import '@eth-optimism/hardhat-deploy-config'
 
 import './tasks/deposits'
+=======
+
+// Hardhat plugins
+import '@eth-optimism/hardhat-deploy-config'
+import '@foundry-rs/hardhat-forge'
+import '@nomiclabs/hardhat-ethers'
+import 'hardhat-deploy'
+
+// Hardhat tasks
+import './tasks/genesis-l1'
+import './tasks/genesis-l2'
+import './tasks/deposits'
+import './tasks/rekey'
+import './tasks/rollup-config'
+>>>>>>> v0.5.23
 
 subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
   async (_, __, runSuper) => {
@@ -36,21 +52,34 @@ const config: HardhatUserConfig = {
     },
     goerli: {
       chainId: 5,
+<<<<<<< HEAD
       url: (process.env.L1_RPC || ''),
       accounts: [
         (process.env.PRIVATE_KEY_DEPLOYER || ethers.constants.HashZero),
       ],
     },
   },
+=======
+      url: process.env.L1_RPC || '',
+      accounts: [process.env.PRIVATE_KEY_DEPLOYER || ethers.constants.HashZero],
+    },
+  },
+  foundry: {
+    buildInfo: true,
+  },
+>>>>>>> v0.5.23
   paths: {
     deploy: './deploy',
     deployments: './deployments',
     deployConfig: './deploy-config',
   },
+<<<<<<< HEAD
   typechain: {
     outDir: 'dist/types',
     target: 'ethers-v5',
   },
+=======
+>>>>>>> v0.5.23
   namedAccounts: {
     deployer: {
       default: 0,
@@ -70,12 +99,38 @@ const config: HardhatUserConfig = {
     historicalBlocks: {
       type: 'number',
     },
+<<<<<<< HEAD
     startingBlockTimestamp: {
+=======
+    startingBlockNumber: {
+      type: 'number',
+    },
+    startingTimestamp: {
+>>>>>>> v0.5.23
       type: 'number',
     },
     sequencerAddress: {
       type: 'address',
     },
+<<<<<<< HEAD
+=======
+    outputOracleOwner: {
+      type: 'address',
+    },
+  },
+  external: {
+    contracts: [
+      {
+        artifacts: '../contracts/artifacts',
+      },
+      {
+        artifacts: '../contracts-governance/artifacts',
+      },
+    ],
+    deployments: {
+      goerli: ['../contracts/deployments/goerli'],
+    },
+>>>>>>> v0.5.23
   },
   solidity: {
     compilers: [

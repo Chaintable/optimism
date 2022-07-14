@@ -6,10 +6,17 @@ import (
 	"math/rand"
 	"testing"
 
+<<<<<<< HEAD
 	"github.com/ethereum-optimism/optimism/op-node/testlog"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
+=======
+	"github.com/ethereum-optimism/optimism/op-node/client"
+	"github.com/ethereum-optimism/optimism/op-node/eth"
+	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum-optimism/optimism/op-node/testlog"
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -45,7 +52,11 @@ func (m *mockRPC) Close() {
 	m.MethodCalled("Close")
 }
 
+<<<<<<< HEAD
 var _ RPCClient = (*mockRPC)(nil)
+=======
+var _ client.RPC = (*mockRPC)(nil)
+>>>>>>> v0.5.23
 
 func randHash() (out common.Hash) {
 	rand.Read(out[:])

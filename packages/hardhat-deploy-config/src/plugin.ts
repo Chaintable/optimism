@@ -6,6 +6,10 @@ import {
   HardhatRuntimeEnvironment,
   HardhatUserConfig,
 } from 'hardhat/types'
+<<<<<<< HEAD
+=======
+import { lazyObject } from 'hardhat/plugins'
+>>>>>>> v0.5.23
 import { ethers } from 'ethers'
 
 // From: https://github.com/wighawag/hardhat-deploy/blob/master/src/index.ts#L63-L76
@@ -104,5 +108,9 @@ extendConfig(
 )
 
 extendEnvironment((hre) => {
+<<<<<<< HEAD
   hre.deployConfig = loadDeployConfig(hre)
+=======
+  hre.deployConfig = lazyObject(() => loadDeployConfig(hre))
+>>>>>>> v0.5.23
 })

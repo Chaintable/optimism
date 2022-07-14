@@ -1,12 +1,19 @@
 import dotenv from 'dotenv'
+<<<<<<< HEAD
+=======
+import { HardhatUserConfig } from 'hardhat/config'
+>>>>>>> v0.5.23
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-waffle'
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
+<<<<<<< HEAD
 import { task, types } from 'hardhat/config'
 import { providers, utils, Wallet } from 'ethers'
 import { CrossChainMessenger } from '@eth-optimism/sdk'
+=======
+>>>>>>> v0.5.23
 
 import './scripts/deploy-token'
 import './scripts/multi-send'
@@ -16,6 +23,7 @@ import './scripts/create-airdrop-json'
 import './scripts/deploy-distributor'
 import './scripts/test-claims'
 import './scripts/create-distributor-json'
+<<<<<<< HEAD
 
 dotenv.config()
 
@@ -77,21 +85,54 @@ const privKey = process.env.PRIVATE_KEY || '0x' + '11'.repeat(32)
  */
 module.exports = {
   solidity: '0.8.12',
+=======
+import './scripts/deposit'
+
+dotenv.config()
+
+const privKey = process.env.PRIVATE_KEY || '0x' + '11'.repeat(32)
+
+const config: HardhatUserConfig = {
+  solidity: {
+    version: '0.8.12',
+    settings: {
+      outputSelection: {
+        '*': {
+          '*': ['metadata', 'storageLayout'],
+        },
+      },
+    },
+  },
+>>>>>>> v0.5.23
   networks: {
     optimism: {
       chainId: 17,
       url: 'http://localhost:8545',
+<<<<<<< HEAD
       saveDeployments: false,
+=======
+>>>>>>> v0.5.23
     },
     'optimism-kovan': {
       chainId: 69,
       url: 'https://kovan.optimism.io',
       accounts: [privKey],
     },
+<<<<<<< HEAD
     'optimism-nightly': {
       chainId: 421,
       url: 'https://goerli-nightly-us-central1-a-sequencer.optimism.io',
       saveDeployments: true,
+=======
+    'optimism-goerli': {
+      chainId: 420,
+      url: 'https://goerli.optimism.io',
+      accounts: [privKey],
+    },
+    'optimism-nightly': {
+      chainId: 421,
+      url: 'https://goerli-nightly-us-central1-a-sequencer.optimism.io',
+>>>>>>> v0.5.23
       accounts: [privKey],
     },
     'optimism-mainnet': {
@@ -100,8 +141,12 @@ module.exports = {
       accounts: [privKey],
     },
     'hardhat-node': {
+<<<<<<< HEAD
       url: 'http://localhost:9545',
       saveDeployments: false,
+=======
+      url: 'http://localhost:8545',
+>>>>>>> v0.5.23
     },
   },
   gasReporter: {
@@ -112,3 +157,8 @@ module.exports = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
 }
+<<<<<<< HEAD
+=======
+
+export default config
+>>>>>>> v0.5.23

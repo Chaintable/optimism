@@ -6,6 +6,11 @@ import (
 	"math/big"
 	"time"
 
+<<<<<<< HEAD
+=======
+	"github.com/ethereum-optimism/optimism/op-node/client"
+
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
@@ -13,22 +18,37 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/ethclient"
+=======
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type Source struct {
+<<<<<<< HEAD
 	rpc     *rpc.Client       // raw RPC client. Used for the consensus namespace
 	client  *ethclient.Client // go-ethereum's wrapper around the rpc client for the eth namespace
+=======
+	rpc     client.RPC    // raw RPC client. Used for the consensus namespace
+	client  client.Client // go-ethereum's wrapper around the rpc client for the eth namespace
+>>>>>>> v0.5.23
 	genesis *rollup.Genesis
 	log     log.Logger
 }
 
+<<<<<<< HEAD
 func NewSource(l2Node *rpc.Client, genesis *rollup.Genesis, log log.Logger) (*Source, error) {
 	return &Source{
 		rpc:     l2Node,
 		client:  ethclient.NewClient(l2Node),
+=======
+func NewSource(l2Node client.RPC, l2Client client.Client, genesis *rollup.Genesis, log log.Logger) (*Source, error) {
+	return &Source{
+		rpc:     l2Node,
+		client:  l2Client,
+>>>>>>> v0.5.23
 		genesis: genesis,
 		log:     log,
 	}, nil
@@ -51,9 +71,15 @@ func (s *Source) PayloadByHash(ctx context.Context, hash common.Hash) (*eth.Exec
 	return payload, nil
 }
 
+<<<<<<< HEAD
 func (s *Source) PayloadByNumber(ctx context.Context, number *big.Int) (*eth.ExecutionPayload, error) {
 	// TODO: we really do not need to parse every single tx and block detail, keeping transactions encoded is faster.
 	block, err := s.client.BlockByNumber(ctx, number)
+=======
+func (s *Source) PayloadByNumber(ctx context.Context, number uint64) (*eth.ExecutionPayload, error) {
+	// TODO: we really do not need to parse every single tx and block detail, keeping transactions encoded is faster.
+	block, err := s.client.BlockByNumber(ctx, big.NewInt(int64(number)))
+>>>>>>> v0.5.23
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve L2 block by number: %v", err)
 	}
@@ -69,16 +95,28 @@ func (s *Source) PayloadByNumber(ctx context.Context, number *big.Int) (*eth.Exe
 // May return an error in ForkChoiceResult, but the error is marshalled into the error return
 func (s *Source) ForkchoiceUpdate(ctx context.Context, fc *eth.ForkchoiceState, attributes *eth.PayloadAttributes) (*eth.ForkchoiceUpdatedResult, error) {
 	e := s.log.New("state", fc, "attr", attributes)
+<<<<<<< HEAD
 	e.Debug("Sharing forkchoice-updated signal")
+=======
+	e.Trace("Sharing forkchoice-updated signal")
+>>>>>>> v0.5.23
 	fcCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 	var result eth.ForkchoiceUpdatedResult
 	err := s.rpc.CallContext(fcCtx, &result, "engine_forkchoiceUpdatedV1", fc, attributes)
 	if err == nil {
+<<<<<<< HEAD
 		e.Debug("Shared forkchoice-updated signal")
 		if attributes != nil {
 			e.Debug("Received payload id", "payloadId", result.PayloadID)
 		}
+=======
+		e.Trace("Shared forkchoice-updated signal")
+		if attributes != nil {
+			e.Trace("Received payload id", "payloadId", result.PayloadID)
+		}
+		return &result, nil
+>>>>>>> v0.5.23
 	} else {
 		e = e.New("err", err)
 		if rpcErr, ok := err.(rpc.Error); ok {
@@ -87,6 +125,7 @@ func (s *Source) ForkchoiceUpdate(ctx context.Context, fc *eth.ForkchoiceState, 
 		} else {
 			e.Error("Failed to share forkchoice-updated signal")
 		}
+<<<<<<< HEAD
 	}
 	switch result.PayloadStatus.Status {
 	case eth.ExecutionSyncing:
@@ -100,18 +139,28 @@ func (s *Source) ForkchoiceUpdate(ctx context.Context, fc *eth.ForkchoiceState, 
 		return &result, nil
 	default:
 		return nil, fmt.Errorf("unknown forkchoice status on %s: %q, ", fc.SafeBlockHash, string(result.PayloadStatus.Status))
+=======
+		return nil, err
+>>>>>>> v0.5.23
 	}
 }
 
 // ExecutePayload executes a built block on the execution engine and returns an error if it was not successful.
+<<<<<<< HEAD
 func (s *Source) NewPayload(ctx context.Context, payload *eth.ExecutionPayload) error {
 	e := s.log.New("block_hash", payload.BlockHash)
 	e.Debug("sending payload for execution")
+=======
+func (s *Source) NewPayload(ctx context.Context, payload *eth.ExecutionPayload) (*eth.PayloadStatusV1, error) {
+	e := s.log.New("block_hash", payload.BlockHash)
+	e.Trace("sending payload for execution")
+>>>>>>> v0.5.23
 
 	execCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 	var result eth.PayloadStatusV1
 	err := s.rpc.CallContext(execCtx, &result, "engine_newPayloadV1", payload)
+<<<<<<< HEAD
 	e.Debug("Received payload execution result", "status", result.Status, "latestValidHash", result.LatestValidHash, "message", result.ValidationError)
 	if err != nil {
 		e.Error("Payload execution failed", "err", err)
@@ -134,12 +183,24 @@ func (s *Source) NewPayload(ctx context.Context, payload *eth.ExecutionPayload) 
 	default:
 		return fmt.Errorf("unknown execution status on %s: %q, ", payload.ID(), string(result.Status))
 	}
+=======
+	e.Trace("Received payload execution result", "status", result.Status, "latestValidHash", result.LatestValidHash, "message", result.ValidationError)
+	if err != nil {
+		e.Error("Payload execution failed", "err", err)
+		return nil, fmt.Errorf("failed to execute payload: %v", err)
+	}
+	return &result, nil
+>>>>>>> v0.5.23
 }
 
 // GetPayload gets the execution payload associated with the PayloadId
 func (s *Source) GetPayload(ctx context.Context, payloadId eth.PayloadID) (*eth.ExecutionPayload, error) {
 	e := s.log.New("payload_id", payloadId)
+<<<<<<< HEAD
 	e.Debug("getting payload")
+=======
+	e.Trace("getting payload")
+>>>>>>> v0.5.23
 	var result eth.ExecutionPayload
 	err := s.rpc.CallContext(ctx, &result, "engine_getPayloadV1", payloadId)
 	if err != nil {
@@ -156,10 +217,27 @@ func (s *Source) GetPayload(ctx context.Context, payloadId eth.PayloadID) (*eth.
 		}
 		return nil, err
 	}
+<<<<<<< HEAD
 	e.Debug("Received payload")
 	return &result, nil
 }
 
+=======
+	e.Trace("Received payload")
+	return &result, nil
+}
+
+// L2BlockRefHead returns the canonical block and parent ids.
+func (s *Source) L2BlockRefHead(ctx context.Context) (eth.L2BlockRef, error) {
+	block, err := s.client.BlockByNumber(ctx, nil)
+	if err != nil {
+		// w%: wrap the error, we still need to detect if a canonical block is not found, a.k.a. end of chain.
+		return eth.L2BlockRef{}, fmt.Errorf("failed to determine block-hash of head, could not get header: %w", err)
+	}
+	return blockToBlockRef(block, s.genesis)
+}
+
+>>>>>>> v0.5.23
 // L2BlockRefByNumber returns the canonical block and parent ids.
 func (s *Source) L2BlockRefByNumber(ctx context.Context, l2Num *big.Int) (eth.L2BlockRef, error) {
 	block, err := s.client.BlockByNumber(ctx, l2Num)
@@ -218,16 +296,28 @@ func blockToBlockRef(block *types.Block, genesis *rollup.Genesis) (eth.L2BlockRe
 }
 
 type ReadOnlySource struct {
+<<<<<<< HEAD
 	rpc     *rpc.Client       // raw RPC client. Used for methods that do not already have bindings
 	client  *ethclient.Client // go-ethereum's wrapper around the rpc client for the eth namespace
+=======
+	rpc     client.RPC    // raw RPC client. Used for methods that do not already have bindings
+	client  client.Client // go-ethereum's wrapper around the rpc client for the eth namespace
+>>>>>>> v0.5.23
 	genesis *rollup.Genesis
 	log     log.Logger
 }
 
+<<<<<<< HEAD
 func NewReadOnlySource(l2Node *rpc.Client, genesis *rollup.Genesis, log log.Logger) (*ReadOnlySource, error) {
 	return &ReadOnlySource{
 		rpc:     l2Node,
 		client:  ethclient.NewClient(l2Node),
+=======
+func NewReadOnlySource(l2Node client.RPC, l2Client client.Client, genesis *rollup.Genesis, log log.Logger) (*ReadOnlySource, error) {
+	return &ReadOnlySource{
+		rpc:     l2Node,
+		client:  l2Client,
+>>>>>>> v0.5.23
 		genesis: genesis,
 		log:     log,
 	}, nil

@@ -39,6 +39,15 @@ func (b Bytes32) String() string {
 	return hexutil.Encode(b[:])
 }
 
+<<<<<<< HEAD
+=======
+// TerminalString implements log.TerminalStringer, formatting a string for console
+// output during logging.
+func (b Bytes32) TerminalString() string {
+	return fmt.Sprintf("%x..%x", b[:3], b[29:])
+}
+
+>>>>>>> v0.5.23
 type Bytes256 [256]byte
 
 func (b *Bytes256) UnmarshalJSON(text []byte) error {
@@ -57,6 +66,15 @@ func (b Bytes256) String() string {
 	return hexutil.Encode(b[:])
 }
 
+<<<<<<< HEAD
+=======
+// TerminalString implements log.TerminalStringer, formatting a string for console
+// output during logging.
+func (b Bytes256) TerminalString() string {
+	return fmt.Sprintf("%x..%x", b[:3], b[253:])
+}
+
+>>>>>>> v0.5.23
 type Uint64Quantity = hexutil.Uint64
 
 type BytesMax32 []byte
@@ -219,10 +237,17 @@ const (
 type PayloadStatusV1 struct {
 	// the result of the payload execution
 	Status ExecutePayloadStatus `json:"status"`
+<<<<<<< HEAD
 	// the hash of the most recent valid block in the branch defined by payload and its ancestors
 	LatestValidHash common.Hash `json:"latestValidHash"`
 	// additional details on the result
 	ValidationError string `json:"validationError"`
+=======
+	// the hash of the most recent valid block in the branch defined by payload and its ancestors (optional field)
+	LatestValidHash *common.Hash `json:"latestValidHash,omitempty"`
+	// additional details on the result (optional field)
+	ValidationError *string `json:"validationError,omitempty"`
+>>>>>>> v0.5.23
 }
 
 type ForkchoiceState struct {

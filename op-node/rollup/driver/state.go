@@ -4,11 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+<<<<<<< HEAD
+=======
+	"io"
+>>>>>>> v0.5.23
 	gosync "sync"
 	"time"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
+<<<<<<< HEAD
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/sync"
 	"github.com/ethereum/go-ethereum/log"
@@ -25,6 +30,56 @@ type state struct {
 	// Rollup config
 	Config    rollup.Config
 	sequencer bool
+=======
+	"github.com/ethereum/go-ethereum/log"
+)
+
+// SyncStatus is a snapshot of the driver
+type SyncStatus struct {
+	// CurrentL1 is the block that the derivation process is currently at,
+	// this may not be fully derived into L2 data yet.
+	// If the node is synced, this matches the HeadL1, minus the verifier confirmation distance.
+	CurrentL1 eth.L1BlockRef `json:"current_l1"`
+	// HeadL1 is the perceived head of the L1 chain, no confirmation distance.
+	// The head is not guaranteed to build on the other L1 sync status fields,
+	// as the node may be in progress of resetting to adapt to a L1 reorg.
+	HeadL1 eth.L1BlockRef `json:"head_l1"`
+	// UnsafeL2 is the absolute tip of the L2 chain,
+	// pointing to block data that has not been submitted to L1 yet.
+	// The sequencer is building this, and verifiers may also be ahead of the
+	// SafeL2 block if they sync blocks via p2p or other offchain sources.
+	UnsafeL2 eth.L2BlockRef `json:"unsafe_l2"`
+	// SafeL2 points to the L2 block that was derived from the L1 chain.
+	// This point may still reorg if the L1 chain reorgs.
+	SafeL2 eth.L2BlockRef `json:"safe_l2"`
+	// FinalizedL2 points to the L2 block that was derived fully from
+	// finalized L1 information, thus irreversible.
+	FinalizedL2 eth.L2BlockRef `json:"finalized_l2"`
+}
+
+type state struct {
+	// Chain State
+	l1Head      eth.L1BlockRef // Latest recorded head of the L1 Chain, independent of derivation work
+	l2Head      eth.L2BlockRef // L2 Unsafe Head
+	l2SafeHead  eth.L2BlockRef // L2 Safe Head - this is the head of the L2 chain as derived from L1
+	l2Finalized eth.L2BlockRef // L2 Block that will never be reversed
+
+	// The derivation pipeline is reset whenever we reorg.
+	// The derivation pipeline determines the new l2SafeHead.
+	derivation DerivationPipeline
+
+	// When the derivation pipeline is waiting for new data to do anything
+	idleDerivation bool
+
+	// Requests for sync status. Synchronized with event loop to avoid reading an inconsistent sync status.
+	syncStatusReq chan chan SyncStatus
+
+	// Rollup config: rollup chain configuration
+	Config *rollup.Config
+
+	// Driver config: verifier and sequencer settings
+	DriverConfig *Config
+>>>>>>> v0.5.23
 
 	// Connections (in/out)
 	l1Heads          chan eth.L1BlockRef
@@ -41,11 +96,24 @@ type state struct {
 	wg gosync.WaitGroup
 }
 
+<<<<<<< HEAD
 // NewState creates a new driver state. State changes take effect though the given output.
 // Optionally a network can be provided to publish things to other nodes than the engine of the driver.
 func NewState(log log.Logger, snapshotLog log.Logger, config rollup.Config, l1Chain L1Chain, l2Chain L2Chain, output outputInterface, network Network, sequencer bool) *state {
 	return &state{
 		Config:           config,
+=======
+// NewState creates a new driver state. State changes take effect though
+// the given output, derivation pipeline and network interfaces.
+func NewState(driverCfg *Config, log log.Logger, snapshotLog log.Logger, config *rollup.Config, l1Chain L1Chain, l2Chain L2Chain,
+	output outputInterface, derivationPipeline DerivationPipeline, network Network) *state {
+	return &state{
+		derivation:       derivationPipeline,
+		idleDerivation:   false,
+		syncStatusReq:    make(chan chan SyncStatus, 10),
+		Config:           config,
+		DriverConfig:     driverCfg,
+>>>>>>> v0.5.23
 		done:             make(chan struct{}),
 		log:              log,
 		snapshotLog:      snapshotLog,
@@ -53,7 +121,10 @@ func NewState(log log.Logger, snapshotLog log.Logger, config rollup.Config, l1Ch
 		l2:               l2Chain,
 		output:           output,
 		network:          network,
+<<<<<<< HEAD
 		sequencer:        sequencer,
+=======
+>>>>>>> v0.5.23
 		l1Heads:          make(chan eth.L1BlockRef, 10),
 		unsafeL2Payloads: make(chan *eth.ExecutionPayload, 10),
 	}
@@ -66,6 +137,7 @@ func (s *state) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
 
 	// Check that we are past the genesis
 	if l1Head.Number > s.Config.Genesis.L1.Number {
@@ -102,11 +174,25 @@ func (s *state) Start(ctx context.Context) error {
 
 	s.wg.Add(1)
 	go s.loop()
+=======
+	s.l1Head = l1Head
+	s.l2Head, _ = s.l2.L2BlockRefByNumber(ctx, nil)
+
+	s.derivation.Reset()
+
+	s.wg.Add(1)
+	go s.eventLoop()
+
+>>>>>>> v0.5.23
 	return nil
 }
 
 func (s *state) Close() error {
+<<<<<<< HEAD
 	close(s.done)
+=======
+	s.done <- struct{}{}
+>>>>>>> v0.5.23
 	s.wg.Wait()
 	return nil
 }
@@ -129,6 +215,7 @@ func (s *state) OnUnsafeL2Payload(ctx context.Context, payload *eth.ExecutionPay
 	}
 }
 
+<<<<<<< HEAD
 // l1WindowBufEnd returns the last block that should be used as `base` to L1ChainWindow.
 // This is either the last block of the window, or the L1 base block if the window is not populated.
 func (s *state) l1WindowBufEnd() eth.BlockID {
@@ -187,6 +274,22 @@ func (s *state) handleNewL1Block(ctx context.Context, newL1Head eth.L1BlockRef) 
 	}
 
 	return nil
+=======
+func (s *state) handleNewL1Block(newL1Head eth.L1BlockRef) {
+	// We don't need to do anything if the head hasn't changed.
+	if s.l1Head.Hash == newL1Head.Hash {
+		s.log.Trace("Received L1 head signal that is the same as the current head", "l1Head", newL1Head)
+	} else if s.l1Head.Hash == newL1Head.ParentHash {
+		// We got a new L1 block whose parent hash is the same as the current L1 head. Means we're
+		// dealing with a linear extension (new block is the immediate child of the old one).
+		s.log.Debug("L1 head moved forward", "l1Head", newL1Head)
+	} else {
+		// New L1 block is not the same as the current head or a single step linear extension.
+		// This could either be a long L1 extension, or a reorg. Both can be handled the same way.
+		s.log.Warn("L1 Head signal indicates an L1 re-org", "old_l1_head", s.l1Head, "new_l1_head_parent", newL1Head.ParentHash, "new_l1_head", newL1Head)
+	}
+	s.l1Head = newL1Head
+>>>>>>> v0.5.23
 }
 
 // findL1Origin determines what the next L1 Origin should be.
@@ -204,6 +307,20 @@ func (s *state) findL1Origin(ctx context.Context) (eth.L1BlockRef, error) {
 		return eth.L1BlockRef{}, err
 	}
 
+<<<<<<< HEAD
+=======
+	if currentOrigin.Number+1+s.DriverConfig.SequencerConfDepth > s.l1Head.Number {
+		// TODO: we can decide to ignore confirmation depth if we would be forced
+		//  to make an empty block (only deposits) by staying on the current origin.
+		s.log.Info("sequencing with old origin to preserve conf depth",
+			"current", currentOrigin, "current_time", currentOrigin.Time,
+			"l1_head", s.l1Head, "l1_head_time", s.l1Head.Time,
+			"l2_head", s.l2Head, "l2_head_time", s.l2Head.Time,
+			"depth", s.DriverConfig.SequencerConfDepth)
+		return currentOrigin, nil
+	}
+
+>>>>>>> v0.5.23
 	// Attempt to find the next L1 origin block, where the next origin is the immediate child of
 	// the current origin block.
 	nextOrigin, err := s.l1.L1BlockRefByNumber(ctx, currentOrigin.Number+1)
@@ -217,7 +334,10 @@ func (s *state) findL1Origin(ctx context.Context) (eth.L1BlockRef, error) {
 	// could decide to continue to build on top of the previous origin until the Sequencer runs out
 	// of slack. For simplicity, we implement our Sequencer to always start building on the latest
 	// L1 block when we can.
+<<<<<<< HEAD
 	// TODO: Can add confirmation depth here if we want.
+=======
+>>>>>>> v0.5.23
 	if s.l2Head.Time+s.Config.BlockTime >= nextOrigin.Time {
 		return nextOrigin, nil
 	}
@@ -252,14 +372,24 @@ func (s *state) createNewL2Block(ctx context.Context) error {
 	}
 
 	// Actually create the new block.
+<<<<<<< HEAD
 	newUnsafeL2Head, payload, err := s.output.createNewBlock(ctx, s.l2Head, s.l2SafeHead.ID(), s.l2Finalized, l1Origin)
+=======
+	newUnsafeL2Head, payload, err := s.output.createNewBlock(ctx, s.l2Head, s.l2SafeHead.ID(), s.l2Finalized.ID(), l1Origin)
+>>>>>>> v0.5.23
 	if err != nil {
 		s.log.Error("Could not extend chain as sequencer", "err", err, "l2UnsafeHead", s.l2Head, "l1Origin", l1Origin)
 		return err
 	}
 
 	// Update our L2 head block based on the new unsafe block we just generated.
+<<<<<<< HEAD
 	s.l2Head = newUnsafeL2Head
+=======
+	s.derivation.SetUnsafeHead(newUnsafeL2Head)
+	s.l2Head = newUnsafeL2Head
+
+>>>>>>> v0.5.23
 	s.log.Info("Sequenced new l2 block", "l2Head", s.l2Head, "l1Origin", s.l2Head.L1Origin, "txs", len(payload.Transactions), "time", s.l2Head.Time)
 
 	if s.network != nil {
@@ -272,6 +402,7 @@ func (s *state) createNewL2Block(ctx context.Context) error {
 	return nil
 }
 
+<<<<<<< HEAD
 // handleEpoch attempts to insert a full L2 epoch on top of the L2 Safe Head.
 // It ensures that a full sequencing window is available and updates the state as needed.
 func (s *state) handleEpoch(ctx context.Context) (bool, error) {
@@ -343,6 +474,10 @@ func (s *state) handleUnsafeL2Payload(ctx context.Context, payload *eth.Executio
 
 // loop is the event loop that responds to L1 changes and internal timers to produce L2 blocks.
 func (s *state) loop() {
+=======
+// the eventLoop responds to L1 changes and internal timers to produce L2 blocks.
+func (s *state) eventLoop() {
+>>>>>>> v0.5.23
 	defer s.wg.Done()
 	s.log.Info("State loop started")
 
@@ -352,7 +487,11 @@ func (s *state) loop() {
 	// Start a ticker to produce L2 blocks at a constant rate. Ticker will only run if we're
 	// running in Sequencer mode.
 	var l2BlockCreationTickerCh <-chan time.Time
+<<<<<<< HEAD
 	if s.sequencer {
+=======
+	if s.DriverConfig.SequencerEnabled {
+>>>>>>> v0.5.23
 		l2BlockCreationTicker := time.NewTicker(time.Duration(s.Config.BlockTime) * time.Second)
 		defer l2BlockCreationTicker.Stop()
 		l2BlockCreationTickerCh = l2BlockCreationTicker.C
@@ -375,8 +514,12 @@ func (s *state) loop() {
 		}
 	}
 
+<<<<<<< HEAD
 	// reqStep requests that a driver stpe be taken. Won't deadlock if the channel is full.
 	// TODO: Rename step request
+=======
+	// reqStep requests a derivation step to be taken. Won't deadlock if the channel is full.
+>>>>>>> v0.5.23
 	reqStep := func() {
 		select {
 		case stepReqCh <- struct{}{}:
@@ -399,6 +542,13 @@ func (s *state) loop() {
 
 		case <-l2BlockCreationReqCh:
 			s.snapshot("L2 Block Creation Request")
+<<<<<<< HEAD
+=======
+			if !s.idleDerivation {
+				s.log.Warn("not creating block, node is deriving new l2 data", "head_l1", s.l1Head)
+				break
+			}
+>>>>>>> v0.5.23
 			ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			err := s.createNewL2Block(ctx)
 			cancel()
@@ -408,14 +558,20 @@ func (s *state) loop() {
 
 			// We need to catch up to the next origin as quickly as possible. We can do this by
 			// requesting a new block ASAP instead of waiting for the next tick.
+<<<<<<< HEAD
 			// TODO: If we want to consider confirmations, need to consider here too.
 			if s.l1Head.Number > s.l2Head.L1Origin.Number {
+=======
+			// We don't request a block if the confirmation depth is not met.
+			if s.l1Head.Number > s.l2Head.L1Origin.Number+s.DriverConfig.SequencerConfDepth {
+>>>>>>> v0.5.23
 				s.log.Trace("Asking for a second L2 block asap", "l2Head", s.l2Head)
 				// But not too quickly to minimize busy-waiting for new blocks
 				time.AfterFunc(time.Millisecond*10, reqL2BlockCreation)
 			}
 
 		case payload := <-s.unsafeL2Payloads:
+<<<<<<< HEAD
 			s.log.Info("Optimistically processing unsafe L2 execution payload", "id", payload.ID())
 			err := s.handleUnsafeL2Payload(ctx, payload)
 			if err != nil {
@@ -471,12 +627,59 @@ func (s *state) loop() {
 				reqStep()
 			}
 
+=======
+			s.snapshot("New unsafe payload")
+			s.log.Info("Optimistically queueing unsafe L2 execution payload", "id", payload.ID())
+			s.derivation.AddUnsafePayload(payload)
+			reqStep()
+
+		case newL1Head := <-s.l1Heads:
+			s.log.Info("new l1 Head")
+			s.snapshot("New L1 Head")
+			s.handleNewL1Block(newL1Head)
+			reqStep() // a new L1 head may mean we have the data to not get an EOF again.
+		case <-stepReqCh:
+			s.idleDerivation = false
+			s.log.Debug("Derivation process step", "onto_origin", s.derivation.Progress().Origin, "onto_closed", s.derivation.Progress().Closed)
+			stepCtx, cancel := context.WithTimeout(ctx, time.Second*10) // TODO pick a timeout for executing a single step
+			err := s.derivation.Step(stepCtx)
+			cancel()
+			if err == io.EOF {
+				s.log.Debug("Derivation process went idle", "progress", s.derivation.Progress().Origin)
+				s.idleDerivation = true
+				continue
+			} else if err != nil {
+				// If the pipeline corrupts, e.g. due to a reorg, simply reset it
+				s.log.Warn("Derivation pipeline is reset", "err", err)
+				s.derivation.Reset()
+			} else {
+				finalized, safe, unsafe := s.derivation.Finalized(), s.derivation.SafeL2Head(), s.derivation.UnsafeL2Head()
+				// log sync progress when it changes
+				if s.l2Finalized != finalized || s.l2SafeHead != safe || s.l2Head != unsafe {
+					s.log.Info("Sync progress", "finalized", finalized, "safe", safe, "unsafe", unsafe)
+				}
+				// update the heads
+				s.l2Finalized = finalized
+				s.l2SafeHead = safe
+				s.l2Head = unsafe
+				reqStep() // continue with the next step if we can
+			}
+		case respCh := <-s.syncStatusReq:
+			respCh <- SyncStatus{
+				CurrentL1:   s.derivation.Progress().Origin,
+				HeadL1:      s.l1Head,
+				UnsafeL2:    s.l2Head,
+				SafeL2:      s.l2SafeHead,
+				FinalizedL2: s.l2Finalized,
+			}
+>>>>>>> v0.5.23
 		case <-s.done:
 			return
 		}
 	}
 }
 
+<<<<<<< HEAD
 func (s *state) snapshot(event string) {
 	l1HeadJSON, _ := json.Marshal(s.l1Head)
 	l2HeadJSON, _ := json.Marshal(s.l2Head)
@@ -491,4 +694,39 @@ func (s *state) snapshot(event string) {
 		"l2SafeHead", string(l2SafeHeadJSON),
 		"l2FinalizedHead", string(l2FinalizedHeadJSON),
 		"l1WindowBuf", string(l1WindowBufJSON))
+=======
+func (s *state) SyncStatus(ctx context.Context) (*SyncStatus, error) {
+	respCh := make(chan SyncStatus)
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case s.syncStatusReq <- respCh:
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case resp := <-respCh:
+			return &resp, nil
+		}
+	}
+}
+
+// deferJSONString helps avoid a JSON-encoding performance hit if the snapshot logger does not run
+type deferJSONString struct {
+	x any
+}
+
+func (v deferJSONString) String() string {
+	out, _ := json.Marshal(v.x)
+	return string(out)
+}
+
+func (s *state) snapshot(event string) {
+	s.snapshotLog.Info("Rollup State Snapshot",
+		"event", event,
+		"l1Head", deferJSONString{s.l1Head},
+		"l1Current", deferJSONString{s.derivation.Progress().Origin},
+		"l2Head", deferJSONString{s.l2Head},
+		"l2SafeHead", deferJSONString{s.l2SafeHead},
+		"l2FinalizedHead", deferJSONString{s.l2Finalized})
+>>>>>>> v0.5.23
 }

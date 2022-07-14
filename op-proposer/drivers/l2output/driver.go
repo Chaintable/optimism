@@ -95,6 +95,7 @@ func (d *Driver) GetBlockRange(
 		Context: ctx,
 	}
 
+<<<<<<< HEAD
 	// Determine the next uncommitted L2 block number. We do so by transforming
 	// the timestamp of the latest committed L2 block into its block number and
 	// adding one.
@@ -106,10 +107,17 @@ func (d *Driver) GetBlockRange(
 	start, err := d.l2ooContract.ComputeL2BlockNumber(callOpts, l2ooTimestamp)
 	if err != nil {
 		d.l.Error(name+" unable to compute latest l2 block number", "err", err)
+=======
+	// Determine the last committed L2 Block Number
+	start, err := d.l2ooContract.LatestBlockNumber(callOpts)
+	if err != nil {
+		d.l.Error(name+" unable to get latest block number", "err", err)
+>>>>>>> v0.5.23
 		return nil, nil, err
 	}
 	start.Add(start, bigOne)
 
+<<<<<<< HEAD
 	// Next we need to obtain the current timestamp and the next timestamp at
 	// which we will need to submit an L2 output. The former is done by simply
 	// adding the submission interval to the latest committed block's timestamp;
@@ -120,10 +128,20 @@ func (d *Driver) GetBlockRange(
 		return nil, nil, err
 	}
 	latestHeader, err := d.cfg.L1Client.HeaderByNumber(ctx, nil)
+=======
+	// Next determine the L2 block that we need to commit
+	nextBlockNumber, err := d.l2ooContract.NextBlockNumber(callOpts)
+	if err != nil {
+		d.l.Error(name+" unable to get next block number", "err", err)
+		return nil, nil, err
+	}
+	latestHeader, err := d.cfg.L2Client.HeaderByNumber(ctx, nil)
+>>>>>>> v0.5.23
 	if err != nil {
 		d.l.Error(name+" unable to retrieve latest header", "err", err)
 		return nil, nil, err
 	}
+<<<<<<< HEAD
 	currentTimestamp := big.NewInt(int64(latestHeader.Time))
 
 	// If the submission window has yet to elapsed, we must wait before
@@ -132,21 +150,37 @@ func (d *Driver) GetBlockRange(
 	if currentTimestamp.Cmp(nextTimestamp) < 0 {
 		d.l.Info(name+" submission interval has not elapsed",
 			"currentTimestamp", currentTimestamp, "nextTimestamp", nextTimestamp)
+=======
+	currentBlockNumber := big.NewInt(latestHeader.Number.Int64())
+
+	// If we do not have the new L2 Block number
+	if currentBlockNumber.Cmp(nextBlockNumber) < 0 {
+		d.l.Info(name+" submission interval has not elapsed",
+			"currentBlockNumber", currentBlockNumber, "nextBlockNumber", nextBlockNumber)
+>>>>>>> v0.5.23
 		return start, start, nil
 	}
 
 	d.l.Info(name+" submission interval has elapsed",
+<<<<<<< HEAD
 		"currentTimestamp", currentTimestamp, "nextTimestamp", nextTimestamp)
+=======
+		"currentBlockNumber", currentBlockNumber, "nextBlockNumber", nextBlockNumber)
+>>>>>>> v0.5.23
 
 	// Otherwise the submission interval has elapsed. Transform the next
 	// expected timestamp into its L2 block number, and add one since end is
 	// exclusive.
+<<<<<<< HEAD
 	end, err := d.l2ooContract.ComputeL2BlockNumber(callOpts, nextTimestamp)
 	if err != nil {
 		d.l.Error(name+" unable to compute next l2 block number", "err", err)
 		return nil, nil, err
 	}
 	end.Add(end, bigOne)
+=======
+	end := new(big.Int).Add(nextBlockNumber, bigOne)
+>>>>>>> v0.5.23
 
 	return start, end, nil
 }
@@ -174,6 +208,7 @@ func (d *Driver) CraftTx(
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	// Fetch the next expected timestamp that we will submit along with the
 	// L2Output.
 	callOpts := &bind.CallOpts{
@@ -198,11 +233,17 @@ func (d *Driver) CraftTx(
 			expCheckpointBlock.Uint64())
 	}
 
+=======
+>>>>>>> v0.5.23
 	numElements := new(big.Int).Sub(start, end).Uint64()
 	d.l.Info(name+" checkpoint constructed", "start", start, "end", end,
 		"nonce", nonce, "blocks_committed", numElements, "checkpoint_block", nextCheckpointBlock)
 
+<<<<<<< HEAD
 	header, err := d.cfg.L1Client.HeaderByNumber(ctx, nil)
+=======
+	l1Header, err := d.cfg.L1Client.HeaderByNumber(ctx, nil)
+>>>>>>> v0.5.23
 	if err != nil {
 		return nil, fmt.Errorf("error resolving checkpoint block: %v", err)
 	}
@@ -212,8 +253,13 @@ func (d *Driver) CraftTx(
 		return nil, fmt.Errorf("error resolving checkpoint block: %v", err)
 	}
 
+<<<<<<< HEAD
 	if l2Header.Time != timestamp.Uint64() {
 		return nil, fmt.Errorf("invalid timestamp: next timestamp is %v, timestamp of block is %v", timestamp, l2Header.Time)
+=======
+	if l2Header.Number.Cmp(nextCheckpointBlock) != 0 {
+		return nil, fmt.Errorf("invalid blockNumber: next blockNumber is %v, blockNumber of block is %v", nextCheckpointBlock, l2Header.Number)
+>>>>>>> v0.5.23
 	}
 
 	opts, err := bind.NewKeyedTransactorWithChainID(
@@ -226,7 +272,11 @@ func (d *Driver) CraftTx(
 	opts.Nonce = nonce
 	opts.NoSend = true
 
+<<<<<<< HEAD
 	return d.l2ooContract.AppendL2Output(opts, l2OutputRoot, timestamp, header.Hash(), header.Number)
+=======
+	return d.l2ooContract.AppendL2Output(opts, l2OutputRoot, nextCheckpointBlock, l1Header.Hash(), l1Header.Number)
+>>>>>>> v0.5.23
 }
 
 // UpdateGasPrice signs an otherwise identical txn to the one provided but with

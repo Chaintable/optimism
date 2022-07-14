@@ -12,17 +12,40 @@ import { Transactor } from "./Transactor.sol";
  */
 contract AssetReceiver is Transactor {
     /**
+<<<<<<< HEAD
      * Emitted when ETH is received by this address.
+=======
+     * @notice Emitted when ETH is received by this address.
+     *
+     * @param from Address that sent ETH to this contract.
+>>>>>>> v0.5.23
      */
     event ReceivedETH(address indexed from, uint256 amount);
 
     /**
+<<<<<<< HEAD
      * Emitted when ETH is withdrawn from this address.
+=======
+     * @notice Emitted when ETH is withdrawn from this address.
+     *
+     * @param withdrawer Address that triggered the withdrawal.
+     * @param recipient  Address that received the withdrawal.
+     * @param amount     ETH amount withdrawn.
+>>>>>>> v0.5.23
      */
     event WithdrewETH(address indexed withdrawer, address indexed recipient, uint256 amount);
 
     /**
+<<<<<<< HEAD
      * Emitted when ERC20 tokens are withdrawn from this address.
+=======
+     * @notice Emitted when ERC20 tokens are withdrawn from this address.
+     *
+     * @param withdrawer Address that triggered the withdrawal.
+     * @param recipient  Address that received the withdrawal.
+     * @param asset      Address of the token being withdrawn.
+     * @param amount     ERC20 amount withdrawn.
+>>>>>>> v0.5.23
      */
     event WithdrewERC20(
         address indexed withdrawer,
@@ -32,7 +55,16 @@ contract AssetReceiver is Transactor {
     );
 
     /**
+<<<<<<< HEAD
      * Emitted when ERC721 tokens are withdrawn from this address.
+=======
+     * @notice Emitted when ERC20 tokens are withdrawn from this address.
+     *
+     * @param withdrawer Address that triggered the withdrawal.
+     * @param recipient  Address that received the withdrawal.
+     * @param asset      Address of the token being withdrawn.
+     * @param id         Token ID being withdrawn.
+>>>>>>> v0.5.23
      */
     event WithdrewERC721(
         address indexed withdrawer,
@@ -47,14 +79,22 @@ contract AssetReceiver is Transactor {
     constructor(address _owner) Transactor(_owner) {}
 
     /**
+<<<<<<< HEAD
      * Make sure we can receive ETH.
+=======
+     * @notice Make sure we can receive ETH.
+>>>>>>> v0.5.23
      */
     receive() external payable {
         emit ReceivedETH(msg.sender, msg.value);
     }
 
     /**
+<<<<<<< HEAD
      * Withdraws full ETH balance to the recipient.
+=======
+     * @notice Withdraws full ETH balance to the recipient.
+>>>>>>> v0.5.23
      *
      * @param _to Address to receive the ETH balance.
      */
@@ -63,9 +103,15 @@ contract AssetReceiver is Transactor {
     }
 
     /**
+<<<<<<< HEAD
      * Withdraws partial ETH balance to the recipient.
      *
      * @param _to Address to receive the ETH balance.
+=======
+     * @notice Withdraws partial ETH balance to the recipient.
+     *
+     * @param _to     Address to receive the ETH balance.
+>>>>>>> v0.5.23
      * @param _amount Amount of ETH to withdraw.
      */
     function withdrawETH(address payable _to, uint256 _amount) public onlyOwner {
@@ -75,20 +121,34 @@ contract AssetReceiver is Transactor {
     }
 
     /**
+<<<<<<< HEAD
      * Withdraws full ERC20 balance to the recipient.
      *
      * @param _asset ERC20 token to withdraw.
      * @param _to Address to receive the ERC20 balance.
+=======
+     * @notice Withdraws full ERC20 balance to the recipient.
+     *
+     * @param _asset ERC20 token to withdraw.
+     * @param _to    Address to receive the ERC20 balance.
+>>>>>>> v0.5.23
      */
     function withdrawERC20(ERC20 _asset, address _to) external onlyOwner {
         withdrawERC20(_asset, _to, _asset.balanceOf(address(this)));
     }
 
     /**
+<<<<<<< HEAD
      * Withdraws partial ERC20 balance to the recipient.
      *
      * @param _asset ERC20 token to withdraw.
      * @param _to Address to receive the ERC20 balance.
+=======
+     * @notice Withdraws partial ERC20 balance to the recipient.
+     *
+     * @param _asset  ERC20 token to withdraw.
+     * @param _to     Address to receive the ERC20 balance.
+>>>>>>> v0.5.23
      * @param _amount Amount of ERC20 to withdraw.
      */
     function withdrawERC20(
@@ -103,11 +163,19 @@ contract AssetReceiver is Transactor {
     }
 
     /**
+<<<<<<< HEAD
      * Withdraws ERC721 token to the recipient.
      *
      * @param _asset ERC721 token to withdraw.
      * @param _to Address to receive the ERC721 token.
      * @param _id Token ID of the ERC721 token to withdraw.
+=======
+     * @notice Withdraws ERC721 token to the recipient.
+     *
+     * @param _asset ERC721 token to withdraw.
+     * @param _to    Address to receive the ERC721 token.
+     * @param _id    Token ID of the ERC721 token to withdraw.
+>>>>>>> v0.5.23
      */
     function withdrawERC721(
         ERC721 _asset,

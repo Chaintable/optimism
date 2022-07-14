@@ -178,6 +178,15 @@ func TestWS(t *testing.T) {
 			"{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"parse error\"},\"id\":null}",
 			"{\"jsonrpc\": \"2.0\", \"method\": true}",
 		},
+<<<<<<< HEAD
+=======
+		{
+			"eth_accounts",
+			"{}",
+			"{\"jsonrpc\":\"2.0\",\"result\":[],\"id\":1}",
+			"{\"jsonrpc\": \"2.0\", \"method\": \"eth_accounts\", \"id\": 1}",
+		},
+>>>>>>> v0.5.23
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

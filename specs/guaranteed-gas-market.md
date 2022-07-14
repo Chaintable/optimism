@@ -4,9 +4,16 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
+<<<<<<< HEAD
 - [Gas Stipend](#gas-stipend)
 - [Limiting Guaranteed Gas](#limiting-guaranteed-gas)
 - [Rationale for burning L1 Gas](#rationale-for-burning-l1-gas)
+=======
+- [Guaranteed Gas Fee Market](#guaranteed-gas-fee-market)
+  - [Gas Stipend](#gas-stipend)
+  - [Limiting Guaranteed Gas](#limiting-guaranteed-gas)
+  - [Rationale for burning L1 Gas](#rationale-for-burning-l1-gas)
+>>>>>>> v0.5.23
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

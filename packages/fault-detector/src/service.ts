@@ -81,6 +81,10 @@ export class FaultDetector extends BaseServiceV2<Options, Metrics, State> {
       l1SignerOrProvider: this.options.l1RpcProvider,
       l2SignerOrProvider: this.options.l2RpcProvider,
       l1ChainId: await getChainId(this.options.l1RpcProvider),
+<<<<<<< HEAD
+=======
+      l2ChainId: await getChainId(this.options.l2RpcProvider),
+>>>>>>> v0.5.23
     })
 
     // We use this a lot, a bit cleaner to pull out to the top level of the state object.
@@ -135,6 +139,19 @@ export class FaultDetector extends BaseServiceV2<Options, Metrics, State> {
 
     const batchStart = event.args._prevTotalElements.toNumber() + 1
     const batchSize = event.args._batchSize.toNumber()
+<<<<<<< HEAD
+=======
+    const batchEnd = batchStart + batchSize
+
+    const latestBlock = await this.options.l2RpcProvider.getBlockNumber()
+    if (latestBlock < batchEnd) {
+      this.logger.info(`node is behind, waiting for sync`, {
+        batchEnd,
+        latestBlock,
+      })
+      return
+    }
+>>>>>>> v0.5.23
 
     // `getBlockRange` has a limit of 1000 blocks, so we have to break this request out into
     // multiple requests of maximum 1000 blocks in the case that batchSize > 1000.

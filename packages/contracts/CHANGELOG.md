@@ -1,5 +1,23 @@
 # Changelog
 
+<<<<<<< HEAD
+=======
+## 0.5.30
+
+### Patch Changes
+
+- 6e3449ba: Properly export typechain
+- Updated dependencies [f9fee446]
+  - @eth-optimism/core-utils@0.9.1
+
+## 0.5.29
+
+### Patch Changes
+
+- Updated dependencies [700dcbb0]
+  - @eth-optimism/core-utils@0.9.0
+
+>>>>>>> v0.5.23
 ## 0.5.28
 
 ### Patch Changes

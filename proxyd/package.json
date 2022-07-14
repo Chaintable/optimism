@@ -1,6 +1,10 @@
 {
   "name": "@eth-optimism/proxyd",
+<<<<<<< HEAD:proxyd/package.json
   "version": "3.8.8",
+=======
+  "version": "3.8.9",
+>>>>>>> v0.5.23:go/proxyd/package.json
   "private": true,
   "dependencies": {}
 }

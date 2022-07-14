@@ -4,6 +4,10 @@ pragma solidity 0.8.10;
 import { Bridge_Initializer } from "./CommonTest.t.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { CrossDomainMessenger } from "../universal/CrossDomainMessenger.sol";
+<<<<<<< HEAD
+=======
+import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
+>>>>>>> v0.5.23
 import { console } from "forge-std/console.sol";
 
 contract L2StandardBridge_Test is Bridge_Initializer {
@@ -43,6 +47,24 @@ contract L2StandardBridge_Test is Bridge_Initializer {
         assertEq(address(messagePasser).balance, 100);
     }
 
+<<<<<<< HEAD
+=======
+    // withrdraw
+    // - requires amount == msg.value
+    function test_cannotWithdrawEthWithoutSendingIt() external {
+        assertEq(address(messagePasser).balance, 0);
+
+        vm.expectRevert("ETH withdrawals must include sufficient ETH value.");
+        vm.prank(alice, alice);
+        L2Bridge.withdraw(
+            address(PredeployAddresses.LEGACY_ERC20_ETH),
+            100,
+            1000,
+            hex""
+        );
+    }
+
+>>>>>>> v0.5.23
     // withdraw
     // - token is burned
     // - emits WithdrawalInitiated
@@ -65,6 +87,22 @@ contract L2StandardBridge_Test is Bridge_Initializer {
         assertEq(L2Token.balanceOf(alice), 0);
     }
 
+<<<<<<< HEAD
+=======
+    function test_withdraw_onlyEOA() external {
+        // This contract has 100 L2Token
+        deal(address(L2Token), address(this), 100, true);
+
+        vm.expectRevert("Account not EOA");
+        L2Bridge.withdraw(
+            address(L2Token),
+            100,
+            1000,
+            hex""
+        );
+    }
+
+>>>>>>> v0.5.23
     // withdrawTo
     // - token is burned
     // - emits WithdrawalInitiated w/ correct recipient
@@ -117,13 +155,20 @@ contract L2StandardBridge_Test is Bridge_Initializer {
     // - invalid deposit calls Withdrawer.initiateWithdrawal
     function test_finalizeDeposit_failsToCompleteOutboundTransfer() external {
         // TODO: events and calls
+<<<<<<< HEAD
         address invalidL2Token = address(0x1234);
 
+=======
+>>>>>>> v0.5.23
         vm.mockCall(
             address(L2Bridge.messenger()),
             abi.encodeWithSelector(CrossDomainMessenger.xDomainMessageSender.selector),
             abi.encode(address(L2Bridge.otherBridge()))
         );
+<<<<<<< HEAD
+=======
+        address invalidL2Token = address(0x1234);
+>>>>>>> v0.5.23
         vm.prank(address(L2Messenger));
         vm.expectEmit(true, true, true, true);
         emit ERC20BridgeInitiated(
@@ -152,5 +197,24 @@ contract L2StandardBridge_Test is Bridge_Initializer {
             hex""
         );
     }
+<<<<<<< HEAD
+=======
+
+    // finalizeBridgeERC20
+    // - fails when the local token's address equals bridge address
+    function test_ERC20BridgeFailed_whenLocalTokenIsBridge() external {
+        vm.mockCall(
+            address(L2Bridge.messenger()),
+            abi.encodeWithSelector(CrossDomainMessenger.xDomainMessageSender.selector),
+            abi.encode(address(L2Bridge.otherBridge()))
+        );
+        // fails when the local token's address equals bridge address
+        vm.expectEmit(true, true, true, true);
+        emit ERC20BridgeFailed(address(L2Bridge), address(L1Token), alice, bob, 100, hex"");
+
+        vm.prank(address(L2Messenger));
+        L2Bridge.finalizeDeposit(address(L1Token), address(L2Bridge), alice, bob, 100, hex"");
+    }
+>>>>>>> v0.5.23
 }
 

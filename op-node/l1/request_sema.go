@@ -4,17 +4,30 @@ import (
 	"context"
 	"sync"
 
+<<<<<<< HEAD
+=======
+	"github.com/ethereum-optimism/optimism/op-node/client"
+
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type limitClient struct {
+<<<<<<< HEAD
 	c    RPCClient
+=======
+	c    client.RPC
+>>>>>>> v0.5.23
 	sema chan struct{}
 	wg   sync.WaitGroup
 }
 
 // LimitRPC limits concurrent RPC requests (excluding subscriptions) to a given number by wrapping the client with a semaphore.
+<<<<<<< HEAD
 func LimitRPC(c RPCClient, concurrentRequests int) RPCClient {
+=======
+func LimitRPC(c client.RPC, concurrentRequests int) client.RPC {
+>>>>>>> v0.5.23
 	return &limitClient{
 		c: c,
 		// the capacity of the channel determines how many go-routines can concurrently execute requests with the wrapped client.

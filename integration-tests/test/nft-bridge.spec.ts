@@ -1,10 +1,18 @@
 /* Imports: External */
 import { Contract, ContractFactory, utils, Wallet } from 'ethers'
 import { ethers } from 'hardhat'
+<<<<<<< HEAD
 import { predeploys } from '@eth-optimism/contracts'
 import Artifact__TestERC721 from '@eth-optimism/contracts-periphery/artifacts/contracts/testing/helpers/TestERC721.sol/TestERC721.json'
 import Artifact__L1ERC721Bridge from '@eth-optimism/contracts-periphery/artifacts/contracts/L1/messaging/L1ERC721Bridge.sol/L1ERC721Bridge.json'
 import Artifact__L2ERC721Bridge from '@eth-optimism/contracts-periphery/artifacts/contracts/L2/messaging/L2ERC721Bridge.sol/L2ERC721Bridge.json'
+=======
+import { getChainId } from '@eth-optimism/core-utils'
+import { predeploys } from '@eth-optimism/contracts'
+import Artifact__TestERC721 from '@eth-optimism/contracts-periphery/artifacts/contracts/testing/helpers/TestERC721.sol/TestERC721.json'
+import Artifact__L1ERC721Bridge from '@eth-optimism/contracts-periphery/artifacts/contracts/L1/L1ERC721Bridge.sol/L1ERC721Bridge.json'
+import Artifact__L2ERC721Bridge from '@eth-optimism/contracts-periphery/artifacts/contracts/L2/L2ERC721Bridge.sol/L2ERC721Bridge.json'
+>>>>>>> v0.5.23
 import Artifact__OptimismMintableERC721Factory from '@eth-optimism/contracts-periphery/artifacts/contracts/universal/op-erc721/OptimismMintableERC721Factory.sol/OptimismMintableERC721Factory.json'
 import Artifact__OptimismMintableERC721 from '@eth-optimism/contracts-periphery/artifacts/contracts/universal/op-erc721/OptimismMintableERC721.sol/OptimismMintableERC721.json'
 
@@ -99,7 +107,12 @@ describe('ERC721 Bridge', () => {
 
     OptimismMintableERC721Factory =
       await Factory__OptimismMintableERC721Factory.deploy(
+<<<<<<< HEAD
         L2ERC721Bridge.address
+=======
+        L2ERC721Bridge.address,
+        await getChainId(env.l1Wallet.provider)
+>>>>>>> v0.5.23
       )
     await OptimismMintableERC721Factory.deployed()
 
@@ -268,7 +281,14 @@ describe('ERC721 Bridge', () => {
       // - Returns the address of the legitimate L1 token from its l1Token() getter.
       // - Allows the L2 bridge to call its burn() function.
       const FakeOptimismMintableERC721 = await (
+<<<<<<< HEAD
         await ethers.getContractFactory('FakeOptimismMintableERC721', bobWalletL2)
+=======
+        await ethers.getContractFactory(
+          'FakeOptimismMintableERC721',
+          bobWalletL2
+        )
+>>>>>>> v0.5.23
       ).deploy(L1ERC721.address, L2ERC721Bridge.address)
       await FakeOptimismMintableERC721.deployed()
 

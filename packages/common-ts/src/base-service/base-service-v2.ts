@@ -34,8 +34,11 @@ export type OptionsSpec<TOptions extends Options> = {
   }
 }
 
-export type MetricsV2 = {
-  [key: string]: Metric
+export type MetricsV2 = Record<any, Metric>
+
+export type StandardMetrics = {
+  metadata: Gauge
+  unhandledErrors: Counter
 }
 
 export type StandardMetrics = {
@@ -146,6 +149,7 @@ export abstract class BaseServiceV2<
    * @param params.port Port for the app server. Defaults to 7300.
    * @param params.hostname Hostname for the app server. Defaults to 0.0.0.0.
    */
+<<<<<<< HEAD
   constructor(params: {
     name: string
     version: string
@@ -157,6 +161,21 @@ export abstract class BaseServiceV2<
     port?: number
     hostname?: string
   }) {
+=======
+  constructor(
+    private readonly params: {
+      name: string
+      version: string
+      optionsSpec: OptionsSpec<TOptions>
+      metricsSpec: MetricsSpec<TMetrics>
+      options?: Partial<TOptions>
+      loop?: boolean
+      loopIntervalMs?: number
+      port?: number
+      hostname?: string
+    }
+  ) {
+>>>>>>> v0.5.23
     this.loop = params.loop !== undefined ? params.loop : true
     this.state = {} as TServiceState
 
@@ -401,6 +420,7 @@ export abstract class BaseServiceV2<
           },
         })
       )
+<<<<<<< HEAD
 
       // Metrics.
       // Will expose a /metrics endpoint by default.
@@ -426,6 +446,44 @@ export abstract class BaseServiceV2<
         this.routes(router)
         app.use('/api', router)
       }
+=======
+
+      // Health status.
+      app.get('/healthz', async (req, res) => {
+        return res.json({
+          ok: this.healthy,
+          version: this.params.version,
+        })
+      })
+
+      // Register user routes.
+      const router = express.Router()
+      if (this.routes) {
+        this.routes(router)
+      }
+
+      // Metrics.
+      // Will expose a /metrics endpoint by default.
+      app.use(
+        promBundle({
+          promRegistry: this.metricsRegistry,
+          includeMethod: true,
+          includePath: true,
+          includeStatusCode: true,
+          normalizePath: (req) => {
+            for (const layer of router.stack) {
+              if (layer.route && req.path.match(layer.regexp)) {
+                return layer.route.path
+              }
+            }
+
+            return '/invalid_path_not_a_real_route'
+          },
+        })
+      )
+
+      app.use('/api', router)
+>>>>>>> v0.5.23
 
       // Wait for server to come up.
       await new Promise((resolve) => {

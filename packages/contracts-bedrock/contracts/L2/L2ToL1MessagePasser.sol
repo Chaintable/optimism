@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+<<<<<<< HEAD
 import { WithdrawalVerifier } from "../libraries/Lib_WithdrawalVerifier.sol";
 import { Burn } from "../libraries/Burn.sol";
+=======
+import { Hashing } from "../libraries/Hashing.sol";
+import { Burn } from "../libraries/Burn.sol";
+import { Semver } from "../universal/Semver.sol";
+>>>>>>> v0.5.23
 
 /**
  * @custom:proxied
@@ -12,7 +18,11 @@ import { Burn } from "../libraries/Burn.sol";
  *         L2 to L1 can be stored. The storage root of this contract is pulled up to the top level
  *         of the L2 output to reduce the cost of proving the existence of sent messages.
  */
+<<<<<<< HEAD
 contract L2ToL1MessagePasser {
+=======
+contract L2ToL1MessagePasser is Semver {
+>>>>>>> v0.5.23
     /**
      * @notice Emitted any time a withdrawal is initiated.
      *
@@ -40,6 +50,14 @@ contract L2ToL1MessagePasser {
     event WithdrawerBalanceBurnt(uint256 indexed amount);
 
     /**
+<<<<<<< HEAD
+=======
+     * @notice The L1 gas limit set when eth is withdrawn using the receive() function.
+     */
+    uint256 internal constant RECEIVE_DEFAULT_GAS_LIMIT = 100_000;
+
+    /**
+>>>>>>> v0.5.23
      * @notice Includes the message hashes for all withdrawals
      */
     mapping(bytes32 => bool) public sentMessages;
@@ -50,10 +68,22 @@ contract L2ToL1MessagePasser {
     uint256 public nonce;
 
     /**
+<<<<<<< HEAD
      * @notice Allows users to withdraw ETH by sending directly to this contract.
      */
     receive() external payable {
         initiateWithdrawal(msg.sender, 100000, bytes(""));
+=======
+     * @custom:semver 0.0.1
+     */
+    constructor() Semver(0, 0, 1) {}
+
+    /**
+     * @notice Allows users to withdraw ETH by sending directly to this contract.
+     */
+    receive() external payable {
+        initiateWithdrawal(msg.sender, RECEIVE_DEFAULT_GAS_LIMIT, bytes(""));
+>>>>>>> v0.5.23
     }
 
     /**
@@ -68,7 +98,11 @@ contract L2ToL1MessagePasser {
         uint256 _gasLimit,
         bytes memory _data
     ) public payable {
+<<<<<<< HEAD
         bytes32 withdrawalHash = WithdrawalVerifier.withdrawalHash(
+=======
+        bytes32 withdrawalHash = Hashing.hashWithdrawal(
+>>>>>>> v0.5.23
             nonce,
             msg.sender,
             _target,

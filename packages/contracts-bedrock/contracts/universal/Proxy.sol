@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 /**
  * @title Proxy
+<<<<<<< HEAD
  * @notice Proxy is a transparent proxy that passes through the call
  *         if the caller is the owner or if the caller is `address(0)`,
  *         meaning that the call originated from an offchain simulation.
@@ -11,14 +12,29 @@ contract Proxy {
     /**
      * @notice An event that is emitted each time the implementation is changed.
      *         This event is part of the EIP 1967 spec.
+=======
+ * @notice Proxy is a transparent proxy that passes through the call if the caller is the owner or
+ *         if the caller is address(0), meaning that the call originated from an off-chain
+ *         simulation.
+ */
+contract Proxy {
+    /**
+     * @notice An event that is emitted each time the implementation is changed. This event is part
+     *         of the EIP-1967 specification.
+>>>>>>> v0.5.23
      *
      * @param implementation The address of the implementation contract
      */
     event Upgraded(address indexed implementation);
 
     /**
+<<<<<<< HEAD
      * @notice An event that is emitted each time the owner is upgraded.
      *         This event is part of the EIP 1967 spec.
+=======
+     * @notice An event that is emitted each time the owner is upgraded. This event is part of the
+     *         EIP-1967 specification.
+>>>>>>> v0.5.23
      *
      * @param previousAdmin The previous owner of the contract
      * @param newAdmin      The new owner of the contract
@@ -40,12 +56,21 @@ contract Proxy {
         0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
     /**
+<<<<<<< HEAD
      * @notice set the initial owner during contract deployment. The
      *         owner is stored at the eip1967 owner storage slot so that
      *         storage collision with the implementation is not possible.
      *
      * @param _admin Address of the initial contract owner. The owner has
      *               the ability to access the transparent proxy interface.
+=======
+     * @notice Sets the initial admin during contract deployment. Admin address is stored at the
+     *         EIP-1967 admin storage slot so that accidental storage collision with the
+     *         implementation is not possible.
+     *
+     * @param _admin Address of the initial contract admin. Admin as the ability to access the
+     *               transparent proxy interface.
+>>>>>>> v0.5.23
      */
     constructor(address _admin) {
         _changeAdmin(_admin);
@@ -57,12 +82,26 @@ contract Proxy {
         _doProxyCall();
     }
 
+<<<<<<< HEAD
     /**
      * @notice A modifier that reverts if not called by the owner
      *         or by `address(0)` to allow `eth_call` to interact
      *         with the proxy without needing to use low level storage
      *         inspection. It is assumed that nobody controls the private
      *         key for `address(0)`.
+=======
+    // slither-disable-next-line locked-ether
+    receive() external payable {
+        // Proxy call by default.
+        _doProxyCall();
+    }
+
+    /**
+     * @notice A modifier that reverts if not called by the owner or by address(0) to allow
+     *         eth_call to interact with this proxy without needing to use low-level storage
+     *         inspection. We assume that nobody is able to trigger calls from address(0) during
+     *         normal EVM execution.
+>>>>>>> v0.5.23
      */
     modifier proxyCallIfNotAdmin() {
         if (msg.sender == _getAdmin() || msg.sender == address(0)) {
@@ -74,16 +113,24 @@ contract Proxy {
     }
 
     /**
+<<<<<<< HEAD
      * @notice Set the implementation contract address. The code at this
      *         address will execute when this contract is called.
      *
      * @param _implementation The address of the implementation contract
+=======
+     * @notice Set the implementation contract address. The code at the given address will execute
+     *         when this contract is called.
+     *
+     * @param _implementation Address of the implementation contract.
+>>>>>>> v0.5.23
      */
     function upgradeTo(address _implementation) external proxyCallIfNotAdmin {
         _setImplementation(_implementation);
     }
 
     /**
+<<<<<<< HEAD
      * @notice Set the implementation and call a function in a single
      *         transaction. This is useful to ensure atomic `initialize()`
      *         based upgrades.
@@ -91,6 +138,13 @@ contract Proxy {
      * @param _implementation The address of the implementation contract
      * @param _data           The calldata to delegatecall the new
      *                        implementation with
+=======
+     * @notice Set the implementation and call a function in a single transaction. Useful to ensure
+     *         atomic execution of initialization-based upgrades.
+     *
+     * @param _implementation Address of the implementation contract.
+     * @param _data           Calldata to delegatecall the new implementation with.
+>>>>>>> v0.5.23
      */
     function upgradeToAndCall(address _implementation, bytes calldata _data)
         external
@@ -100,7 +154,11 @@ contract Proxy {
     {
         _setImplementation(_implementation);
         (bool success, bytes memory returndata) = _implementation.delegatecall(_data);
+<<<<<<< HEAD
         require(success);
+=======
+        require(success, "Proxy: delegatecall to new implementation contract failed");
+>>>>>>> v0.5.23
         return returndata;
     }
 
@@ -146,6 +204,7 @@ contract Proxy {
     /**
      * @notice Queries the implementation address.
      *
+<<<<<<< HEAD
      * @return implementation address.
      */
     function _getImplementation() internal view returns (address) {
@@ -154,6 +213,16 @@ contract Proxy {
             implementation := sload(IMPLEMENTATION_KEY)
         }
         return implementation;
+=======
+     * @return Implementation address.
+     */
+    function _getImplementation() internal view returns (address) {
+        address impl;
+        assembly {
+            impl := sload(IMPLEMENTATION_KEY)
+        }
+        return impl;
+>>>>>>> v0.5.23
     }
 
     /**
@@ -172,7 +241,11 @@ contract Proxy {
     /**
      * @notice Queries the owner of the proxy contract.
      *
+<<<<<<< HEAD
      * @return owner address.
+=======
+     * @return Owner address.
+>>>>>>> v0.5.23
      */
     function _getAdmin() internal view returns (address) {
         address owner;
@@ -186,16 +259,25 @@ contract Proxy {
      * @notice Performs the proxy call via a delegatecall.
      */
     function _doProxyCall() internal {
+<<<<<<< HEAD
         address implementation = _getImplementation();
 
         require(implementation != address(0), "Proxy: implementation not initialized");
+=======
+        address impl = _getImplementation();
+        require(impl != address(0), "Proxy: implementation not initialized");
+>>>>>>> v0.5.23
 
         assembly {
             // Copy calldata into memory at 0x0....calldatasize.
             calldatacopy(0x0, 0x0, calldatasize())
 
             // Perform the delegatecall, make sure to pass all available gas.
+<<<<<<< HEAD
             let success := delegatecall(gas(), implementation, 0x0, calldatasize(), 0x0, 0x0)
+=======
+            let success := delegatecall(gas(), impl, 0x0, calldatasize(), 0x0, 0x0)
+>>>>>>> v0.5.23
 
             // Copy returndata into memory at 0x0....returndatasize. Note that this *will*
             // overwrite the calldata that we just copied into memory but that doesn't really

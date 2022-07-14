@@ -1,18 +1,26 @@
 package driver
 
 import (
+<<<<<<< HEAD
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"math/big"
+=======
+	"context"
+	"fmt"
+>>>>>>> v0.5.23
 	"time"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 
+<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/common"
+=======
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
@@ -20,6 +28,7 @@ import (
 
 type outputImpl struct {
 	dl     Downloader
+<<<<<<< HEAD
 	l2     Engine
 	log    log.Logger
 	Config rollup.Config
@@ -72,6 +81,11 @@ func (d *outputImpl) processBlock(ctx context.Context, l2Head eth.L2BlockRef, l2
 		return fmt.Errorf("failed to persist forkchoice update: %v", err)
 	}
 	return nil
+=======
+	l2     derive.Engine
+	log    log.Logger
+	Config *rollup.Config
+>>>>>>> v0.5.23
 }
 
 func (d *outputImpl) createNewBlock(ctx context.Context, l2Head eth.L2BlockRef, l2SafeHead eth.BlockID, l2Finalized eth.BlockID, l1Origin eth.L1BlockRef) (eth.L2BlockRef, *eth.ExecutionPayload, error) {
@@ -80,7 +94,11 @@ func (d *outputImpl) createNewBlock(ctx context.Context, l2Head eth.L2BlockRef, 
 	fetchCtx, cancel := context.WithTimeout(ctx, time.Second*20)
 	defer cancel()
 
+<<<<<<< HEAD
 	var l1Info derive.L1Info
+=======
+	var l1Info eth.L1Info
+>>>>>>> v0.5.23
 	var receipts types.Receipts
 	var err error
 
@@ -90,9 +108,25 @@ func (d *outputImpl) createNewBlock(ctx context.Context, l2Head eth.L2BlockRef, 
 	// case we need to fetch all transaction receipts from the L1 origin block so we can scan for
 	// user deposits.
 	if l2Head.L1Origin.Number != l1Origin.Number {
+<<<<<<< HEAD
 		l1Info, _, receipts, err = d.dl.Fetch(fetchCtx, l1Origin.Hash)
 		seqNumber = 0 // reset sequence number at the start of the epoch
 	} else {
+=======
+		if l2Head.L1Origin.Hash != l1Origin.ParentHash {
+			d.log.Error("SEQUENCING BUG: cannot create new block on top of l2Head with new origin", "head", l2Head,
+				"head_origin", l2Head.L1Origin, "head_seq_nr", l2Head.SequenceNumber, "new_origin", l1Origin, "new_origin_parent", l1Origin.ParentID())
+			return l2Head, nil, fmt.Errorf("cannot create new block with L1 origin %s (parent %s) on top of L1 origin %s", l1Origin, l1Origin.ParentID(), l2Head.L1Origin)
+		}
+		l1Info, _, receipts, err = d.dl.Fetch(fetchCtx, l1Origin.Hash)
+		seqNumber = 0 // reset sequence number at the start of the epoch
+	} else {
+		if l2Head.L1Origin.Hash != l1Origin.Hash {
+			d.log.Error("SEQUENCING BUG: cannot create new block on top of l2Head with different origin at same height",
+				"head", l2Head, "head_origin", l2Head.L1Origin, "head_seq_nr", l2Head.SequenceNumber, "new_origin", l1Origin, "new_origin_parent", l1Origin.ParentID())
+			return l2Head, nil, fmt.Errorf("cannot create new block with L1 origin %s (parent %s) on top of L1 origin %s", l1Origin, l1Origin.ParentID(), l2Head.L1Origin)
+		}
+>>>>>>> v0.5.23
 		l1Info, err = d.dl.InfoByHash(fetchCtx, l1Origin.Hash)
 	}
 	if err != nil {
@@ -144,9 +178,18 @@ func (d *outputImpl) createNewBlock(ctx context.Context, l2Head eth.L2BlockRef, 
 	}
 
 	// Actually execute the block and add it to the head of the chain.
+<<<<<<< HEAD
 	payload, err := d.insertHeadBlock(ctx, fc, attrs, false)
 	if err != nil {
 		return l2Head, nil, fmt.Errorf("failed to extend L2 chain: %v", err)
+=======
+	payload, rpcErr, payloadErr := derive.InsertHeadBlock(ctx, d.log, d.l2, fc, attrs, false)
+	if rpcErr != nil {
+		return l2Head, nil, fmt.Errorf("failed to extend L2 chain due to RPC error: %v", rpcErr)
+	}
+	if payloadErr != nil {
+		return l2Head, nil, fmt.Errorf("failed to extend L2 chain, cannot produce valid payload: %v", payloadErr)
+>>>>>>> v0.5.23
 	}
 
 	// Generate an L2 block ref from the payload.
@@ -154,6 +197,7 @@ func (d *outputImpl) createNewBlock(ctx context.Context, l2Head eth.L2BlockRef, 
 
 	return ref, payload, err
 }
+<<<<<<< HEAD
 
 // insertEpoch creates and inserts one epoch on top of the safe head. It prefers blocks it creates to what is recorded in the unsafe chain.
 // It returns the new L2 head and L2 Safe head and if there was a reorg. This function must return if there was a reorg otherwise the L2 chain must be traversed.
@@ -407,3 +451,5 @@ func (d *outputImpl) insertHeadBlock(ctx context.Context, fc eth.ForkchoiceState
 	}
 	return payload, nil
 }
+=======
+>>>>>>> v0.5.23

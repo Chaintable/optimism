@@ -7,7 +7,11 @@ const deployFn: DeployFunction = async (hre) => {
 
   await hre.deployments.deploy('OptimismMintableERC721Factory', {
     from: deployer,
+<<<<<<< HEAD
     args: [ethers.constants.AddressZero],
+=======
+    args: [ethers.constants.AddressZero, 0],
+>>>>>>> v0.5.23
     log: true,
   })
 }

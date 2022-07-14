@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
@@ -6,6 +7,19 @@ import { WithdrawalVerifier } from "../libraries/Lib_WithdrawalVerifier.sol";
 import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
 import { ExcessivelySafeCall } from "../libraries/ExcessivelySafeCall.sol";
 import { ResourceMetering } from "./ResourceMetering.sol";
+=======
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { ExcessivelySafeCall } from "excessively-safe-call/src/ExcessivelySafeCall.sol";
+import { L2OutputOracle } from "./L2OutputOracle.sol";
+import { Hashing } from "../libraries/Hashing.sol";
+import { SecureMerkleTrie } from "../libraries/trie/SecureMerkleTrie.sol";
+import { AddressAliasHelper } from "../vendor/AddressAliasHelper.sol";
+import { ResourceMetering } from "./ResourceMetering.sol";
+import { Semver } from "../universal/Semver.sol";
+>>>>>>> v0.5.23
 
 /**
  * @custom:proxied
@@ -14,7 +28,11 @@ import { ResourceMetering } from "./ResourceMetering.sol";
  *         and L2. Messages sent directly to the OptimismPortal have no form of replayability.
  *         Users are encouraged to use the L1CrossDomainMessenger for a higher-level interface.
  */
+<<<<<<< HEAD
 contract OptimismPortal is ResourceMetering {
+=======
+contract OptimismPortal is Initializable, ResourceMetering, Semver {
+>>>>>>> v0.5.23
     /**
      * @notice Emitted when a transaction is deposited from L1 to L2. The parameters of this event
      *         are read by the rollup node and used to derive deposit transactions on L2.
@@ -65,7 +83,21 @@ contract OptimismPortal is ResourceMetering {
      *         of this variable is the default L2 sender address, then we are NOT inside of a call
      *         to finalizeWithdrawalTransaction.
      */
+<<<<<<< HEAD
     address public l2Sender = DEFAULT_L2_SENDER;
+=======
+    address public l2Sender;
+
+    /**
+     * @notice The L2 gas limit set when eth is deposited using the receive() function.
+     */
+    uint64 internal constant RECEIVE_DEFAULT_GAS_LIMIT = 100_000;
+
+    /**
+     * @notice Additional gas reserved for clean up after finalizing a transaction withdrawal.
+     */
+    uint256 internal constant FINALIZE_GAS_BUFFER = 20_000;
+>>>>>>> v0.5.23
 
     /**
      * @notice A list of withdrawal hashes which have been successfully finalized.
@@ -73,21 +105,55 @@ contract OptimismPortal is ResourceMetering {
     mapping(bytes32 => bool) public finalizedWithdrawals;
 
     /**
+<<<<<<< HEAD
      * @param _l2Oracle                  Address of the L2OutputOracle.
      * @param _finalizationPeriodSeconds Finalization time in seconds.
      */
     constructor(L2OutputOracle _l2Oracle, uint256 _finalizationPeriodSeconds) {
         L2_ORACLE = _l2Oracle;
         FINALIZATION_PERIOD_SECONDS = _finalizationPeriodSeconds;
+=======
+     * @notice Reserve extra slots (to to a total of 50) in the storage layout for future upgrades.
+     */
+    uint256[48] private __gap;
+
+    /**
+     * @custom:semver 0.0.1
+     *
+     * @param _l2Oracle                  Address of the L2OutputOracle contract.
+     * @param _finalizationPeriodSeconds Output finalization time in seconds.
+     */
+    constructor(L2OutputOracle _l2Oracle, uint256 _finalizationPeriodSeconds) Semver(0, 0, 1) {
+        L2_ORACLE = _l2Oracle;
+        FINALIZATION_PERIOD_SECONDS = _finalizationPeriodSeconds;
+
+        initialize();
+    }
+
+    /**
+     * @notice Intializes mutable variables.
+     */
+    function initialize() public initializer {
+        l2Sender = DEFAULT_L2_SENDER;
+        __ResourceMetering_init();
+>>>>>>> v0.5.23
     }
 
     /**
      * @notice Accepts value so that users can send ETH directly to this contract and have the
      *         funds be deposited to their address on L2. This is intended as a convenience
+<<<<<<< HEAD
      *         function for EOAs. Contracts should call the depositTransaction() function directly.
      */
     receive() external payable {
         depositTransaction(msg.sender, msg.value, 100000, false, bytes(""));
+=======
+     *         function for EOAs. Contracts should call the depositTransaction() function directly
+     *         otherwise any deposited funds will be lost due to address aliasing.
+     */
+    receive() external payable {
+        depositTransaction(msg.sender, msg.value, RECEIVE_DEFAULT_GAS_LIMIT, false, bytes(""));
+>>>>>>> v0.5.23
     }
 
     /**
@@ -131,6 +197,39 @@ contract OptimismPortal is ResourceMetering {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * @notice Determine if an L2 Output is finalized.
+     *
+     * @param _l2BlockNumber The number of the L2 block.
+     */
+
+    function isOutputFinalized(uint256 _l2BlockNumber) external view returns (bool) {
+        L2OutputOracle.OutputProposal memory proposal = L2_ORACLE.getL2Output(_l2BlockNumber);
+
+        if (proposal.outputRoot == bytes32(uint256(0))) {
+            uint256 interval = L2_ORACLE.SUBMISSION_INTERVAL();
+            uint256 startingBlockNumber = L2_ORACLE.STARTING_BLOCK_NUMBER();
+
+            // Prevent underflow
+            if (startingBlockNumber > _l2BlockNumber) {
+                return false;
+            }
+
+            // Find the distance between the _l2BlockNumber, and the checkpoint block before it.
+            uint256 offset = (_l2BlockNumber - startingBlockNumber) % interval;
+            // Look up the checkpoint block after it.
+            proposal = L2_ORACLE.getL2Output(_l2BlockNumber + (interval - offset));
+            // False if that block is not yet appended.
+            if (proposal.outputRoot == bytes32(uint256(0))) {
+                return false;
+            }
+        }
+        return block.timestamp > proposal.timestamp + FINALIZATION_PERIOD_SECONDS;
+    }
+
+    /**
+>>>>>>> v0.5.23
      * @notice Finalizes a withdrawal transaction.
      *
      * @param _nonce           Nonce for the provided message.
@@ -139,7 +238,11 @@ contract OptimismPortal is ResourceMetering {
      * @param _value           ETH to send to the target.
      * @param _gasLimit        Minumum gas to be forwarded to the target.
      * @param _data            Data to send to the target.
+<<<<<<< HEAD
      * @param _l2Timestamp     L2 timestamp of the outputRoot.
+=======
+     * @param _l2BlockNumber   L2 block number of the outputRoot.
+>>>>>>> v0.5.23
      * @param _outputRootProof Inclusion proof of the withdrawer contracts storage root.
      * @param _withdrawalProof Inclusion proof for the given withdrawal in the withdrawer contract.
      */
@@ -150,11 +253,19 @@ contract OptimismPortal is ResourceMetering {
         uint256 _value,
         uint256 _gasLimit,
         bytes calldata _data,
+<<<<<<< HEAD
         uint256 _l2Timestamp,
         WithdrawalVerifier.OutputRootProof calldata _outputRootProof,
         bytes calldata _withdrawalProof
     ) external payable {
         // Prevent reentrancy.
+=======
+        uint256 _l2BlockNumber,
+        Hashing.OutputRootProof calldata _outputRootProof,
+        bytes calldata _withdrawalProof
+    ) external payable {
+        // Prevent nested withdrawals within withdrawals.
+>>>>>>> v0.5.23
         require(
             l2Sender == DEFAULT_L2_SENDER,
             "OptimismPortal: can only trigger one withdrawal per transaction"
@@ -168,7 +279,11 @@ contract OptimismPortal is ResourceMetering {
         );
 
         // Get the output root.
+<<<<<<< HEAD
         L2OutputOracle.OutputProposal memory proposal = L2_ORACLE.getL2Output(_l2Timestamp);
+=======
+        L2OutputOracle.OutputProposal memory proposal = L2_ORACLE.getL2Output(_l2BlockNumber);
+>>>>>>> v0.5.23
 
         // Ensure that enough time has passed since the proposal was submitted before allowing a
         // withdrawal. Under the assumption that the fault proof mechanism is operating correctly,
@@ -181,13 +296,21 @@ contract OptimismPortal is ResourceMetering {
 
         // Verify that the output root can be generated with the elements in the proof.
         require(
+<<<<<<< HEAD
             proposal.outputRoot == WithdrawalVerifier._deriveOutputRoot(_outputRootProof),
+=======
+            proposal.outputRoot == Hashing.hashOutputRootProof(_outputRootProof),
+>>>>>>> v0.5.23
             "OptimismPortal: invalid output root proof"
         );
 
         // All withdrawals have a unique hash, we'll use this as the identifier for the withdrawal
         // and to prevent replay attacks.
+<<<<<<< HEAD
         bytes32 withdrawalHash = WithdrawalVerifier.withdrawalHash(
+=======
+        bytes32 withdrawalHash = Hashing.hashWithdrawal(
+>>>>>>> v0.5.23
             _nonce,
             _sender,
             _target,
@@ -200,7 +323,11 @@ contract OptimismPortal is ResourceMetering {
         // this is true, then we know that this withdrawal was actually triggered on L2 can can
         // therefore be relayed on L1.
         require(
+<<<<<<< HEAD
             WithdrawalVerifier._verifyWithdrawalInclusion(
+=======
+            _verifyWithdrawalInclusion(
+>>>>>>> v0.5.23
                 withdrawalHash,
                 _outputRootProof.withdrawerStorageRoot,
                 _withdrawalProof
@@ -221,7 +348,11 @@ contract OptimismPortal is ResourceMetering {
         // target contract is at least the gas limit specified by the user. We can do this by
         // enforcing that, at this point in time, we still have gaslimit + buffer gas available.
         require(
+<<<<<<< HEAD
             gasleft() >= _gasLimit + 20000,
+=======
+            gasleft() >= _gasLimit + FINALIZE_GAS_BUFFER,
+>>>>>>> v0.5.23
             "OptimismPortal: insufficient gas to finalize withdrawal"
         );
 
@@ -246,4 +377,36 @@ contract OptimismPortal is ResourceMetering {
         // be achieved through contracts built on top of this contract
         emit WithdrawalFinalized(withdrawalHash, success);
     }
+<<<<<<< HEAD
+=======
+
+    /**
+     * @notice Verifies a Merkle Trie inclusion proof that a given withdrawal hash is present in
+     *         the storage of the L2ToL1MessagePasser contract.
+     *
+     * @param _withdrawalHash Hash of the withdrawal to verify.
+     * @param _storageRoot    Root of the storage of the L2ToL1MessagePasser contract.
+     * @param _proof          Inclusion proof of the withdrawal hash in the storage root.
+     */
+    function _verifyWithdrawalInclusion(
+        bytes32 _withdrawalHash,
+        bytes32 _storageRoot,
+        bytes memory _proof
+    ) internal pure returns (bool) {
+        bytes32 storageKey = keccak256(
+            abi.encode(
+                _withdrawalHash,
+                uint256(0) // The withdrawals mapping is at the first slot in the layout.
+            )
+        );
+
+        return
+            SecureMerkleTrie.verifyInclusionProof(
+                abi.encode(storageKey),
+                hex"01",
+                _proof,
+                _storageRoot
+            );
+    }
+>>>>>>> v0.5.23
 }

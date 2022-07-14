@@ -7,6 +7,7 @@ import { IDripCheck } from "./IDripCheck.sol";
 /**
  * @title Drippie
  * @notice Drippie is a system for managing automated contract interactions. A specific interaction
+<<<<<<< HEAD
  * is called a "drip" and can be executed according to some condition (called a dripcheck) and an
  * execution interval. Drips cannot be executed faster than the execution interval. Drips can
  * trigger arbitrary contract calls where the calling contract is this contract address. Drips can
@@ -18,6 +19,25 @@ import { IDripCheck } from "./IDripCheck.sol";
 contract Drippie is AssetReceiver {
     /**
      * Enum representing different status options for a given drip.
+=======
+ *         is called a "drip" and can be executed according to some condition (called a dripcheck)
+ *         and an execution interval. Drips cannot be executed faster than the execution interval.
+ *         Drips can trigger arbitrary contract calls where the calling contract is this contract
+ *         address. Drips can also send ETH value, which makes them ideal for keeping addresses
+ *         sufficiently funded with ETH. Drippie is designed to be connected with smart contract
+ *         automation services so that drips can be executed automatically. However, Drippie is
+ *         specifically designed to be separated from these services so that trust assumptions are
+ *         better compartmentalized.
+ */
+contract Drippie is AssetReceiver {
+    /**
+     * @notice Enum representing different status options for a given drip.
+     *
+     * @custom:value NONE     Drip does not exist.
+     * @custom:value ACTIVE   Drip is active and can be executed.
+     * @custom:value PAUSED   Drip is paused and cannot be executed until reactivated.
+     * @custom:value ARCHIVED Drip is archived and can no longer be executed or reactivated.
+>>>>>>> v0.5.23
      */
     enum DripStatus {
         NONE,
@@ -27,7 +47,11 @@ contract Drippie is AssetReceiver {
     }
 
     /**
+<<<<<<< HEAD
      * Represents a drip action.
+=======
+     * @notice Represents a drip action.
+>>>>>>> v0.5.23
      */
     struct DripAction {
         address payable target;
@@ -36,7 +60,11 @@ contract Drippie is AssetReceiver {
     }
 
     /**
+<<<<<<< HEAD
      * Represents the configuration for a given drip.
+=======
+     * @notice Represents the configuration for a given drip.
+>>>>>>> v0.5.23
      */
     struct DripConfig {
         uint256 interval;
@@ -46,7 +74,11 @@ contract Drippie is AssetReceiver {
     }
 
     /**
+<<<<<<< HEAD
      * Represents the state of an active drip.
+=======
+     * @notice Represents the state of an active drip.
+>>>>>>> v0.5.23
      */
     struct DripState {
         DripStatus status;
@@ -56,7 +88,15 @@ contract Drippie is AssetReceiver {
     }
 
     /**
+<<<<<<< HEAD
      * Emitted when a new drip is created.
+=======
+     * @notice Emitted when a new drip is created.
+     *
+     * @param nameref Indexed name parameter (hashed).
+     * @param name    Unindexed name parameter (unhashed).
+     * @param config  Config for the created drip.
+>>>>>>> v0.5.23
      */
     event DripCreated(
         // Emit name twice because indexed version is hashed.
@@ -66,7 +106,15 @@ contract Drippie is AssetReceiver {
     );
 
     /**
+<<<<<<< HEAD
      * Emitted when a drip status is updated.
+=======
+     * @notice Emitted when a drip status is updated.
+     *
+     * @param nameref Indexed name parameter (hashed).
+     * @param name    Unindexed name parameter (unhashed).
+     * @param status  New drip status.
+>>>>>>> v0.5.23
      */
     event DripStatusUpdated(
         // Emit name twice because indexed version is hashed.
@@ -76,7 +124,16 @@ contract Drippie is AssetReceiver {
     );
 
     /**
+<<<<<<< HEAD
      * Emitted when a drip is executed.
+=======
+     * @notice Emitted when a drip is executed.
+     *
+     * @param nameref   Indexed name parameter (hashed).
+     * @param name      Unindexed name parameter (unhashed).
+     * @param executor  Address that executed the drip.
+     * @param timestamp Time when the drip was executed.
+>>>>>>> v0.5.23
      */
     event DripExecuted(
         // Emit name twice because indexed version is hashed.
@@ -87,7 +144,11 @@ contract Drippie is AssetReceiver {
     );
 
     /**
+<<<<<<< HEAD
      * Maps from drip names to drip states.
+=======
+     * @notice Maps from drip names to drip states.
+>>>>>>> v0.5.23
      */
     mapping(string => DripState) public drips;
 
@@ -97,11 +158,19 @@ contract Drippie is AssetReceiver {
     constructor(address _owner) AssetReceiver(_owner) {}
 
     /**
+<<<<<<< HEAD
      * Creates a new drip with the given name and configuration. Once created, drips cannot be
      * modified in any way (this is a security measure). If you want to update a drip, simply pause
      * (and potentially archive) the existing drip and create a new one.
      *
      * @param _name Name of the drip.
+=======
+     * @notice Creates a new drip with the given name and configuration. Once created, drips cannot
+     *         be modified in any way (this is a security measure). If you want to update a drip,
+     *         simply pause (and potentially archive) the existing drip and create a new one.
+     *
+     * @param _name   Name of the drip.
+>>>>>>> v0.5.23
      * @param _config Configuration for the drip.
      */
     function create(string memory _name, DripConfig memory _config) external onlyOwner {
@@ -130,11 +199,20 @@ contract Drippie is AssetReceiver {
     }
 
     /**
+<<<<<<< HEAD
      * Sets the status for a given drip. The behavior of this function depends on the status that
      * the user is trying to set. A drip can always move between ACTIVE and PAUSED, but it can
      * never move back to NONE and once ARCHIVED, it can never move back to ACTIVE or PAUSED.
      *
      * @param _name Name of the drip to update.
+=======
+     * @notice Sets the status for a given drip. The behavior of this function depends on the
+     *         status that the user is trying to set. A drip can always move between ACTIVE and
+     *         PAUSED, but it can never move back to NONE and once ARCHIVED, it can never move back
+     *         to ACTIVE or PAUSED.
+     *
+     * @param _name   Name of the drip to update.
+>>>>>>> v0.5.23
      * @param _status New drip status.
      */
     function status(string memory _name, DripStatus _status) external onlyOwner {
@@ -184,9 +262,16 @@ contract Drippie is AssetReceiver {
     }
 
     /**
+<<<<<<< HEAD
      * Checks if a given drip is executable.
      *
      * @param _name Drip to check.
+=======
+     * @notice Checks if a given drip is executable.
+     *
+     * @param _name Drip to check.
+     *
+>>>>>>> v0.5.23
      * @return True if the drip is executable, false otherwise.
      */
     function executable(string memory _name) public view returns (bool) {
@@ -219,12 +304,21 @@ contract Drippie is AssetReceiver {
     }
 
     /**
+<<<<<<< HEAD
      * Triggers a drip. This function is deliberately left as a public function because the
      * assumption being made here is that setting the drip to ACTIVE is an affirmative signal that
      * the drip should be executable according to the drip parameters, drip check, and drip
      * interval. Note that drip parameters are read entirely from the state and are not supplied as
      * user input, so there should not be any way for a non-authorized user to influence the
      * behavior of the drip.
+=======
+     * @notice Triggers a drip. This function is deliberately left as a public function because the
+     *         assumption being made here is that setting the drip to ACTIVE is an affirmative
+     *         signal that the drip should be executable according to the drip parameters, drip
+     *         check, and drip interval. Note that drip parameters are read entirely from the state
+     *         and are not supplied as user input, so there should not be any way for a
+     *         non-authorized user to influence the behavior of the drip.
+>>>>>>> v0.5.23
      *
      * @param _name Name of the drip to trigger.
      */

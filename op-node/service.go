@@ -8,6 +8,11 @@ import (
 	"os"
 	"strings"
 
+<<<<<<< HEAD
+=======
+	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
+
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -27,7 +32,14 @@ func NewConfig(ctx *cli.Context, log log.Logger) (*node.Config, error) {
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	enableSequencing := ctx.GlobalBool(flags.SequencingEnabledFlag.Name)
+=======
+	driverConfig, err := NewDriverConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+>>>>>>> v0.5.23
 
 	p2pSignerSetup, err := p2p.LoadSignerSetup(ctx)
 	if err != nil {
@@ -50,14 +62,29 @@ func NewConfig(ctx *cli.Context, log log.Logger) (*node.Config, error) {
 	}
 
 	cfg := &node.Config{
+<<<<<<< HEAD
 		L1:        l1Endpoint,
 		L2:        l2Endpoint,
 		Rollup:    *rollupConfig,
 		Sequencer: enableSequencing,
+=======
+		L1:     l1Endpoint,
+		L2:     l2Endpoint,
+		Rollup: *rollupConfig,
+		Driver: *driverConfig,
+>>>>>>> v0.5.23
 		RPC: node.RPCConfig{
 			ListenAddr: ctx.GlobalString(flags.RPCListenAddr.Name),
 			ListenPort: ctx.GlobalInt(flags.RPCListenPort.Name),
 		},
+<<<<<<< HEAD
+=======
+		Metrics: node.MetricsConfig{
+			Enabled:    ctx.GlobalBool(flags.MetricsEnabledFlag.Name),
+			ListenAddr: ctx.GlobalString(flags.MetricsAddrFlag.Name),
+			ListenPort: ctx.GlobalInt(flags.MetricsPortFlag.Name),
+		},
+>>>>>>> v0.5.23
 		P2P:       p2pConfig,
 		P2PSigner: p2pSignerSetup,
 	}
@@ -104,6 +131,17 @@ func NewL2EndpointConfig(ctx *cli.Context, log log.Logger) (*node.L2EndpointConf
 	}, nil
 }
 
+<<<<<<< HEAD
+=======
+func NewDriverConfig(ctx *cli.Context) (*driver.Config, error) {
+	return &driver.Config{
+		VerifierConfDepth:  ctx.GlobalUint64(flags.VerifierL1Confs.Name),
+		SequencerConfDepth: ctx.GlobalUint64(flags.SequencerL1Confs.Name),
+		SequencerEnabled:   ctx.GlobalBool(flags.SequencerEnabledFlag.Name),
+	}, nil
+}
+
+>>>>>>> v0.5.23
 func NewRollupConfig(ctx *cli.Context) (*rollup.Config, error) {
 	rollupConfigPath := ctx.GlobalString(flags.RollupConfig.Name)
 	file, err := os.Open(rollupConfigPath)
@@ -143,8 +181,13 @@ func NewSnapshotLogger(ctx *cli.Context) (log.Logger, error) {
 		if err != nil {
 			return nil, err
 		}
+<<<<<<< HEAD
 	}
 	handler = log.SyncHandler(handler)
+=======
+		handler = log.SyncHandler(handler)
+	}
+>>>>>>> v0.5.23
 	logger := log.New()
 	logger.SetHandler(handler)
 	return logger, nil
