@@ -3,20 +3,31 @@ package op_e2e
 import (
 	"context"
 	"fmt"
+<<<<<<< HEAD
 	"io/ioutil"
 	"math/big"
 	"os"
+=======
+	"math/big"
+>>>>>>> v0.5.23
 	"strings"
 	"time"
 
 	bss "github.com/ethereum-optimism/optimism/op-batcher"
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
+<<<<<<< HEAD
+=======
+	"github.com/ethereum-optimism/optimism/op-node/metrics"
+>>>>>>> v0.5.23
 	rollupNode "github.com/ethereum-optimism/optimism/op-node/node"
 	"github.com/ethereum-optimism/optimism/op-node/p2p"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	l2os "github.com/ethereum-optimism/optimism/op-proposer"
+<<<<<<< HEAD
 
+=======
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -52,10 +63,18 @@ func deriveAccount(w accounts.Wallet, path string) accounts.Account {
 
 type L2OOContractConfig struct {
 	SubmissionFrequency   *big.Int
+<<<<<<< HEAD
 	L2StartTime           *big.Int
 	L2BlockTime           *big.Int
 	GenesisL2Output       [32]byte
 	HistoricalTotalBlocks *big.Int
+=======
+	L2StartingBlock       *big.Int
+	GenesisL2Output       [32]byte
+	HistoricalTotalBlocks *big.Int
+	L2StartingTimeStamp   *big.Int
+	L2BlockTime           *big.Int
+>>>>>>> v0.5.23
 }
 
 type DepositContractConfig struct {
@@ -82,9 +101,17 @@ type SystemConfig struct {
 	JWTFilePath string
 	JWTSecret   [32]byte
 
+<<<<<<< HEAD
 	Nodes        map[string]*rollupNode.Config // Per node config. Don't use populate rollup.Config
 	Loggers      map[string]log.Logger
 	RollupConfig rollup.Config // Shared rollup configs
+=======
+	Nodes          map[string]*rollupNode.Config // Per node config. Don't use populate rollup.Config
+	Loggers        map[string]log.Logger
+	ProposerLogger log.Logger
+	BatcherLogger  log.Logger
+	RollupConfig   rollup.Config // Shared rollup configs
+>>>>>>> v0.5.23
 
 	L1BlockTime uint64
 
@@ -92,6 +119,12 @@ type SystemConfig struct {
 	// A nil map disables P2P completely.
 	// Any node name not in the topology will not have p2p enabled.
 	P2PTopology map[string][]string
+<<<<<<< HEAD
+=======
+
+	BaseFeeRecipient common.Address
+	L1FeeRecipient   common.Address
+>>>>>>> v0.5.23
 }
 
 type System struct {
@@ -101,6 +134,7 @@ type System struct {
 	wallet *hdwallet.Wallet
 
 	// Connections to running nodes
+<<<<<<< HEAD
 	nodes                      map[string]*node.Node
 	backends                   map[string]*eth.Ethereum
 	Clients                    map[string]*ethclient.Client
@@ -112,6 +146,18 @@ type System struct {
 	L2OOContractAddr           common.Address
 	DepositContractAddr        common.Address
 	Mocknet                    mocknet.Mocknet
+=======
+	nodes               map[string]*node.Node
+	backends            map[string]*eth.Ethereum
+	Clients             map[string]*ethclient.Client
+	RolupGenesis        rollup.Genesis
+	rollupNodes         map[string]*rollupNode.OpNode
+	l2OutputSubmitter   *l2os.L2OutputSubmitter
+	batchSubmitter      *bss.BatchSubmitter
+	L2OOContractAddr    common.Address
+	DepositContractAddr common.Address
+	Mocknet             mocknet.Mocknet
+>>>>>>> v0.5.23
 }
 
 func precompileAlloc() core.GenesisAlloc {
@@ -147,9 +193,12 @@ func (sys *System) Close() {
 	if sys.batchSubmitter != nil {
 		sys.batchSubmitter.Stop()
 	}
+<<<<<<< HEAD
 	if sys.sequencerHistoryDBFileName != "" {
 		_ = os.Remove(sys.sequencerHistoryDBFileName)
 	}
+=======
+>>>>>>> v0.5.23
 
 	for _, node := range sys.rollupNodes {
 		node.Close()
@@ -234,7 +283,15 @@ func (cfg SystemConfig) start() (*System, error) {
 	}
 
 	l2Alloc[cfg.L1InfoPredeployAddress] = core.GenesisAccount{Code: common.FromHex(bindings.L1BlockDeployedBin), Balance: common.Big0}
+<<<<<<< HEAD
 	l2Alloc[common.HexToAddress(predeploys.L2ToL1MessagePasser)] = core.GenesisAccount{Code: common.FromHex(bindings.L2ToL1MessagePasserDeployedBin), Balance: common.Big0}
+=======
+	l2Alloc[predeploys.L2ToL1MessagePasserAddr] = core.GenesisAccount{Code: common.FromHex(bindings.L2ToL1MessagePasserDeployedBin), Balance: common.Big0}
+	l2Alloc[predeploys.OVM_GasPriceOracleAddr] = core.GenesisAccount{Code: common.FromHex(bindings.GasPriceOracleDeployedBin), Balance: common.Big0, Storage: map[common.Hash]common.Hash{
+		// storage for GasPriceOracle to have transctorPath wallet as owner
+		common.BigToHash(big.NewInt(0)): common.HexToHash("0x8A0A996b22B103B500Cd0F20d62dF2Ba3364D295"),
+	}}
+>>>>>>> v0.5.23
 
 	genesisTimestamp := uint64(time.Now().Unix())
 
@@ -279,6 +336,13 @@ func (cfg SystemConfig) start() (*System, error) {
 			LondonBlock:             common.Big0,
 			MergeForkBlock:          common.Big0,
 			TerminalTotalDifficulty: common.Big0,
+<<<<<<< HEAD
+=======
+			Optimism: &params.OptimismConfig{
+				BaseFeeRecipient: cfg.BaseFeeRecipient,
+				L1FeeRecipient:   cfg.L1FeeRecipient,
+			},
+>>>>>>> v0.5.23
 		},
 		Alloc:      l2Alloc,
 		Difficulty: common.Big1,
@@ -380,12 +444,22 @@ func (cfg SystemConfig) start() (*System, error) {
 	sys.cfg.RollupConfig.Genesis = sys.RolupGenesis
 	sys.cfg.RollupConfig.BatchSenderAddress = batchSubmitterAddr
 	sys.cfg.RollupConfig.P2PSequencerAddress = p2pSignerAddr
+<<<<<<< HEAD
 	sys.cfg.L2OOCfg.L2StartTime = new(big.Int).SetUint64(l2GenesisTime)
+=======
+	sys.cfg.L2OOCfg.L2StartingBlock = new(big.Int).SetUint64(l2GenesisID.Number)
+	sys.cfg.L2OOCfg.L2StartingTimeStamp = new(big.Int).SetUint64(l2Genesis.Timestamp)
+	sys.cfg.L2OOCfg.L2BlockTime = new(big.Int).SetUint64(2)
+>>>>>>> v0.5.23
 
 	// Deploy Deposit Contract
 	deployerPrivKey, err := sys.wallet.PrivateKey(accounts.Account{
 		URL: accounts.URL{
+<<<<<<< HEAD
 			Path: sys.cfg.DeployerHDPath,
+=======
+			Path: cfg.DeployerHDPath,
+>>>>>>> v0.5.23
 		},
 	})
 	if err != nil {
@@ -402,11 +476,21 @@ func (cfg SystemConfig) start() (*System, error) {
 		opts,
 		l1Client,
 		sys.cfg.L2OOCfg.SubmissionFrequency,
+<<<<<<< HEAD
 		sys.cfg.L2OOCfg.L2BlockTime,
 		sys.cfg.L2OOCfg.GenesisL2Output,
 		sys.cfg.L2OOCfg.HistoricalTotalBlocks,
 		sys.cfg.L2OOCfg.L2StartTime,
 		l2OutputSubmitterAddr,
+=======
+		sys.cfg.L2OOCfg.GenesisL2Output,
+		sys.cfg.L2OOCfg.HistoricalTotalBlocks,
+		sys.cfg.L2OOCfg.L2StartingBlock,
+		sys.cfg.L2OOCfg.L2StartingTimeStamp,
+		sys.cfg.L2OOCfg.L2BlockTime,
+		l2OutputSubmitterAddr,
+		crypto.PubkeyToAddress(deployerPrivKey.PublicKey),
+>>>>>>> v0.5.23
 	)
 	sys.cfg.DepositCFG.L2Oracle = sys.L2OOContractAddr
 	if err != nil {
@@ -474,6 +558,14 @@ func (cfg SystemConfig) start() (*System, error) {
 			}
 		}
 	}
+<<<<<<< HEAD
+=======
+
+	// Don't log state snapshots in test output
+	snapLog := log.New()
+	snapLog.SetHandler(log.DiscardHandler())
+
+>>>>>>> v0.5.23
 	// Rollup nodes
 	for name, nodeConfig := range cfg.Nodes {
 		c := *nodeConfig // copy
@@ -483,12 +575,20 @@ func (cfg SystemConfig) start() (*System, error) {
 		if p, ok := p2pNodes[name]; ok {
 			c.P2P = p
 
+<<<<<<< HEAD
 			if c.Sequencer {
+=======
+			if c.Driver.SequencerEnabled {
+>>>>>>> v0.5.23
 				c.P2PSigner = &p2p.PreparedSigner{Signer: p2p.NewLocalSigner(p2pSignerPrivKey)}
 			}
 		}
 
+<<<<<<< HEAD
 		node, err := rollupNode.New(context.Background(), &c, cfg.Loggers[name], cfg.Loggers[name], "")
+=======
+		node, err := rollupNode.New(context.Background(), &c, cfg.Loggers[name], snapLog, "", metrics.NewMetrics(""))
+>>>>>>> v0.5.23
 		if err != nil {
 			didErrAfterStart = true
 			return nil, err
@@ -542,7 +642,11 @@ func (cfg SystemConfig) start() (*System, error) {
 		LogTerminal:               true,
 		Mnemonic:                  sys.cfg.Mnemonic,
 		L2OutputHDPath:            sys.cfg.L2OutputHDPath,
+<<<<<<< HEAD
 	}, "", log.New())
+=======
+	}, "", sys.cfg.Loggers["proposer"])
+>>>>>>> v0.5.23
 	if err != nil {
 		return nil, fmt.Errorf("unable to setup l2 output submitter: %w", err)
 	}
@@ -551,6 +655,7 @@ func (cfg SystemConfig) start() (*System, error) {
 		return nil, fmt.Errorf("unable to start l2 output submitter: %w", err)
 	}
 
+<<<<<<< HEAD
 	sequencerHistoryDBFile, err := ioutil.TempFile("", "bss.*.json")
 	if err != nil {
 		return nil, fmt.Errorf("unable to create sequencer history db file: %w", err)
@@ -560,6 +665,8 @@ func (cfg SystemConfig) start() (*System, error) {
 		return nil, fmt.Errorf("unable to close sequencer history db file: %w", err)
 	}
 
+=======
+>>>>>>> v0.5.23
 	// Batch Submitter
 	sys.batchSubmitter, err = bss.NewBatchSubmitter(bss.Config{
 		L1EthRpc:                   sys.nodes["l1"].WSEndpoint(),
@@ -567,10 +674,15 @@ func (cfg SystemConfig) start() (*System, error) {
 		RollupRpc:                  rollupEndpoint,
 		MinL1TxSize:                1,
 		MaxL1TxSize:                120000,
+<<<<<<< HEAD
+=======
+		ChannelTimeout:             sys.cfg.RollupConfig.ChannelTimeout,
+>>>>>>> v0.5.23
 		PollInterval:               50 * time.Millisecond,
 		NumConfirmations:           1,
 		ResubmissionTimeout:        5 * time.Second,
 		SafeAbortNonceTooLowCount:  3,
+<<<<<<< HEAD
 		LogLevel:                   "info",
 		LogTerminal:                true,
 		Mnemonic:                   sys.cfg.Mnemonic,
@@ -579,6 +691,14 @@ func (cfg SystemConfig) start() (*System, error) {
 		SequencerGenesisHash:       sys.RolupGenesis.L2.Hash.String(),
 		SequencerBatchInboxAddress: sys.cfg.RollupConfig.BatchInboxAddress.String(),
 	}, "", log.New())
+=======
+		LogLevel:                   "info", // ignored if started in-process this way
+		LogTerminal:                true,   // ignored
+		Mnemonic:                   sys.cfg.Mnemonic,
+		SequencerHDPath:            sys.cfg.BatchSubmitterHDPath,
+		SequencerBatchInboxAddress: sys.cfg.RollupConfig.BatchInboxAddress.String(),
+	}, sys.cfg.Loggers["batcher"])
+>>>>>>> v0.5.23
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup batch submitter: %w", err)
 	}

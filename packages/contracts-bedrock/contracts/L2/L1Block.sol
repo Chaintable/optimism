@@ -1,6 +1,14 @@
+<<<<<<< HEAD
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
+=======
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
+
+import { Semver } from "../universal/Semver.sol";
+
+>>>>>>> v0.5.23
 /**
  * @custom:proxied
  * @custom:predeploy 0x4200000000000000000000000000000000000015
@@ -10,7 +18,11 @@ pragma solidity 0.8.10;
  *         set by the "depositor" account, a special system address. Depositor account transactions
  *         are created by the protocol whenever we move to a new epoch.
  */
+<<<<<<< HEAD
 contract L1Block {
+=======
+contract L1Block is Semver {
+>>>>>>> v0.5.23
     /**
      * @notice Address of the special depositor account.
      */
@@ -42,6 +54,14 @@ contract L1Block {
     uint64 public sequenceNumber;
 
     /**
+<<<<<<< HEAD
+=======
+     * @custom:semver 0.0.1
+     */
+    constructor() Semver(0, 0, 1) {}
+
+    /**
+>>>>>>> v0.5.23
      * @notice Updates the L1 block values.
      *
      * @param _number         L1 blocknumber.

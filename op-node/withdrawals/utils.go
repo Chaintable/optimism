@@ -20,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
+<<<<<<< HEAD
 // WaitForFinalizationPeriod waits until the timestamp has been submitted to the L2 Output Oracle on L1 and
 // then waits for the finalization period to be up.
 // This functions polls and can block for a very long time if used on mainnet.
@@ -27,6 +28,15 @@ import (
 func WaitForFinalizationPeriod(ctx context.Context, client *ethclient.Client, portalAddr common.Address, timestamp uint64) (uint64, error) {
 	opts := &bind.CallOpts{Context: ctx}
 	timestampBig := new(big.Int).SetUint64(timestamp)
+=======
+// WaitForFinalizationPeriod waits until there is OutputProof for an L2 block number larger than the supplied l2BlockNumber
+// and that the output is finalized.
+// This functions polls and can block for a very long time if used on mainnet.
+// This returns the block number to use for the proof generation.
+func WaitForFinalizationPeriod(ctx context.Context, client *ethclient.Client, portalAddr common.Address, l2BlockNumber *big.Int) (uint64, error) {
+	l2BlockNumber = new(big.Int).Set(l2BlockNumber) // Don't clobber caller owned l2BlockNumber
+	opts := &bind.CallOpts{Context: ctx}
+>>>>>>> v0.5.23
 
 	portal, err := bindings.NewOptimismPortalCaller(portalAddr, client)
 	if err != nil {
@@ -40,21 +50,46 @@ func WaitForFinalizationPeriod(ctx context.Context, client *ethclient.Client, po
 	if err != nil {
 		return 0, err
 	}
+<<<<<<< HEAD
+=======
+	submissionInterval, err := l2OO.SUBMISSIONINTERVAL(opts)
+	if err != nil {
+		return 0, err
+	}
+	// Convert blockNumber to submission interval boundary
+	rem := new(big.Int)
+	l2BlockNumber, rem = l2BlockNumber.DivMod(l2BlockNumber, submissionInterval, rem)
+	if rem.Cmp(common.Big0) != 0 {
+		l2BlockNumber = l2BlockNumber.Add(l2BlockNumber, common.Big1)
+	}
+	l2BlockNumber = l2BlockNumber.Mul(l2BlockNumber, submissionInterval)
+>>>>>>> v0.5.23
 
 	finalizationPeriod, err := portal.FINALIZATIONPERIODSECONDS(opts)
 	if err != nil {
 		return 0, err
 	}
 
+<<<<<<< HEAD
 	next, err := l2OO.LatestBlockTimestamp(opts)
+=======
+	latest, err := l2OO.LatestBlockNumber(opts)
+>>>>>>> v0.5.23
 	if err != nil {
 		return 0, err
 	}
 
+<<<<<<< HEAD
 	// Now poll
 	var ticker *time.Ticker
 	diff := new(big.Int).Sub(timestampBig, next)
 	if diff.Cmp(big.NewInt(60)) > 0 {
+=======
+	// Now poll for the output to be submitted on chain
+	var ticker *time.Ticker
+	diff := new(big.Int).Sub(l2BlockNumber, latest)
+	if diff.Cmp(big.NewInt(10)) > 0 {
+>>>>>>> v0.5.23
 		ticker = time.NewTicker(time.Minute)
 	} else {
 		ticker = time.NewTicker(time.Second)
@@ -64,12 +99,21 @@ loop:
 	for {
 		select {
 		case <-ticker.C:
+<<<<<<< HEAD
 			next, err = l2OO.LatestBlockTimestamp(opts)
 			if err != nil {
 				return 0, err
 			}
 			// Already passed next
 			if next.Cmp(timestampBig) > 0 {
+=======
+			latest, err = l2OO.LatestBlockNumber(opts)
+			if err != nil {
+				return 0, err
+			}
+			// Already passed the submitted block (likely just equals rather than >= here).
+			if latest.Cmp(l2BlockNumber) >= 0 {
+>>>>>>> v0.5.23
 				break loop
 			}
 		case <-ctx.Done():
@@ -78,10 +122,20 @@ loop:
 	}
 
 	// Now wait for it to be finalized
+<<<<<<< HEAD
 	output, err := l2OO.GetL2Output(opts, next)
 	if err != nil {
 		return 0, err
 	}
+=======
+	output, err := l2OO.GetL2Output(opts, l2BlockNumber)
+	if err != nil {
+		return 0, err
+	}
+	if output.OutputRoot == [32]byte{} {
+		return 0, errors.New("empty output root. likely no proposal at timestamp")
+	}
+>>>>>>> v0.5.23
 	targetTimestamp := new(big.Int).Add(output.Timestamp, finalizationPeriod)
 	targetTime := time.Unix(targetTimestamp.Int64(), 0)
 	// Assume clock is relatively correct
@@ -96,7 +150,11 @@ loop:
 				return 0, err
 			}
 			if header.Time > targetTimestamp.Uint64() {
+<<<<<<< HEAD
 				return next.Uint64(), nil
+=======
+				return l2BlockNumber.Uint64(), nil
+>>>>>>> v0.5.23
 			}
 		case <-ctx.Done():
 			return 0, ctx.Err()
@@ -131,21 +189,35 @@ func NewClient(client *rpc.Client) *Client {
 
 }
 
+<<<<<<< HEAD
 // FinalizedWithdrawalParameters is the set of paramets to pass to the FinalizedWithdrawal function
+=======
+// FinalizedWithdrawalParameters is the set of parameters to pass to the FinalizedWithdrawal function
+>>>>>>> v0.5.23
 type FinalizedWithdrawalParameters struct {
 	Nonce           *big.Int
 	Sender          common.Address
 	Target          common.Address
 	Value           *big.Int
 	GasLimit        *big.Int
+<<<<<<< HEAD
 	Timestamp       *big.Int
 	Data            []byte
 	OutputRootProof bindings.WithdrawalVerifierOutputRootProof
+=======
+	BlockNumber     *big.Int
+	Data            []byte
+	OutputRootProof bindings.HashingOutputRootProof
+>>>>>>> v0.5.23
 	WithdrawalProof []byte // RLP Encoded list of trie nodes to prove L2 storage
 }
 
 // FinalizeWithdrawalParameters queries L2 to generate all withdrawal parameters and proof necessary to finalize an withdrawal on L1.
+<<<<<<< HEAD
 // The header provided is very imporant. It should be a block (timestamp) for which there is a submitted output in the L2 Output Oracle
+=======
+// The header provided is very important. It should be a block (timestamp) for which there is a submitted output in the L2 Output Oracle
+>>>>>>> v0.5.23
 // contract. If not, the withdrawal will fail as it the storage proof cannot be verified if there is no submitted state root.
 func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txHash common.Hash, header *types.Header) (FinalizedWithdrawalParameters, error) {
 	// Transaction receipt
@@ -164,7 +236,11 @@ func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txH
 		return FinalizedWithdrawalParameters{}, err
 	}
 	slot := StorageSlotOfWithdrawalHash(withdrawalHash)
+<<<<<<< HEAD
 	p, err := l2client.GetProof(ctx, common.HexToAddress(predeploys.L2ToL1MessagePasser), []string{slot.String()}, header.Number)
+=======
+	p, err := l2client.GetProof(ctx, predeploys.L2ToL1MessagePasserAddr, []string{slot.String()}, header.Number)
+>>>>>>> v0.5.23
 	if err != nil {
 		return FinalizedWithdrawalParameters{}, err
 	}
@@ -189,6 +265,7 @@ func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txH
 	}
 
 	return FinalizedWithdrawalParameters{
+<<<<<<< HEAD
 		Nonce:     ev.Nonce,
 		Sender:    ev.Sender,
 		Target:    ev.Target,
@@ -197,6 +274,16 @@ func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txH
 		Timestamp: new(big.Int).SetUint64(header.Time),
 		Data:      ev.Data,
 		OutputRootProof: bindings.WithdrawalVerifierOutputRootProof{
+=======
+		Nonce:       ev.Nonce,
+		Sender:      ev.Sender,
+		Target:      ev.Target,
+		Value:       ev.Value,
+		GasLimit:    ev.GasLimit,
+		BlockNumber: new(big.Int).Set(header.Number),
+		Data:        ev.Data,
+		OutputRootProof: bindings.HashingOutputRootProof{
+>>>>>>> v0.5.23
 			Version:               [32]byte{}, // Empty for version 1
 			StateRoot:             header.Root,
 			WithdrawerStorageRoot: p.StorageHash,

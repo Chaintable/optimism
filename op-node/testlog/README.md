@@ -4,3 +4,11 @@
 
 Since we use the same logging, but as an external package, we have to move the test utility to our own internal package.
 
+<<<<<<< HEAD
+=======
+This fork also made minor modifications:
+
+- Enable color by default.
+- Add `estimateInfoLen` and use this for message padding in `flush()` to align the contents of the log entries,
+  compensating for the different lengths of the log decoration that the Go library adds.
+>>>>>>> v0.5.23

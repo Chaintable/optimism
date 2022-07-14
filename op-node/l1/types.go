@@ -6,7 +6,10 @@ import (
 	"math/big"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
+<<<<<<< HEAD
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
+=======
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/trie"
@@ -35,7 +38,11 @@ type HeaderInfo struct {
 	receiptHash common.Hash
 }
 
+<<<<<<< HEAD
 var _ derive.L1Info = (*HeaderInfo)(nil)
+=======
+var _ eth.L1Info = (*HeaderInfo)(nil)
+>>>>>>> v0.5.23
 
 func (info *HeaderInfo) Hash() common.Hash {
 	return info.hash

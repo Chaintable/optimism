@@ -26,6 +26,17 @@ export interface DrippieConfig {
   [name: string]: DripConfig
 }
 
+<<<<<<< HEAD
+=======
+export enum Time {
+  SECOND = 1,
+  MINUTE = 60 * Time.SECOND,
+  HOUR = 60 * Time.MINUTE,
+  DAY = 24 * Time.HOUR,
+  WEEK = 7 * Time.DAY,
+}
+
+>>>>>>> v0.5.23
 export const getDrippieConfig = async (
   hre: HardhatRuntimeEnvironment
 ): Promise<Required<DrippieConfig>> => {
@@ -109,3 +120,22 @@ export const parseDrippieConfig = async (
 
   return parsed as Required<DrippieConfig>
 }
+<<<<<<< HEAD
+=======
+
+export const isSameConfig = (a: DripConfig, b: DripConfig): boolean => {
+  return (
+    a.dripcheck.toLowerCase() === b.dripcheck.toLowerCase() &&
+    a.checkparams === b.checkparams &&
+    ethers.BigNumber.from(a.interval).eq(b.interval) &&
+    a.actions.length === b.actions.length &&
+    a.actions.every((ax, i) => {
+      return (
+        ax.target === b.actions[i].target &&
+        ax.data === b.actions[i].data &&
+        ethers.BigNumber.from(ax.value).eq(b.actions[i].value)
+      )
+    })
+  )
+}
+>>>>>>> v0.5.23

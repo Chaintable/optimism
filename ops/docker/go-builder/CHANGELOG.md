@@ -1,5 +1,14 @@
 # @eth-optimism/go-builder
 
+<<<<<<< HEAD
+=======
+## 0.0.5
+
+### Patch Changes
+
+- df5eb9e7: Upgrade golangci-lint version for go 1.18
+
+>>>>>>> v0.5.23
 ## 0.0.4
 
 ### Patch Changes

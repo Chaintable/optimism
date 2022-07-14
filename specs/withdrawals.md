@@ -33,6 +33,7 @@ finalization.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
+<<<<<<< HEAD
 - [Withdrawal Flow](#withdrawal-flow)
   - [On L2](#on-l2)
   - [On L1](#on-l1)
@@ -45,6 +46,21 @@ finalization.
   - [Handling Successfully Verified Messages That Fail When Relayed](#handling-successfully-verified-messages-that-fail-when-relayed)
 - [Summary of Definitions](#summary-of-definitions)
   - [Constants](#constants)
+=======
+- [Withdrawals](#withdrawals)
+  - [Withdrawal Flow](#withdrawal-flow)
+    - [On L2](#on-l2)
+    - [On L1](#on-l1)
+  - [The L2ToL1MessagePasser Contract](#the-l2tol1messagepasser-contract)
+    - [Addresses are not Aliased on Withdrawals](#addresses-are-not-aliased-on-withdrawals)
+  - [The Optimism Portal Contract](#the-optimism-portal-contract)
+  - [Withdrawal Verification and Finalization](#withdrawal-verification-and-finalization)
+  - [Security Considerations](#security-considerations)
+    - [Key Properties of Withdrawal Verification](#key-properties-of-withdrawal-verification)
+    - [Handling Successfully Verified Messages That Fail When Relayed](#handling-successfully-verified-messages-that-fail-when-relayed)
+  - [Summary of Definitions](#summary-of-definitions)
+    - [Constants](#constants)
+>>>>>>> v0.5.23
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

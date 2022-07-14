@@ -1,5 +1,27 @@
 # @eth-optimism/contracts-governance
 
+<<<<<<< HEAD
+=======
+## 0.1.4
+
+### Patch Changes
+
+- dc9cf2b6: Clean up the hardhat config
+- Updated dependencies [f9fee446]
+  - @eth-optimism/core-utils@0.9.1
+  - @eth-optimism/sdk@1.2.1
+
+## 0.1.3
+
+### Patch Changes
+
+- 977493bc: Update SDK version and usage to account for new constructor
+- Updated dependencies [977493bc]
+- Updated dependencies [700dcbb0]
+  - @eth-optimism/sdk@1.2.0
+  - @eth-optimism/core-utils@0.9.0
+
+>>>>>>> v0.5.23
 ## 0.1.2
 
 ### Patch Changes

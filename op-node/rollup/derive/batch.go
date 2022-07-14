@@ -7,7 +7,14 @@ import (
 	"io"
 	"sync"
 
+<<<<<<< HEAD
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
+=======
+	"github.com/ethereum-optimism/optimism/op-node/eth"
+
+	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum/go-ethereum/common"
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -20,6 +27,7 @@ import (
 //
 // An empty input is not a valid batch.
 //
+<<<<<<< HEAD
 // Batch-bundle format
 // first byte is type followed by bytestring
 //
@@ -29,6 +37,8 @@ import (
 //
 // An empty input is not a valid bundle.
 //
+=======
+>>>>>>> v0.5.23
 // Note: the type system is based on L1 typed transactions.
 
 // encodeBufferPool holds temporary encoder buffers for batch encoding
@@ -40,6 +50,7 @@ const (
 	BatchV1Type = iota
 )
 
+<<<<<<< HEAD
 const (
 	BatchBundleV1Type = iota
 	BatchBundleV2Type
@@ -47,6 +58,11 @@ const (
 
 type BatchV1 struct {
 	Epoch     rollup.Epoch // aka l1 num
+=======
+type BatchV1 struct {
+	EpochNum  rollup.Epoch // aka l1 num
+	EpochHash common.Hash  // block hash
+>>>>>>> v0.5.23
 	Timestamp uint64
 	// no feeRecipient address input, all fees go to a L2 contract
 	Transactions []hexutil.Bytes
@@ -57,6 +73,7 @@ type BatchData struct {
 	// batches may contain additional data with new upgrades
 }
 
+<<<<<<< HEAD
 func DecodeBatches(config *rollup.Config, r io.Reader) ([]*BatchData, error) {
 	var typeData [1]byte
 	if _, err := io.ReadFull(r, typeData[:]); err != nil {
@@ -95,6 +112,10 @@ func EncodeBatches(config *rollup.Config, batches []*BatchData, w io.Writer) err
 	default:
 		return fmt.Errorf("unrecognized batch bundle type: %d", bundleType)
 	}
+=======
+func (b *BatchV1) Epoch() eth.BlockID {
+	return eth.BlockID{Hash: b.EpochHash, Number: uint64(b.EpochNum)}
+>>>>>>> v0.5.23
 }
 
 // EncodeRLP implements rlp.Encoder

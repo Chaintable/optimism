@@ -1,7 +1,12 @@
 ws_backend_group = "main"
 
 ws_method_whitelist = [
+<<<<<<< HEAD
   "eth_subscribe"
+=======
+  "eth_subscribe",
+  "eth_accounts"
+>>>>>>> v0.5.23
 ]
 
 [server]

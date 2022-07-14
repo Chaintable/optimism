@@ -1,5 +1,14 @@
 # @eth-optimism/hardhat-node
 
+<<<<<<< HEAD
+=======
+## 0.2.0
+
+### Minor Changes
+
+- 587a7d0d: Correct configuration file behavior
+
+>>>>>>> v0.5.23
 ## 0.1.5
 
 ### Patch Changes

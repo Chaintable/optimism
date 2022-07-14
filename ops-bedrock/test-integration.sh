@@ -13,5 +13,10 @@ if [ ! -f "$DEPLOYMENTS_DIR/OptimismPortal.json" ]; then
 fi
 
 export OPTIMISM_PORTAL_ADDRESS=$(jq -r '.address' < "$DEPLOYMENTS_DIR/OptimismPortal.json")
+<<<<<<< HEAD
 cd ./packages/integration-tests
 yarn test
+=======
+cd ./packages/integration-tests-bedrock
+yarn test
+>>>>>>> v0.5.23

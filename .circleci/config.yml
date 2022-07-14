@@ -1,5 +1,6 @@
 version: 2.1
 
+<<<<<<< HEAD
 orbs:
   node: circleci/node@5.0.2
 
@@ -29,47 +30,31 @@ commands:
       - store_test_results:
           path: /test-results
 
+=======
+>>>>>>> v0.5.23
 jobs:
-  go-lint-test:
-    parameters:
-      working_directory:
-        description: Working directory
-        type: string
-    docker:
-      - image: ethereumoptimism/go-builder:latest
-      - image: cimg/postgres:14.1
-    steps:
-      - go-lint-test:
-          working_directory: <<parameters.working_directory>>
-
-  go-lint-test-build:
-    parameters:
-      binary_name:
-        description: Binary name to build
-        type: string
-      working_directory:
-        description: Working directory
-        type: string
-    docker:
-      - image: ethereumoptimism/go-builder:latest
-      - image: cimg/postgres:14.1
-    steps:
-      - go-lint-test:
-          working_directory: <<parameters.working_directory>>
-      - run:
-          name: Build
-          command: make <<parameters.binary_name>>
-          working_directory: <<parameters.working_directory>>
-
   yarn-monorepo:
     docker:
+<<<<<<< HEAD
       - image: ethereumoptimism/js-builder:nightly
+=======
+      - image: ethereumoptimism/ci-builder:latest
+    resource_class: xlarge
+>>>>>>> v0.5.23
     steps:
       - restore_cache:
           keys:
             - v2-cache-source-{{ .Branch }}-{{ .Revision }}
             - v2-cache-source-{{ .Branch }}
       - checkout
+      - run:
+          name: Check if we should run
+          command: |
+            shopt -s inherit_errexit
+            CHANGED=$(check-changed "packages/")
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
       - save_cache:
           key: v2-cache-source-{{ .Branch }}-{{ .Revision }}
           paths:
@@ -106,19 +91,57 @@ jobs:
           paths:
             - "."
 
-  contracts-slither:
+  docker-publish:
+    environment:
+      DOCKER_BUILDKIT: 1
+    parameters:
+      docker_tags:
+        description: Docker image tags as csv
+        type: string
+      docker_file:
+        description: Path to Dockerfile
+        type: string
+      docker_context:
+        description: Docker build context
+        type: string
+      target:
+        description: Docker build target
+        type: string
+        default: ""
     docker:
-      - image: ethereumoptimism/js-builder:latest
+      - image: circleci/buildpack-deps:stretch
     steps:
-      - restore_cache:
-          keys:
-            - v2-cache-yarn-build-{{ .Revision }}
       - checkout
+      - setup_remote_docker:
+          version: 20.10.12
+      - when:
+          condition: <<parameters.target>>
+          steps:
+            - run:
+                name: Build with context
+                command: |
+                  docker build \
+                  $(echo -ne "<< parameters.docker_tags >>" | sed "s/,/\n/g" | sed -e 's/^/-t /' | tr '\n' ' ') \
+                  -f <<parameters.docker_file>> \
+                  --target <<parameters.target>> \
+                  <<parameters.docker_context>>
+      - unless:
+          condition: <<parameters.target>>
+          steps:
+            - run:
+                name: Build
+                command: |
+                  docker build \
+                  $(echo -ne "<< parameters.docker_tags >>" | sed "s/,/\n/g" | sed -e 's/^/-t /' | tr '\n' ' ') \
+                  -f <<parameters.docker_file>> \
+                  <<parameters.docker_context>>
       - run:
-          name: Run Slither
-          command: yarn test:slither
-          working_directory: packages/contracts
+          name: Publish
+          command: |
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USERNAME" --password-stdin
+            docker push <<parameters.docker_tags>>
 
+<<<<<<< HEAD
   contracts-periphery-slither:
     docker:
       - image: ethereumoptimism/js-builder:latest
@@ -133,31 +156,55 @@ jobs:
           working_directory: packages/contracts-periphery
 
   contracts-tests:
+=======
+  contracts-bedrock-tests:
+>>>>>>> v0.5.23
     docker:
-      - image: ethereumoptimism/js-builder:latest
-    resource_class: xlarge
+      - image: ethereumoptimism/ci-builder:latest
+    resource_class: medium
     steps:
       - restore_cache:
           keys:
             - v2-cache-yarn-build-{{ .Revision }}
       - checkout
       - run:
-          name: Lint
+          name: Check if we should run
+          command: |
+            shopt -s inherit_errexit
+            CHANGED=$(check-changed "(contracts-bedrock|hardhat-deploy-config)")
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
+      - run:
+          name: lint
           command: yarn lint:check
-          working_directory: packages/contracts
+          working_directory: packages/contracts-bedrock
       - run:
-          name: Check deployment docs
-          command: yarn autogen:markdown && git diff --exit-code
-          working_directory: packages/contracts
+          name: slither
+          command: |
+            slither --version
+            yarn slither || exit 0
+          working_directory: packages/contracts-bedrock
       - run:
-          name: Slither
-          command: yarn test:slither
-          working_directory: packages/contracts
+          name: test
+          command: yarn test
+          working_directory: packages/contracts-bedrock
       - run:
-          name: Test
-          command: yarn test:coverage
-          working_directory: packages/contracts
+          name: gas snapshot
+          command: |
+            forge --version
+            forge snapshot --check
+          working_directory: packages/contracts-bedrock
+      - run:
+          name: storage snapshot
+          command: yarn storage-snapshot && git diff --exit-code .storage-layout
+          working_directory: packages/contracts-bedrock
+      - run:
+          name: check go bindings
+          command: make && git diff --exit-code
+          working_directory: op-bindings
 
+<<<<<<< HEAD
   contracts-periphery-tests:
     docker:
       - image: ethereumoptimism/js-builder:latest
@@ -199,36 +246,156 @@ jobs:
           working_directory: packages/contracts-governance
 
   dtl-tests:
+=======
+  js-lint-test:
+    parameters:
+      package_name:
+        description: Package name
+        type: string
+      dependencies:
+        description: Regex matching dependent packages
+        type: string
+        default: this-package-does-not-exist
+>>>>>>> v0.5.23
     docker:
-      - image: ethereumoptimism/js-builder:latest
+      - image: ethereumoptimism/ci-builder:latest
+    resource_class: large
     steps:
       - restore_cache:
           keys:
             - v2-cache-yarn-build-{{ .Revision }}
       - checkout
+      - run:
+          name: Check if we should run
+          command: |
+            shopt -s inherit_errexit
+            CHANGED=$(check-changed "(packages/<<parameters.package_name>>|packages/<<parameters.dependencies>>)")
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
+      - run:
+          name: Lint
+          command: yarn lint:check
+          working_directory: packages/<<parameters.package_name>>
       - run:
           name: Test
           command: yarn test:coverage
-          working_directory: packages/data-transport-layer
+          working_directory: packages/<<parameters.package_name>>
 
-  geth-tests:
+  bedrock-go-tests:
     docker:
-      - image: ethereumoptimism/go-builder:latest
+      - image: ethereumoptimism/ci-builder:latest
     steps:
       - checkout
       - run:
-          name: Test
-          command: make test
-          working_directory: l2geth
+          name: Check if we should run
+          command: |
+            shopt -s inherit_errexit
+            CHANGED=$(check-changed "op-(batcher|bindings|e2e|node|proposer)")
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
+      - run:
+          name: lint op-bindings
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-bindings
+      - run:
+          name: lint op-node
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-node
+      - run:
+          name: lint op-proposer
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-proposer
+      - run:
+          name: lint op-batcher
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-batcher
+      - run:
+          name: lint op-e2e
+          command: |
+            golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: op-e2e
+      - run:
+          name: prep results dir
+          command: mkdir -p /test-results
+      - run:
+          name: test op-node
+          command: |
+            gotestsum --junitfile /test-results/op-node.xml -- -coverpkg=github.com/ethereum-optimism/optimism/... -coverprofile=coverage.out -covermode=atomic ./...
+          working_directory: op-node
+      - run:
+          name: test op-proposer
+          command: |
+            gotestsum --junitfile /test-results/op-proposer.xml -- -coverpkg=github.com/ethereum-optimism/optimism/... -coverprofile=coverage.out -covermode=atomic ./...
+          working_directory: op-proposer
+      - run:
+          name: test op-batcher
+          command: |
+            gotestsum --junitfile /test-results/op-batcher.xml -- -coverpkg=github.com/ethereum-optimism/optimism/... -coverprofile=coverage.out -covermode=atomic ./...
+          working_directory: op-batcher
+      - run:
+          name: test op-e2e
+          command: |
+            gotestsum --junitfile /test-results/op-e2e.xml -- -coverpkg=github.com/ethereum-optimism/optimism/... -coverprofile=coverage.out -covermode=atomic ./...
+          working_directory: op-e2e
+      - store_test_results:
+          path: /test-results
+      - run:
+          command: echo "Done."
+
+  bedrock-markdown:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - run:
+          name: markdown lint
+          command: |
+            docker run -v `pwd`:/workdir davidanson/markdownlint-cli2:0.4.0 "op-node/README.md" "./specs/**/*.md" "#**/node_modules"
+      - run:
+          name: link lint
+          command: |
+            docker run --init -it -v `pwd`:/input lycheeverse/lychee --verbose --no-progress --exclude-loopback --exclude twitter.com --exclude-mail /input/README.md "/input/specs/**/*.md" "/input/meta/**/*.md" "/input/op-node/**/*.md" || exit 0
+
+  fuzz-op-node:
+    docker:
+      - image: ethereumoptimism/ci-builder:latest
+    steps:
+      - checkout
+      - run:
+          name: Check if we should run
+          command: |
+            shopt -s inherit_errexit
+            CHANGED=$(check-changed "op-node")
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
+      - run:
+          name: Fuzz
+          command: make fuzz
+          working_directory: op-node
 
   depcheck:
     docker:
-      - image: ethereumoptimism/js-builder:latest
+      - image: ethereumoptimism/ci-builder:latest
     steps:
       - restore_cache:
           keys:
             - v2-cache-yarn-build-{{ .Revision }}
       - checkout
+      - run:
+          name: Check if we should run
+          command: |
+            shopt -s inherit_errexit
+            CHANGED=$(check-changed "packages/")
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
       # Note: The below needs to be manually configured whenever we
       # add a new package to CI.
       - run:
@@ -256,33 +423,148 @@ jobs:
           command: npx depcheck
           working_directory: integration-tests
 
-  bss-core-tests:
+  go-lint-test-build:
+    parameters:
+      binary_name:
+        description: Binary name to build
+        type: string
+      working_directory:
+        description: Working directory
+        type: string
+      build:
+        description: Whether or not to build the binary
+        type: boolean
+        default: true
+      dependencies:
+        description: Regex matching dependent packages
+        type: string
+        default: this-package-does-not-exist
     docker:
-      - image: ethereumoptimism/go-builder:latest
+      - image: ethereumoptimism/ci-builder:latest
+      - image: cimg/postgres:14.1
     steps:
       - checkout
       - run:
+          name: Check if we should run
+          command: |
+            shopt -s inherit_errexit
+            CHANGED=$(check-changed "(<<parameters.working_directory>>|<<parameters.dependencies>>)")
+            echo $CHANGED
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
+      - run:
           name: Lint
+<<<<<<< HEAD
           command: golangci-lint run -E goimports -E sqlclosecheck -E bodyclose -E asciicheck ./...
           working_directory: bss-core
+=======
+          command: golangci-lint run -E goimports,sqlclosecheck,bodyclose,asciicheck,misspell ./...
+          working_directory: <<parameters.working_directory>>
+      - store_test_results:
+          path: /test-results
+>>>>>>> v0.5.23
       - run:
           name: Test
           command: |
             mkdir -p /test-results
             gotestsum --junitfile /test-results/tests.xml
+<<<<<<< HEAD
           working_directory: bss-core
       - store_test_results:
           path: /test-results
+=======
+          working_directory: <<parameters.working_directory>>
+      - when:
+          condition:
+            equal: [ true, <<parameters.build>> ]
+          steps:
+            - run:
+                name: Build
+                command: make <<parameters.binary_name>>
+                working_directory: <<parameters.working_directory>>
+
+  geth-tests:
+    docker:
+      - image: ethereumoptimism/ci-builder:latest
+    steps:
+      - checkout
+      - run:
+          name: Check if we should run
+          command: |
+            shopt -s inherit_errexit
+            CHANGED=$(check-changed "l2geth")
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
+      - run:
+          name: Test
+          command: make test
+          working_directory: l2geth
+
+  devnet:
+    machine:
+      image: ubuntu-2004:202201-01
+      docker_layer_caching: true
+    environment:
+      DOCKER_BUILDKIT: 1
+    steps:
+      - checkout
+      - run:
+          name: Check if we should run
+          command: |
+            CHANGED=$(bash ./ops/docker/ci-builder/check-changed.sh "(contracts-bedrock|op-bindings|op-batcher|op-node|op-proposer|ops-bedrock)/")
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
+      - run:
+          name: foundryup
+          command: |
+            curl -L https://foundry.paradigm.xyz | bash
+            source $HOME/.bashrc
+            foundryup
+            echo 'export PATH=$HOME/.foundry/bin:$PATH' >> $BASH_ENV
+      - run:
+          name: Install and build
+          command: |
+            yarn install
+            yarn build
+      - run:
+          name: Bring up the stack
+          command: |
+            make devnet-up
+      - run:
+          name: Do a deposit
+          no_output_timeout: 5m
+          command: |
+            npx hardhat compile
+            npx hardhat deposit \
+                --to 0xB79f76EF2c5F0286176833E7B2eEe103b1CC3244  \
+                --amount-eth 1 \
+                --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+                --network devnetL1
+          working_directory: packages/contracts-bedrock/contracts-bedrock
+      - run:
+          command: echo "Deposit complete."
+>>>>>>> v0.5.23
 
   integration-tests:
     machine:
-      image: ubuntu-2004:202111-02
+      image: ubuntu-2004:202201-01
       docker_layer_caching: true
     environment:
       DOCKER_BUILDKIT: 1
     parallelism: 3
     steps:
       - checkout
+      - run:
+          name: Check if we should run
+          command: |
+            shopt -s inherit_errexit
+            CHANGED=$(bash ./ops/docker/ci-builder/check-changed.sh "(l2geth|common-ts|contracts|core-utils|message-relayer|data-transport-layer|replica-healthcheck|sdk|batch-submitter|gas-oracle|bss-core|integration-tests)/")
+            if [[ "$CHANGED" = "FALSE" ]]; then
+              circleci step halt
+            fi
       - run:
           name: Bring up the stack
           command: |
@@ -299,77 +581,57 @@ jobs:
             circleci tests glob "../integration-tests/test/*.spec.ts" | circleci tests split | tee splits.txt
             docker-compose run integration_tests $(cat splits.txt)
           working_directory: ops
+      - run:
+          command: echo "Done."
 
-  js-lint-test:
+  semgrep-scan:
     parameters:
-      package_name:
-        description: Package name
+      diff_branch:
         type: string
-    docker:
-      - image: ethereumoptimism/js-builder:latest
-    steps:
-      - restore_cache:
-          keys:
-            - v2-cache-yarn-build-{{ .Revision }}
-      - checkout
-      - run:
-          name: Lint
-          command: yarn lint:check
-          working_directory: packages/<<parameters.package_name>>
-      - run:
-          name: Test
-          command: yarn test:coverage
-          working_directory: packages/<<parameters.package_name>>
-
-  docker-publish:
+        default: develop
     environment:
-      DOCKER_BUILDKIT: 1
-    parameters:
-      docker_tags:
-        description: Docker image tags as csv
-        type: string
-      docker_file:
-        description: Path to Dockerfile
-        type: string
-      docker_context:
-        description: Docker build context
-        type: string
-      target:
-        description: Docker build target
-        type: string
-        default: ""
+      TEMPORARY_BASELINE_REF: << parameters.diff_branch >>
+      SEMGREP_REPO_URL: << pipeline.project.git_url >>
+      SEMGREP_BRANCH: << pipeline.git.branch >>
+      SEMGREP_COMMIT: << pipeline.git.revision >>
+
+      # Change job timeout (default is 1800 seconds; set to 0 to disable)
+      SEMGREP_TIMEOUT: 3000
+
     docker:
-      - image: circleci/buildpack-deps:stretch
+      - image: returntocorp/semgrep
+    resource_class: xlarge
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 20.10.12
-      - when:
-          condition: <<parameters.target>>
-          steps:
-            - run:
-                name: Build with context
-                command: |
-                    docker build \
-                    $(echo -ne "<< parameters.docker_tags >>" | sed "s/,/\n/g" | sed -e 's/^/-t /' | tr '\n' ' ') \
-                    -f <<parameters.docker_file>> \
-                    --target <<parameters.target>> \
-                    <<parameters.docker_context>>
       - unless:
-          condition: <<parameters.target>>
+          condition:
+            equal: [ "develop", << pipeline.git.branch >> ]
           steps:
             - run:
-                name: Build
+                # Scan changed files in PRs, block on new issues only (existing issues ignored)
+                # Do a full scan when scanning develop, otherwise do an incremental scan.
+                name: "Conditionally set BASELINE env var"
                 command: |
-                    docker build \
-                    $(echo -ne "<< parameters.docker_tags >>" | sed "s/,/\n/g" | sed -e 's/^/-t /' | tr '\n' ' ') \
-                    -f <<parameters.docker_file>> \
-                    <<parameters.docker_context>>
+                  echo 'export SEMGREP_BASELINE_REF=${TEMPORARY_BASELINE_REF}' >> $BASH_ENV
       - run:
-          name: Publish
+          name: "Set environment variables" # for PR comments and in-app hyperlinks to findings
           command: |
-            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USERNAME" --password-stdin
-            docker push <<parameters.docker_tags>>
+            echo 'export SEMGREP_PR_ID=${CIRCLE_PULL_REQUEST##*/}' >> $BASH_ENV
+            echo 'export SEMGREP_JOB_URL=$CIRCLE_BUILD_URL' >> $BASH_ENV
+            echo 'export SEMGREP_REPO_NAME=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME' >> $BASH_ENV
+      - run:
+          name: "Semgrep scan"
+          command: semgrep ci
+
+  go-mod-tidy:
+    docker:
+      - image: ethereumoptimism/ci-builder:latest
+    steps:
+      - checkout
+      - run:
+          name: "Go mod tidy"
+          command: make mod-tidy && git diff --exit-code
+
 
   bedrock-markdown:
     machine:
@@ -545,6 +807,7 @@ workflows:
     jobs:
       - semgrep-scan
       - yarn-monorepo
+<<<<<<< HEAD
       - bedrock-go-tests
       - bedrock-markdown
       - fuzz-op-node
@@ -572,6 +835,11 @@ workflows:
           name: bss-core-tests
           working_directory: bss-core
       - contracts-tests:
+=======
+      - js-lint-test:
+          name: common-ts-tests
+          package_name: common-ts
+>>>>>>> v0.5.23
           requires:
             - yarn-monorepo
       - contracts-periphery-tests:
@@ -584,8 +852,9 @@ workflows:
           requires:
             - yarn-monorepo
       - js-lint-test:
-          name: dtl-tests
-          package_name: data-transport-layer
+          name: contracts-tests
+          package_name: contracts
+          dependencies: hardhat-deploy-config
           requires:
             - yarn-monorepo
       - js-lint-test:
@@ -593,9 +862,37 @@ workflows:
           package_name: core-utils
           requires:
             - yarn-monorepo
+      - contracts-bedrock-tests:
+          requires:
+            - yarn-monorepo
       - js-lint-test:
-          name: sdk-tests
-          package_name: sdk
+          name: contracts-governance-tests
+          package_name: contracts-governance
+          dependencies: "(core-utils|sdk)"
+          requires:
+            - yarn-monorepo
+      - js-lint-test:
+          name: contracts-periphery-tests
+          package_name: contracts-periphery
+          dependencies: "(contracts|contracts-bedrock|core-utils|hardhat-deploy-config)"
+          requires:
+            - yarn-monorepo
+      - js-lint-test:
+          name: dtl-tests
+          package_name: data-transport-layer
+          dependencies: "(common-ts|contracts|core-utils)"
+          requires:
+            - yarn-monorepo
+      - js-lint-test:
+          name: drippie-mon-tests
+          package_name: drippie-mon
+          dependencies: "(common-ts|contracts-periphery|core-utils|sdk)"
+          requires:
+            - yarn-monorepo
+      - js-lint-test:
+          name: fault-detector-tests
+          package_name: fault-detector
+          dependencies: "(common-ts|contracts|core-utils|sdk)"
           requires:
             - yarn-monorepo
       - js-lint-test:
@@ -611,18 +908,60 @@ workflows:
       - js-lint-test:
           name: message-relayer-tests
           package_name: message-relayer
+          dependencies: "(common-ts|core-utils|sdk)"
           requires:
             - yarn-monorepo
       - js-lint-test:
           name: replica-healthcheck-tests
           package_name: replica-healthcheck
+          dependencies: "(common-ts|core-utils)"
+          requires:
+            - yarn-monorepo
+      - js-lint-test:
+          name: sdk-tests
+          package_name: sdk
+          dependencies: "(contracts|core-utils)"
           requires:
             - yarn-monorepo
       - depcheck:
           requires:
             - yarn-monorepo
+      - bedrock-go-tests
+      - fuzz-op-node
+      - bedrock-markdown
+      - devnet
+      - go-lint-test-build:
+          name: batch-submitter-tests
+          binary_name: batch-submitter
+          working_directory: batch-submitter
+          dependencies: bss-core
+      - go-lint-test-build:
+          name: proxyd-tests
+          binary_name: proxyd
+          working_directory: proxyd
+      - go-lint-test-build:
+          name: teleportr-tests
+          binary_name: teleportr
+          working_directory: teleportr
+          dependencies: bss-core
+      - go-lint-test-build:
+          name: gas-oracle-tests
+          binary_name: gas-oracle
+          working_directory: gas-oracle
+      - go-lint-test-build:
+          name: indexer-tests
+          binary_name: indexer
+          working_directory: indexer
+          dependencies: op-bindings
+      - go-lint-test-build:
+          name: bss-core-tests
+          binary_name: bss-core
+          working_directory: bss-core
+          build: false
       - geth-tests
       - integration-tests
+      - semgrep-scan
+      - go-mod-tidy
 
   nightly:
     triggers:

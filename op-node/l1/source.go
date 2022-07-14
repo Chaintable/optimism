@@ -5,12 +5,19 @@ import (
 	"errors"
 	"fmt"
 
+<<<<<<< HEAD
+=======
+	"github.com/ethereum-optimism/optimism/op-node/client"
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum"
 
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
+<<<<<<< HEAD
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
+=======
+>>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -94,6 +101,7 @@ func DefaultConfig(config *rollup.Config, trustRPC bool) *SourceConfig {
 
 type batchCallContextFn func(ctx context.Context, b []rpc.BatchElem) error
 
+<<<<<<< HEAD
 type RPCClient interface {
 	BatchCallContext(ctx context.Context, b []rpc.BatchElem) error
 	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
@@ -105,6 +113,12 @@ type RPCClient interface {
 // and flag to not trust the RPC.
 type Source struct {
 	client RPCClient
+=======
+// Source to retrieve L1 data from with optimized batch requests, cached results,
+// and flag to not trust the RPC.
+type Source struct {
+	client client.RPC
+>>>>>>> v0.5.23
 
 	batchCall batchCallContextFn
 
@@ -123,7 +137,11 @@ type Source struct {
 	headersCache *lru.Cache
 }
 
+<<<<<<< HEAD
 func NewSource(client RPCClient, log log.Logger, config *SourceConfig) (*Source, error) {
+=======
+func NewSource(client client.RPC, log log.Logger, config *SourceConfig) (*Source, error) {
+>>>>>>> v0.5.23
 	if err := config.Check(); err != nil {
 		return nil, fmt.Errorf("bad config, cannot create L1 source: %w", err)
 	}
@@ -190,24 +208,40 @@ func (s *Source) blockCall(ctx context.Context, method string, id interface{}) (
 	return info, txs, nil
 }
 
+<<<<<<< HEAD
 func (s *Source) InfoByHash(ctx context.Context, hash common.Hash) (derive.L1Info, error) {
+=======
+func (s *Source) InfoByHash(ctx context.Context, hash common.Hash) (eth.L1Info, error) {
+>>>>>>> v0.5.23
 	if header, ok := s.headersCache.Get(hash); ok {
 		return header.(*HeaderInfo), nil
 	}
 	return s.headerCall(ctx, "eth_getBlockByHash", hash)
 }
 
+<<<<<<< HEAD
 func (s *Source) InfoByNumber(ctx context.Context, number uint64) (derive.L1Info, error) {
+=======
+func (s *Source) InfoByNumber(ctx context.Context, number uint64) (eth.L1Info, error) {
+>>>>>>> v0.5.23
 	// can't hit the cache when querying by number due to reorgs.
 	return s.headerCall(ctx, "eth_getBlockByNumber", hexutil.EncodeUint64(number))
 }
 
+<<<<<<< HEAD
 func (s *Source) InfoHead(ctx context.Context) (derive.L1Info, error) {
+=======
+func (s *Source) InfoHead(ctx context.Context) (eth.L1Info, error) {
+>>>>>>> v0.5.23
 	// can't hit the cache when querying the head due to reorgs / changes.
 	return s.headerCall(ctx, "eth_getBlockByNumber", "latest")
 }
 
+<<<<<<< HEAD
 func (s *Source) InfoAndTxsByHash(ctx context.Context, hash common.Hash) (derive.L1Info, types.Transactions, error) {
+=======
+func (s *Source) InfoAndTxsByHash(ctx context.Context, hash common.Hash) (eth.L1Info, types.Transactions, error) {
+>>>>>>> v0.5.23
 	if header, ok := s.headersCache.Get(hash); ok {
 		if txs, ok := s.transactionsCache.Get(hash); ok {
 			return header.(*HeaderInfo), txs.(types.Transactions), nil
@@ -216,17 +250,29 @@ func (s *Source) InfoAndTxsByHash(ctx context.Context, hash common.Hash) (derive
 	return s.blockCall(ctx, "eth_getBlockByHash", hash)
 }
 
+<<<<<<< HEAD
 func (s *Source) InfoAndTxsByNumber(ctx context.Context, number uint64) (derive.L1Info, types.Transactions, error) {
+=======
+func (s *Source) InfoAndTxsByNumber(ctx context.Context, number uint64) (eth.L1Info, types.Transactions, error) {
+>>>>>>> v0.5.23
 	// can't hit the cache when querying by number due to reorgs.
 	return s.blockCall(ctx, "eth_getBlockByNumber", hexutil.EncodeUint64(number))
 }
 
+<<<<<<< HEAD
 func (s *Source) InfoAndTxsHead(ctx context.Context) (derive.L1Info, types.Transactions, error) {
+=======
+func (s *Source) InfoAndTxsHead(ctx context.Context) (eth.L1Info, types.Transactions, error) {
+>>>>>>> v0.5.23
 	// can't hit the cache when querying the head due to reorgs / changes.
 	return s.blockCall(ctx, "eth_getBlockByNumber", "latest")
 }
 
+<<<<<<< HEAD
 func (s *Source) Fetch(ctx context.Context, blockHash common.Hash) (derive.L1Info, types.Transactions, types.Receipts, error) {
+=======
+func (s *Source) Fetch(ctx context.Context, blockHash common.Hash) (eth.L1Info, types.Transactions, types.Receipts, error) {
+>>>>>>> v0.5.23
 	if blockHash == (common.Hash{}) {
 		return nil, nil, nil, ethereum.NotFound
 	}

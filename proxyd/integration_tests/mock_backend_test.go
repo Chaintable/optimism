@@ -231,9 +231,13 @@ func (m *MockBackend) Requests() []*RecordedRequest {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
 	out := make([]*RecordedRequest, len(m.requests))
+<<<<<<< HEAD
 	for i := 0; i < len(m.requests); i++ {
 		out[i] = m.requests[i]
 	}
+=======
+	copy(out, m.requests)
+>>>>>>> v0.5.23
 	return out
 }
 

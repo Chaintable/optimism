@@ -5,8 +5,13 @@
  */
 export interface State {
   [address: string]: {
+<<<<<<< HEAD
     nonce: number
     balance: string
+=======
+    nonce?: string
+    balance?: string
+>>>>>>> v0.5.23
     codeHash?: string
     root?: string
     code?: string
@@ -24,6 +29,10 @@ export interface ChainConfig {
   chainId: number
   homesteadBlock: number
   eip150Block: number
+<<<<<<< HEAD
+=======
+  eip150Hash?: string
+>>>>>>> v0.5.23
   eip155Block: number
   eip158Block: number
   byzantiumBlock: number
@@ -34,6 +43,10 @@ export interface ChainConfig {
   berlinBlock: number
   londonBlock?: number
   arrowGlacierBlock?: number
+<<<<<<< HEAD
+=======
+  grayGlacierBlock?: number
+>>>>>>> v0.5.23
   mergeForkBlock?: number
   terminalTotalDifficulty?: number
   clique?: {
@@ -48,12 +61,39 @@ export interface ChainConfig {
  */
 export interface Genesis {
   config: ChainConfig
+<<<<<<< HEAD
   nonce?: number
   timestamp?: number
   difficulty: string
   mixHash?: string
   coinbase?: string
+=======
+  nonce?: string
+  timestamp?: string
+  difficulty: string
+  mixHash?: string
+  coinbase?: string
+  number?: string
+>>>>>>> v0.5.23
   gasLimit: string
+  gasUsed?: string
+  parentHash?: string
   extraData: string
   alloc: State
+}
+
+/**
+ * Represents the chain config for an Optimism chain
+ */
+export interface OptimismChainConfig {
+  enabled: boolean
+  baseFeeRecipient: string
+  l1FeeRecipient: string
+}
+
+/**
+ * Represents the Genesis file format for an Optimism chain
+ */
+export interface OptimismGenesis extends Genesis {
+  optimism: OptimismChainConfig
 }

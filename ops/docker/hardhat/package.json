@@ -1,11 +1,19 @@
 {
   "name": "@eth-optimism/hardhat-node",
+<<<<<<< HEAD
   "version": "0.1.5",
+=======
+  "version": "0.2.0",
+>>>>>>> v0.5.23
   "scripts": {
     "start": "hardhat node --network hardhat"
   },
   "license": "MIT",
   "dependencies": {
+<<<<<<< HEAD
+=======
+    "dotenv": "^10.0.0",
+>>>>>>> v0.5.23
     "hardhat": "^2.9.6"
   }
 }

@@ -4,6 +4,10 @@ RUN apk add --no-cache make gcc musl-dev linux-headers git jq bash
 
 COPY ./indexer /go/indexer
 COPY ./l2geth /go/l2geth
+<<<<<<< HEAD:indexer/Dockerfile
+=======
+COPY ./op-bindings /go/op-bindings
+>>>>>>> v0.5.23:ops/docker/Dockerfile.indexer
 
 COPY ./indexer/docker.go.work /go/go.work
 

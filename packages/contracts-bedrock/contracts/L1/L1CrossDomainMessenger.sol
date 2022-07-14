@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+<<<<<<< HEAD
 import { Lib_PredeployAddresses } from "../libraries/Lib_PredeployAddresses.sol";
 import { OptimismPortal } from "./OptimismPortal.sol";
 import { CrossDomainMessenger } from "../universal/CrossDomainMessenger.sol";
+=======
+import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
+import { OptimismPortal } from "./OptimismPortal.sol";
+import { CrossDomainMessenger } from "../universal/CrossDomainMessenger.sol";
+import { Semver } from "../universal/Semver.sol";
+>>>>>>> v0.5.23
 
 /**
  * @custom:proxied
@@ -12,6 +19,7 @@ import { CrossDomainMessenger } from "../universal/CrossDomainMessenger.sol";
  *         for sending and receiving data on the L1 side. Users are encouraged to use this
  *         interface instead of interacting with lower-level contracts directly.
  */
+<<<<<<< HEAD
 contract L1CrossDomainMessenger is CrossDomainMessenger {
     /**
      * @notice Address of the OptimismPortal.
@@ -30,6 +38,34 @@ contract L1CrossDomainMessenger is CrossDomainMessenger {
         blockedSystemAddresses[0] = address(this);
 
         _initialize(Lib_PredeployAddresses.L2_CROSS_DOMAIN_MESSENGER, blockedSystemAddresses);
+=======
+contract L1CrossDomainMessenger is CrossDomainMessenger, Semver {
+    /**
+     * @notice Address of the OptimismPortal.
+     */
+    OptimismPortal public immutable portal;
+
+    /**
+     * @custom:semver 0.0.1
+     *
+     * @param _portal Address of the OptimismPortal contract on this network.
+     */
+    constructor(OptimismPortal _portal) Semver(0, 0, 1) {
+        portal = _portal;
+        initialize();
+    }
+
+    /**
+     * @notice Initializer.
+     */
+    function initialize() public initializer {
+        address[] memory blockedSystemAddresses = new address[](1);
+        blockedSystemAddresses[0] = address(this);
+        __CrossDomainMessenger_init(
+            PredeployAddresses.L2_CROSS_DOMAIN_MESSENGER,
+            blockedSystemAddresses
+        );
+>>>>>>> v0.5.23
     }
 
     /**

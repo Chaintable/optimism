@@ -1,10 +1,18 @@
 import { ethers } from 'ethers'
 
+<<<<<<< HEAD
 import { DrippieConfig } from '../../src'
 
 const config: DrippieConfig = {
   TeleportrWithdrawal: {
     interval: 60 * 10,
+=======
+import { DrippieConfig, Time } from '../../src'
+
+const config: DrippieConfig = {
+  TeleportrWithdrawal: {
+    interval: 10 * Time.MINUTE,
+>>>>>>> v0.5.23
     dripcheck: 'CheckBalanceHigh',
     checkparams: {
       target: '0x4821975ca220601c153d02353300d6ad34adc362',
@@ -21,7 +29,11 @@ const config: DrippieConfig = {
     ],
   },
   GelatoBalance: {
+<<<<<<< HEAD
     interval: 60 * 60 * 24,
+=======
+    interval: 1 * Time.DAY,
+>>>>>>> v0.5.23
     dripcheck: 'CheckGelatoLow',
     checkparams: {
       treasury: '0x340759c8346A1E6Ed92035FB8B6ec57cE1D82c2c',

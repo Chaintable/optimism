@@ -8,3 +8,7 @@ forge-artifacts
 cache
 typechain
 coverage*
+<<<<<<< HEAD
+=======
+deployments
+>>>>>>> v0.5.23

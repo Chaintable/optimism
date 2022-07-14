@@ -7,6 +7,13 @@ coverage.json
 *.tsbuildinfo
 
 yarn-error.log
+<<<<<<< HEAD
+=======
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+.pnp.*
+>>>>>>> v0.5.23
 
 dist
 artifacts
@@ -21,6 +28,10 @@ packages/contracts/hardhat*
 packages/contracts-periphery/coverage*
 packages/contracts-periphery/@openzeppelin*
 packages/contracts-periphery/hardhat*
+<<<<<<< HEAD
+=======
+packages/contracts-periphery/forge-artifacts*
+>>>>>>> v0.5.23
 
 packages/data-transport-layer/db
 
@@ -37,9 +48,12 @@ packages/contracts-bedrock/deployments/anvil
 .env*
 !.env.example
 *.log
+<<<<<<< HEAD
 .idea/
 .vscode/settings.json
 l2geth/.vscode/settings.json
+=======
+>>>>>>> v0.5.23
 
 .devnet
 

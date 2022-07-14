@@ -3,12 +3,19 @@ package l2
 import (
 	"github.com/ethereum-optimism/optimism/indexer/bindings/l2erc20"
 	"github.com/ethereum-optimism/optimism/indexer/db"
+<<<<<<< HEAD:indexer/services/l2/query.go
 	"github.com/ethereum-optimism/optimism/l2geth/accounts/abi/bind"
 	l2common "github.com/ethereum-optimism/optimism/l2geth/common"
 	l2ethclient "github.com/ethereum-optimism/optimism/l2geth/ethclient"
+=======
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+>>>>>>> v0.5.23:go/indexer/services/l2/query.go
 )
 
-func QueryERC20(address l2common.Address, client *l2ethclient.Client) (*db.Token, error) {
+func QueryERC20(address common.Address, client *ethclient.Client) (*db.Token, error) {
 	contract, err := l2erc20.NewL2ERC20(address, client)
 	if err != nil {
 		return nil, err

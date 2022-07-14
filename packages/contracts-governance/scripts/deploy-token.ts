@@ -93,6 +93,13 @@ task('deploy-token', 'Deploy governance token and its mint manager contracts')
         console.log(`Got ${tokenReceipt.contractAddress}`)
         throw new Error(`Fatal error! Mismatch of governance token address`)
       }
+<<<<<<< HEAD
+=======
+    } else if (nonceTokenDeployer !== 0 && governanceTokenCode === '0x') {
+      throw new Error(
+        `Nonce is ${nonceTokenDeployer} without governance token deployed`
+      )
+>>>>>>> v0.5.23
     } else {
       console.log(
         `GovernanceToken already deployed at ${addresses.governanceToken}, skipping`

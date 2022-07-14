@@ -4,6 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"math/big"
+<<<<<<< HEAD
+=======
+	"math/rand"
+
+	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
+	"github.com/ethereum-optimism/optimism/op-node/testutils"
+
+	"github.com/ethereum-optimism/optimism/op-node/metrics"
+>>>>>>> v0.5.23
 
 	"github.com/ethereum-optimism/optimism/op-node/version"
 
@@ -84,9 +93,17 @@ func TestOutputAtBlock(t *testing.T) {
 
 	l2Client := &mockL2Client{}
 	l2Client.mock.On("GetBlockHeader", "latest").Return(&header)
+<<<<<<< HEAD
 	l2Client.mock.On("GetProof", common.HexToAddress(predeploys.L2ToL1MessagePasser), "latest").Return(&result)
 
 	server, err := newRPCServer(context.Background(), rpcCfg, rollupCfg, l2Client, log, "0.0")
+=======
+	l2Client.mock.On("GetProof", predeploys.L2ToL1MessagePasserAddr, "latest").Return(&result)
+
+	drClient := &mockDriverClient{}
+
+	server, err := newRPCServer(context.Background(), rpcCfg, rollupCfg, l2Client, drClient, log, "0.0", metrics.NewMetrics(""))
+>>>>>>> v0.5.23
 	assert.NoError(t, err)
 	assert.NoError(t, server.Start())
 	defer server.Stop()
@@ -104,6 +121,10 @@ func TestOutputAtBlock(t *testing.T) {
 func TestVersion(t *testing.T) {
 	log := testlog.Logger(t, log.LvlError)
 	l2Client := &mockL2Client{}
+<<<<<<< HEAD
+=======
+	drClient := &mockDriverClient{}
+>>>>>>> v0.5.23
 	rpcCfg := &RPCConfig{
 		ListenAddr: "localhost",
 		ListenPort: 0,
@@ -111,7 +132,11 @@ func TestVersion(t *testing.T) {
 	rollupCfg := &rollup.Config{
 		// ignore other rollup config info in this test
 	}
+<<<<<<< HEAD
 	server, err := newRPCServer(context.Background(), rpcCfg, rollupCfg, l2Client, log, "0.0")
+=======
+	server, err := newRPCServer(context.Background(), rpcCfg, rollupCfg, l2Client, drClient, log, "0.0", metrics.NewMetrics(""))
+>>>>>>> v0.5.23
 	assert.NoError(t, err)
 	assert.NoError(t, server.Start())
 	defer server.Stop()
@@ -125,6 +150,52 @@ func TestVersion(t *testing.T) {
 	assert.Equal(t, version.Version+"-"+version.Meta, out)
 }
 
+<<<<<<< HEAD
+=======
+func TestSyncStatus(t *testing.T) {
+	log := testlog.Logger(t, log.LvlError)
+	l2Client := &mockL2Client{}
+	drClient := &mockDriverClient{}
+	rng := rand.New(rand.NewSource(1234))
+	status := driver.SyncStatus{
+		CurrentL1:   testutils.RandomBlockRef(rng),
+		HeadL1:      testutils.RandomBlockRef(rng),
+		UnsafeL2:    testutils.RandomL2BlockRef(rng),
+		SafeL2:      testutils.RandomL2BlockRef(rng),
+		FinalizedL2: testutils.RandomL2BlockRef(rng),
+	}
+	drClient.On("SyncStatus").Return(&status)
+
+	rpcCfg := &RPCConfig{
+		ListenAddr: "localhost",
+		ListenPort: 0,
+	}
+	rollupCfg := &rollup.Config{
+		// ignore other rollup config info in this test
+	}
+	server, err := newRPCServer(context.Background(), rpcCfg, rollupCfg, l2Client, drClient, log, "0.0", metrics.NewMetrics(""))
+	assert.NoError(t, err)
+	assert.NoError(t, server.Start())
+	defer server.Stop()
+
+	client, err := dialRPCClientWithBackoff(context.Background(), log, "http://"+server.Addr().String(), nil)
+	assert.NoError(t, err)
+
+	var out *driver.SyncStatus
+	err = client.CallContext(context.Background(), &out, "optimism_syncStatus")
+	assert.NoError(t, err)
+	assert.Equal(t, &status, out)
+}
+
+type mockDriverClient struct {
+	mock.Mock
+}
+
+func (c *mockDriverClient) SyncStatus(ctx context.Context) (*driver.SyncStatus, error) {
+	return c.Mock.MethodCalled("SyncStatus").Get(0).(*driver.SyncStatus), nil
+}
+
+>>>>>>> v0.5.23
 type mockL2Client struct {
 	mock mock.Mock
 }

@@ -5,8 +5,13 @@ import { Bridge_Initializer } from "./CommonTest.t.sol";
 import { StandardBridge } from "../universal/StandardBridge.sol";
 import { L2StandardBridge } from "../L2/L2StandardBridge.sol";
 import { CrossDomainMessenger } from "../universal/CrossDomainMessenger.sol";
+<<<<<<< HEAD
 import { Lib_PredeployAddresses } from "../libraries/Lib_PredeployAddresses.sol";
 import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
+=======
+import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
+import { AddressAliasHelper } from "../vendor/AddressAliasHelper.sol";
+>>>>>>> v0.5.23
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 
@@ -25,12 +30,20 @@ contract L1StandardBridge_Test is Bridge_Initializer {
 
         assertEq(
             address(L1Bridge.otherBridge()),
+<<<<<<< HEAD
             Lib_PredeployAddresses.L2_STANDARD_BRIDGE
+=======
+            PredeployAddresses.L2_STANDARD_BRIDGE
+>>>>>>> v0.5.23
         );
 
         assertEq(
             address(L2Bridge),
+<<<<<<< HEAD
             Lib_PredeployAddresses.L2_STANDARD_BRIDGE
+=======
+            PredeployAddresses.L2_STANDARD_BRIDGE
+>>>>>>> v0.5.23
         );
     }
 
@@ -390,6 +403,7 @@ contract L1StandardBridge_Test is Bridge_Initializer {
             hex""
         );
     }
+<<<<<<< HEAD
 
     // donateETH
     // - can send ETH to the contract
@@ -399,4 +413,6 @@ contract L1StandardBridge_Test is Bridge_Initializer {
         L1Bridge.donateETH{ value: 1000 }();
         assertEq(address(L1Bridge).balance, 1000);
     }
+=======
+>>>>>>> v0.5.23
 }

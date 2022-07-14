@@ -32,6 +32,8 @@ const (
 	defaultMaxUpstreamBatchSize = 10
 )
 
+var emptyArrayResponse = json.RawMessage("[]")
+
 type Server struct {
 	backendGroups        map[string]*BackendGroup
 	wsBackendGroup       *BackendGroup
@@ -241,6 +243,7 @@ func (s *Server) handleBatchRPC(ctx context.Context, reqs []json.RawMessage, isB
 			responses[i] = NewRPCErrorRes(nil, err)
 			continue
 		}
+<<<<<<< HEAD:proxyd/server.go
 
 		if err := ValidateRPCReq(parsedReq); err != nil {
 			RecordRPCError(ctx, BackendProxyd, MethodUnknown, err)
@@ -248,6 +251,21 @@ func (s *Server) handleBatchRPC(ctx context.Context, reqs []json.RawMessage, isB
 			continue
 		}
 
+=======
+
+		if err := ValidateRPCReq(parsedReq); err != nil {
+			RecordRPCError(ctx, BackendProxyd, MethodUnknown, err)
+			responses[i] = NewRPCErrorRes(nil, err)
+			continue
+		}
+
+		if parsedReq.Method == "eth_accounts" {
+			RecordRPCForward(ctx, BackendProxyd, "eth_accounts", RPCRequestSourceHTTP)
+			responses[i] = NewRPCRes(parsedReq.ID, emptyArrayResponse)
+			continue
+		}
+
+>>>>>>> v0.5.23:go/proxyd/server.go
 		group := s.rpcMethodMappings[parsedReq.Method]
 		if group == "" {
 			// use unknown below to prevent DOS vector that fills up memory
