@@ -2,12 +2,6 @@ module github.com/ethereum-optimism/optimism/indexer
 
 go 1.17
 
-<<<<<<< HEAD
-replace github.com/ethereum-optimism/optimism/l2geth v0.0.0 => ../l2geth
-
-require (
-	github.com/ethereum-optimism/optimism/l2geth v0.0.0
-=======
 replace (
 	github.com/ethereum-optimism/optimism/l2geth v0.0.0 => ../l2geth
 	github.com/ethereum-optimism/optimism/op-bindings v0.0.0 => ../op-bindings
@@ -16,7 +10,6 @@ replace (
 require (
 	github.com/ethereum-optimism/optimism/l2geth v0.0.0
 	github.com/ethereum-optimism/optimism/op-bindings v0.0.0
->>>>>>> v0.5.23
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/getsentry/sentry-go v0.12.0
 	github.com/google/uuid v1.3.0
@@ -33,11 +26,7 @@ require (
 	github.com/aristanetworks/goarista v0.0.0-20170210015632-ea17b1a17847 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd v0.22.1 // indirect
-<<<<<<< HEAD
-	github.com/btcsuite/btcd/btcec/v2 v2.1.2 // indirect
-=======
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
->>>>>>> v0.5.23
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
