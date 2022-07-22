@@ -1,4 +1,4 @@
-name: geth unit tests
+name: geth lint and release
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
         make lint
 
   build:
-    runs-on: [self-hosted, general]
+    runs-on: [self-hosted, ops]
 
     needs: lint
 
