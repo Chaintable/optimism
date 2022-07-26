@@ -36,6 +36,15 @@ import (
 
 var _ vm.Tracer = (*StructLogger)(nil)
 
+type Diff struct {
+	BeforeValue *common.Hash `json:"before"`
+	AfterValue  *common.Hash `json:"after"`
+}
+
+type AccountDiff map[common.Hash]Diff
+
+type StateDiff map[common.Address]AccountDiff
+
 // StructLogger is a transaction trace creator
 type StructLogger struct {
 	store       Store
@@ -56,14 +65,16 @@ type StructLogger struct {
 	stack        []*big.Int
 	reverted     bool
 	output       []byte
+	stateDiff    StateDiff
 	err          error
 }
 
 // NewTraceStructLogger creates new instance of trace creator with underlying database.
 func NewTraceStructLogger(db Store) *StructLogger {
 	traceStructLogger := StructLogger{
-		store: db,
-		stack: make([]*big.Int, 30),
+		store:     db,
+		stack:     make([]*big.Int, 30),
+		stateDiff: make(StateDiff),
 	}
 	return &traceStructLogger
 }
@@ -160,7 +171,7 @@ func (tr *StructLogger) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, 
 	}
 
 	// We only care about system opcodes, faster if we pre-check once.
-	if !(op&0xf0 == 0xf0) && op != 0x0 {
+	if !(op&0xf0 == 0xf0) && op != 0x0 && op != vm.SSTORE {
 		return nil
 	}
 
@@ -276,8 +287,27 @@ func (tr *StructLogger) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, 
 		traceAction.Balance = (*hexutil.Big)(big.NewInt(0))
 		trace.Action = *traceAction
 		fromTrace.childTraces = append(fromTrace.childTraces, trace)
-	}
 
+	case vm.SSTORE:
+		stackLen := len(stack.Data())
+		if stackLen >= 2 && tr.store == nil {
+			accountAddress := contract.Address()
+			if tr.stateDiff[accountAddress] == nil {
+				tr.stateDiff[accountAddress] = make(AccountDiff)
+			}
+			afterValue := common.BigToHash(stack.Data()[stackLen-2])
+			indexAddress := common.BigToHash(stack.Data()[stackLen-1])
+			if diff, ok := tr.stateDiff[accountAddress][indexAddress]; !ok {
+				beforeValue := env.StateDB.GetState(contract.Address(), indexAddress)
+				tr.stateDiff[accountAddress][indexAddress] = Diff{
+					BeforeValue: &beforeValue,
+					AfterValue:  &afterValue,
+				}
+			} else {
+				diff.AfterValue = &afterValue
+			}
+		}
+	}
 	return nil
 }
 
@@ -399,6 +429,10 @@ func (tr *StructLogger) GetResult() *[]ActionTrace {
 	}
 	empty := make([]ActionTrace, 0)
 	return &empty
+}
+
+func (ot *StructLogger) GetStateDiff() StateDiff {
+	return ot.stateDiff
 }
 
 // CallTrace is struct for holding tracing results
