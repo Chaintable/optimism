@@ -4,9 +4,13 @@ cache
 typechain
 coverage.out
 .deps
-deployments
 broadcast
 <<<<<<< HEAD
 =======
 genesis.json
+<<<<<<< HEAD
 >>>>>>> v0.5.23
+=======
+src/contract-artifacts.ts
+tmp-artifacts
+>>>>>>> v0.5.24

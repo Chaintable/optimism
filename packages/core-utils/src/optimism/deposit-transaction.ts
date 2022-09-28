@@ -1,23 +1,43 @@
+import { getAddress } from '@ethersproject/address'
+import { ContractReceipt, Event } from '@ethersproject/contracts'
+import { BigNumber, BigNumberish } from '@ethersproject/bignumber'
+import { keccak256 } from '@ethersproject/keccak256'
+import { Zero } from '@ethersproject/constants'
+import * as RLP from '@ethersproject/rlp'
 import {
-  BigNumber,
-  BigNumberish,
+  arrayify,
   BytesLike,
-  ContractReceipt,
-  ethers,
-  Event,
-} from 'ethers'
+  hexDataSlice,
+  stripZeros,
+  hexConcat,
+  zeroPad,
+} from '@ethersproject/bytes'
+
+const formatBoolean = (value: boolean): Uint8Array => {
+  return value ? new Uint8Array([1]) : new Uint8Array([])
+}
 
 const formatNumber = (value: BigNumberish, name: string): Uint8Array => {
-  const result = ethers.utils.stripZeros(BigNumber.from(value).toHexString())
+  const result = stripZeros(BigNumber.from(value).toHexString())
   if (result.length > 32) {
     throw new Error(`invalid length for ${name}`)
   }
   return result
 }
 
+const handleBoolean = (value: string): boolean => {
+  if (value === '0x') {
+    return false
+  }
+  if (value === '0x01') {
+    return true
+  }
+  throw new Error(`invalid boolean RLP hex value ${value}`)
+}
+
 const handleNumber = (value: string): BigNumber => {
   if (value === '0x') {
-    return ethers.constants.Zero
+    return Zero
   }
   return BigNumber.from(value)
 }
@@ -27,7 +47,7 @@ const handleAddress = (value: string): string => {
     // @ts-ignore
     return null
   }
-  return ethers.utils.getAddress(value)
+  return getAddress(value)
 }
 
 export enum SourceHashDomain {
@@ -42,6 +62,7 @@ interface DepositTxOpts {
   mint: BigNumberish
   value: BigNumberish
   gas: BigNumberish
+  isSystemTransaction: boolean
   data: string
   domain?: SourceHashDomain
   l1BlockHash?: string
@@ -65,6 +86,7 @@ export class DepositTx {
   public mint: BigNumberish
   public value: BigNumberish
   public gas: BigNumberish
+  public isSystemTransaction: boolean
   public data: BigNumberish
 
   public domain?: SourceHashDomain
@@ -79,6 +101,7 @@ export class DepositTx {
     this.mint = opts.mint!
     this.value = opts.value!
     this.gas = opts.gas!
+    this.isSystemTransaction = opts.isSystemTransaction || false
     this.data = opts.data!
     this.domain = opts.domain
     this.l1BlockHash = opts.l1BlockHash
@@ -88,7 +111,7 @@ export class DepositTx {
 
   hash() {
     const encoded = this.encode()
-    return ethers.utils.keccak256(encoded)
+    return keccak256(encoded)
   }
 
   sourceHash() {
@@ -110,17 +133,11 @@ export class DepositTx {
       }
 
       const l1BlockHash = this.l1BlockHash
-      const input = ethers.utils.hexConcat([
-        l1BlockHash,
-        ethers.utils.zeroPad(marker, 32),
-      ])
-      const depositIDHash = ethers.utils.keccak256(input)
+      const input = hexConcat([l1BlockHash, zeroPad(marker, 32)])
+      const depositIDHash = keccak256(input)
       const domain = BigNumber.from(this.domain).toHexString()
-      const domainInput = ethers.utils.hexConcat([
-        ethers.utils.zeroPad(domain, 32),
-        depositIDHash,
-      ])
-      this._sourceHash = ethers.utils.keccak256(domainInput)
+      const domainInput = hexConcat([zeroPad(domain, 32), depositIDHash])
+      this._sourceHash = keccak256(domainInput)
     }
     return this._sourceHash
   }
@@ -128,36 +145,36 @@ export class DepositTx {
   encode() {
     const fields: any = [
       this.sourceHash() || '0x',
-      ethers.utils.getAddress(this.from) || '0x',
-      this.to != null ? ethers.utils.getAddress(this.to) : '0x',
+      getAddress(this.from) || '0x',
+      this.to != null ? getAddress(this.to) : '0x',
       formatNumber(this.mint || 0, 'mint'),
       formatNumber(this.value || 0, 'value'),
       formatNumber(this.gas || 0, 'gas'),
+      formatBoolean(this.isSystemTransaction),
       this.data || '0x',
     ]
 
-    return ethers.utils.hexConcat([
+    return hexConcat([
       BigNumber.from(this.type).toHexString(),
-      BigNumber.from(this.version).toHexString(),
-      ethers.utils.RLP.encode(fields),
+      RLP.encode(fields),
     ])
   }
 
   decode(raw: BytesLike, extra: DepositTxExtraOpts = {}) {
-    const payload = ethers.utils.arrayify(raw)
+    const payload = arrayify(raw)
     if (payload[0] !== this.type) {
       throw new Error(`Invalid type ${payload[0]}`)
     }
     this.version = payload[1]
-
-    const transaction = ethers.utils.RLP.decode(payload.slice(2))
+    const transaction = RLP.decode(payload.slice(1))
     this._sourceHash = transaction[0]
     this.from = handleAddress(transaction[1])
     this.to = handleAddress(transaction[2])
     this.mint = handleNumber(transaction[3])
     this.value = handleNumber(transaction[4])
     this.gas = handleNumber(transaction[5])
-    this.data = transaction[6]
+    this.isSystemTransaction = handleBoolean(transaction[6])
+    this.data = transaction[7]
 
     if ('l1BlockHash' in extra) {
       this.l1BlockHash = extra.l1BlockHash
@@ -204,29 +221,37 @@ export class DepositTx {
       throw new Error('"from" undefined')
     }
     this.from = event.args.from
-    if (typeof event.args.isCreation === 'undefined') {
-      throw new Error('"isCreation" undefined')
-    }
     if (typeof event.args.to === 'undefined') {
       throw new Error('"to" undefined')
     }
-    this.to = event.args.isCreation ? null : event.args.to
-    if (typeof event.args.mint === 'undefined') {
-      throw new Error('"mint" undefined')
+    if (typeof event.args.version === 'undefined') {
+      throw new Error(`"verison" undefined`)
     }
-    this.mint = event.args.mint
-    if (typeof event.args.value === 'undefined') {
-      throw new Error('"value" undefined')
+    if (!event.args.version.eq(0)) {
+      throw new Error(`Unsupported version ${event.args.version.toString()}`)
     }
-    this.value = event.args.value
-    if (typeof event.args.gasLimit === 'undefined') {
-      throw new Error('"gasLimit" undefined')
+    if (typeof event.args.opaqueData === 'undefined') {
+      throw new Error(`"opaqueData" undefined`)
     }
-    this.gas = event.args.gasLimit
-    if (typeof event.args.data === 'undefined') {
-      throw new Error('"data" undefined')
+
+    const opaqueData = event.args.opaqueData
+    if (opaqueData.length < 32 + 32 + 8 + 1) {
+      throw new Error(`invalid opaqueData size: ${opaqueData.length}`)
     }
-    this.data = event.args.data
+
+    let offset = 0
+    this.mint = BigNumber.from(hexDataSlice(opaqueData, offset, offset + 32))
+    offset += 32
+    this.value = BigNumber.from(hexDataSlice(opaqueData, offset, offset + 32))
+    offset += 32
+    this.gas = BigNumber.from(hexDataSlice(opaqueData, offset, offset + 8))
+    offset += 8
+    const isCreation = BigNumber.from(opaqueData[offset]).eq(1)
+    offset += 1
+    this.to = isCreation === true ? null : event.args.to
+    const length = opaqueData.length - offset
+    this.isSystemTransaction = false
+    this.data = hexDataSlice(opaqueData, offset, offset + length)
     this.domain = SourceHashDomain.UserDeposit
     this.l1BlockHash = event.blockHash
     this.logIndex = event.logIndex

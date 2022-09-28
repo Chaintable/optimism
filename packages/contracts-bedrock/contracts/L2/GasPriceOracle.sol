@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity 0.8.15;
 
 <<<<<<< HEAD
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -7,8 +7,12 @@ import { Lib_PredeployAddresses } from "../libraries/Lib_PredeployAddresses.sol"
 =======
 import { Semver } from "../universal/Semver.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+<<<<<<< HEAD
 import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
 >>>>>>> v0.5.23
+=======
+import { Predeploys } from "../libraries/Predeploys.sol";
+>>>>>>> v0.5.24
 import { L1Block } from "../L2/L1Block.sol";
 
 /**
@@ -55,6 +59,7 @@ contract GasPriceOracle is Ownable, Semver {
 
     /**
 <<<<<<< HEAD
+<<<<<<< HEAD
      * @param _owner Address that will initially own this contract.
      */
     constructor(address _owner) Ownable() {
@@ -69,6 +74,8 @@ contract GasPriceOracle is Ownable, Semver {
     }
 
     /**
+=======
+>>>>>>> v0.5.24
      * @notice Emitted when the overhead value is updated.
      */
     event OverheadUpdated(uint256 overhead);
@@ -84,6 +91,7 @@ contract GasPriceOracle is Ownable, Semver {
     event DecimalsUpdated(uint256 decimals);
 
     /**
+<<<<<<< HEAD
      * @notice Retrieves the current gas price (base fee).
      *
      * @return Current L2 gas price (base fee).
@@ -111,15 +119,23 @@ contract GasPriceOracle is Ownable, Semver {
 
     /**
      * @notice Retrieves the latest known L1 base fee.
+=======
+     * @custom:semver 0.0.1
+>>>>>>> v0.5.24
      *
-     * @return Latest known L1 base fee.
+     * @param _owner Address that will initially own this contract.
      */
+<<<<<<< HEAD
     function l1BaseFee() public view returns (uint256) {
 <<<<<<< HEAD
         return L1Block(Lib_PredeployAddresses.L1_BLOCK_ATTRIBUTES).basefee();
 =======
         return L1Block(PredeployAddresses.L1_BLOCK_ATTRIBUTES).basefee();
 >>>>>>> v0.5.23
+=======
+    constructor(address _owner) Ownable() Semver(0, 0, 1) {
+        transferOwnership(_owner);
+>>>>>>> v0.5.24
     }
 
     /**
@@ -167,6 +183,33 @@ contract GasPriceOracle is Ownable, Semver {
         uint256 unscaled = l1Fee * scalar;
         uint256 scaled = unscaled / divisor;
         return scaled;
+    }
+
+    /**
+     * @notice Retrieves the current gas price (base fee).
+     *
+     * @return Current L2 gas price (base fee).
+     */
+    function gasPrice() public view returns (uint256) {
+        return block.basefee;
+    }
+
+    /**
+     * @notice Retrieves the current base fee.
+     *
+     * @return Current L2 base fee.
+     */
+    function baseFee() public view returns (uint256) {
+        return block.basefee;
+    }
+
+    /**
+     * @notice Retrieves the latest known L1 base fee.
+     *
+     * @return Latest known L1 base fee.
+     */
+    function l1BaseFee() public view returns (uint256) {
+        return L1Block(Predeploys.L1_BLOCK_ATTRIBUTES).basefee();
     }
 
     /**

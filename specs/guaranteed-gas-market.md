@@ -5,6 +5,7 @@
 **Table of Contents**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 - [Gas Stipend](#gas-stipend)
 - [Limiting Guaranteed Gas](#limiting-guaranteed-gas)
 - [Rationale for burning L1 Gas](#rationale-for-burning-l1-gas)
@@ -14,6 +15,11 @@
   - [Limiting Guaranteed Gas](#limiting-guaranteed-gas)
   - [Rationale for burning L1 Gas](#rationale-for-burning-l1-gas)
 >>>>>>> v0.5.23
+=======
+- [Gas Stipend](#gas-stipend)
+- [Limiting Guaranteed Gas](#limiting-guaranteed-gas)
+- [Rationale for burning L1 Gas](#rationale-for-burning-l1-gas)
+>>>>>>> v0.5.24
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

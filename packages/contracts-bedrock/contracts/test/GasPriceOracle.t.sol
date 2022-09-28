@@ -1,14 +1,18 @@
-//SPDX-License-Identifier: MIT
-pragma solidity 0.8.10;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.15;
 
 import { CommonTest } from "./CommonTest.t.sol";
 import { GasPriceOracle } from "../L2/GasPriceOracle.sol";
 import { L1Block } from "../L2/L1Block.sol";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Lib_PredeployAddresses } from "../libraries/Lib_PredeployAddresses.sol";
 =======
 import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
 >>>>>>> v0.5.23
+=======
+import { Predeploys } from "../libraries/Predeploys.sol";
+>>>>>>> v0.5.24
 
 contract GasPriceOracle_Test is CommonTest {
 
@@ -24,6 +28,7 @@ contract GasPriceOracle_Test is CommonTest {
         // place the L1Block contract at the predeploy address
         vm.etch(
 <<<<<<< HEAD
+<<<<<<< HEAD
             Lib_PredeployAddresses.L1_BLOCK_ATTRIBUTES,
             address(new L1Block()).code
         );
@@ -36,6 +41,13 @@ contract GasPriceOracle_Test is CommonTest {
 
         l1Block = L1Block(PredeployAddresses.L1_BLOCK_ATTRIBUTES);
 >>>>>>> v0.5.23
+=======
+            Predeploys.L1_BLOCK_ATTRIBUTES,
+            address(new L1Block()).code
+        );
+
+        l1Block = L1Block(Predeploys.L1_BLOCK_ATTRIBUTES);
+>>>>>>> v0.5.24
         depositor = l1Block.DEPOSITOR_ACCOUNT();
 
         // We are not setting the gas oracle at its predeploy

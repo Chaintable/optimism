@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity 0.8.15;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 import { Lib_PredeployAddresses } from "../libraries/Lib_PredeployAddresses.sol";
 import { StandardBridge } from "../universal/StandardBridge.sol";
 =======
 import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
+=======
+import { Predeploys } from "../libraries/Predeploys.sol";
+>>>>>>> v0.5.24
 import { StandardBridge } from "../universal/StandardBridge.sol";
 import { Semver } from "../universal/Semver.sol";
 >>>>>>> v0.5.23
@@ -163,34 +167,52 @@ contract L1StandardBridge is StandardBridge, Semver {
     );
 
     /**
-     * @param _messenger Address of the L1CrossDomainMessenger.
-     */
-    constructor(address payable _messenger) Semver(0, 0, 1) {
-        initialize(_messenger);
-    }
-
-    /**
-     * @notice Initializer.
+     * @custom:semver 0.0.2
      *
      * @param _messenger Address of the L1CrossDomainMessenger.
      */
+<<<<<<< HEAD
     function initialize(address payable _messenger) public initializer {
         __StandardBridge_init(_messenger, payable(PredeployAddresses.L2_STANDARD_BRIDGE));
 >>>>>>> v0.5.23
     }
+=======
+    constructor(address payable _messenger)
+        Semver(0, 0, 2)
+        StandardBridge(_messenger, payable(Predeploys.L2_STANDARD_BRIDGE))
+    {}
+>>>>>>> v0.5.24
 
     /**
      * @custom:legacy
-     * @notice Retrieves the access of the corresponding L2 bridge contract.
+     * @notice Finalizes a withdrawal of ERC20 tokens from L2.
      *
-     * @return Address of the corresponding L2 bridge contract.
+     * @param _l1Token   Address of the token on L1.
+     * @param _l2Token   Address of the corresponding token on L2.
+     * @param _from      Address of the withdrawer on L2.
+     * @param _to        Address of the recipient on L1.
+     * @param _amount    Amount of ETH to withdraw.
+     * @param _extraData Optional data forwarded from L2.
      */
+<<<<<<< HEAD
 <<<<<<< HEAD
     function l2TokenBridge() external returns (address) {
 =======
     function l2TokenBridge() external view returns (address) {
 >>>>>>> v0.5.23
         return address(otherBridge);
+=======
+    function finalizeERC20Withdrawal(
+        address _l1Token,
+        address _l2Token,
+        address _from,
+        address _to,
+        uint256 _amount,
+        bytes calldata _extraData
+    ) external onlyOtherBridge {
+        emit ERC20WithdrawalFinalized(_l1Token, _l2Token, _from, _to, _amount, _extraData);
+        finalizeBridgeERC20(_l1Token, _l2Token, _from, _to, _amount, _extraData);
+>>>>>>> v0.5.24
     }
 
     /**
@@ -369,8 +391,9 @@ contract L1StandardBridge is StandardBridge, Semver {
 
     /**
      * @custom:legacy
-     * @notice Finalizes a withdrawal of ERC20 tokens from L2.
+     * @notice Retrieves the access of the corresponding L2 bridge contract.
      *
+<<<<<<< HEAD
 <<<<<<< HEAD
      * @param _l1Token Address of the token on L1.
      * @param _l2Token Address of the corresponding token on L2.
@@ -404,6 +427,12 @@ contract L1StandardBridge is StandardBridge, Semver {
         emit ERC20WithdrawalFinalized(_l1Token, _l2Token, _from, _to, _amount, _extraData);
         finalizeBridgeERC20(_l1Token, _l2Token, _from, _to, _amount, _extraData);
 >>>>>>> v0.5.23
+=======
+     * @return Address of the corresponding L2 bridge contract.
+     */
+    function l2TokenBridge() external view returns (address) {
+        return address(otherBridge);
+>>>>>>> v0.5.24
     }
 
     /**
@@ -423,12 +452,16 @@ contract L1StandardBridge is StandardBridge, Semver {
         address _to,
         uint32 _minGasLimit,
 <<<<<<< HEAD
+<<<<<<< HEAD
         bytes memory _data
     ) internal {
         emit ETHDepositInitiated(_from, _to, msg.value, _data);
         _initiateBridgeETH(_from, _to, msg.value, _minGasLimit, _data);
 =======
         bytes memory _extraData
+=======
+        bytes calldata _extraData
+>>>>>>> v0.5.24
     ) internal {
         emit ETHDepositInitiated(_from, _to, msg.value, _extraData);
         _initiateBridgeETH(_from, _to, msg.value, _minGasLimit, _extraData);

@@ -1,15 +1,19 @@
-//SPDX-License-Identifier: MIT
-pragma solidity 0.8.10;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.15;
 
 import { Bridge_Initializer } from "./CommonTest.t.sol";
 import { StandardBridge } from "../universal/StandardBridge.sol";
 import { L2StandardBridge } from "../L2/L2StandardBridge.sol";
 import { CrossDomainMessenger } from "../universal/CrossDomainMessenger.sol";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Lib_PredeployAddresses } from "../libraries/Lib_PredeployAddresses.sol";
 import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
 =======
 import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
+=======
+import { Predeploys } from "../libraries/Predeploys.sol";
+>>>>>>> v0.5.24
 import { AddressAliasHelper } from "../vendor/AddressAliasHelper.sol";
 >>>>>>> v0.5.23
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -31,19 +35,27 @@ contract L1StandardBridge_Test is Bridge_Initializer {
         assertEq(
             address(L1Bridge.otherBridge()),
 <<<<<<< HEAD
-            Lib_PredeployAddresses.L2_STANDARD_BRIDGE
-=======
-            PredeployAddresses.L2_STANDARD_BRIDGE
->>>>>>> v0.5.23
-        );
-
-        assertEq(
-            address(L2Bridge),
 <<<<<<< HEAD
             Lib_PredeployAddresses.L2_STANDARD_BRIDGE
 =======
             PredeployAddresses.L2_STANDARD_BRIDGE
 >>>>>>> v0.5.23
+=======
+            Predeploys.L2_STANDARD_BRIDGE
+>>>>>>> v0.5.24
+        );
+
+        assertEq(
+            address(L2Bridge),
+<<<<<<< HEAD
+<<<<<<< HEAD
+            Lib_PredeployAddresses.L2_STANDARD_BRIDGE
+=======
+            PredeployAddresses.L2_STANDARD_BRIDGE
+>>>>>>> v0.5.23
+=======
+            Predeploys.L2_STANDARD_BRIDGE
+>>>>>>> v0.5.24
         );
     }
 
@@ -72,7 +84,8 @@ contract L1StandardBridge_Test is Bridge_Initializer {
         );
 
         vm.prank(alice, alice);
-        address(L1Bridge).call{ value: 100 }(hex"");
+        (bool success,) = address(L1Bridge).call{ value: 100 }(hex"");
+        assertEq(success, true);
         assertEq(address(op).balance, 100);
     }
 
@@ -112,7 +125,7 @@ contract L1StandardBridge_Test is Bridge_Initializer {
         // turn alice into a contract
         vm.etch(alice, address(L1Token).code);
 
-        vm.expectRevert("Account not EOA");
+        vm.expectRevert("StandardBridge: function can only be called from an EOA");
         vm.prank(alice);
         L1Bridge.depositETH{ value: 1 }(300, hex"");
     }
@@ -219,7 +232,7 @@ contract L1StandardBridge_Test is Bridge_Initializer {
         // turn alice into a contract
         vm.etch(alice, hex"ffff");
 
-        vm.expectRevert("Account not EOA");
+        vm.expectRevert("StandardBridge: function can only be called from an EOA");
         vm.prank(alice, alice);
         L1Bridge.depositERC20(
             address(0),
@@ -375,7 +388,7 @@ contract L1StandardBridge_Test is Bridge_Initializer {
             abi.encode(address(L1Bridge.otherBridge()))
         );
         vm.prank(address(28));
-        vm.expectRevert("Could not authenticate bridge message.");
+        vm.expectRevert("StandardBridge: function can only be called from the other bridge");
         L1Bridge.finalizeERC20Withdrawal(
             address(L1Token),
             address(L2Token),
@@ -393,7 +406,7 @@ contract L1StandardBridge_Test is Bridge_Initializer {
             abi.encode(address(address(0)))
         );
         vm.prank(address(L1Bridge.messenger()));
-        vm.expectRevert("Could not authenticate bridge message.");
+        vm.expectRevert("StandardBridge: function can only be called from the other bridge");
         L1Bridge.finalizeERC20Withdrawal(
             address(L1Token),
             address(L2Token),
@@ -403,6 +416,7 @@ contract L1StandardBridge_Test is Bridge_Initializer {
             hex""
         );
     }
+<<<<<<< HEAD
 <<<<<<< HEAD
 
     // donateETH
@@ -415,4 +429,50 @@ contract L1StandardBridge_Test is Bridge_Initializer {
     }
 =======
 >>>>>>> v0.5.23
+=======
+
+    function test_finalizeBridgeERC20FailSendBack() external {
+        deal(address(BadL1Token), address(L1Bridge), 100, true);
+
+        uint256 slot = stdstore
+            .target(address(L1Bridge))
+            .sig("deposits(address,address)")
+            .with_key(address(BadL1Token))
+            .with_key(address(L2Token))
+            .find();
+
+        // Give the L1 bridge some ERC20 tokens
+        vm.store(address(L1Bridge), bytes32(slot), bytes32(uint256(100)));
+        assertEq(L1Bridge.deposits(address(BadL1Token), address(L2Token)), 100);
+
+        vm.expectEmit(true, true, true, true);
+
+        emit ERC20BridgeInitiated(
+            address(BadL1Token),
+            address(L2Token),
+            bob,
+            alice,
+            100,
+            hex""
+        );
+
+        vm.mockCall(
+            address(L1Bridge.messenger()),
+            abi.encodeWithSelector(CrossDomainMessenger.xDomainMessageSender.selector),
+            abi.encode(address(L1Bridge.otherBridge()))
+        );
+        vm.prank(address(L1Bridge.messenger()));
+        L1Bridge.finalizeBridgeERC20(
+            address(BadL1Token),
+            address(L2Token),
+            alice,
+            bob,
+            100,
+            hex""
+        );
+
+        assertEq(BadL1Token.balanceOf(address(L1Bridge)), 100);
+        assertEq(BadL1Token.balanceOf(address(alice)), 0);
+    }
+>>>>>>> v0.5.24
 }

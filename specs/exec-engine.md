@@ -5,6 +5,9 @@
 **Table of Contents**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> v0.5.24
 - [Deposited transaction processing](#deposited-transaction-processing)
   - [Deposited transaction boundaries](#deposited-transaction-boundaries)
 - [Engine API](#engine-api)
@@ -16,6 +19,7 @@
 - [Sync](#sync)
   - [Happy-path sync](#happy-path-sync)
   - [Worst-case sync](#worst-case-sync)
+<<<<<<< HEAD
 =======
 - [L2 Execution Engine](#l2-execution-engine)
   - [Deposited transaction processing](#deposited-transaction-processing)
@@ -30,6 +34,8 @@
     - [Happy-path sync](#happy-path-sync)
     - [Worst-case sync](#worst-case-sync)
 >>>>>>> v0.5.23
+=======
+>>>>>>> v0.5.24
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

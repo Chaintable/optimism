@@ -4,7 +4,7 @@ pragma solidity 0.8.10;
 
 =======
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.10;
+pragma solidity 0.8.15;
 
 import { Semver } from "../universal/Semver.sol";
 

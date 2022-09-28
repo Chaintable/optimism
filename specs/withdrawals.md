@@ -34,11 +34,18 @@ finalization.
 **Table of Contents**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> v0.5.24
 - [Withdrawal Flow](#withdrawal-flow)
   - [On L2](#on-l2)
   - [On L1](#on-l1)
 - [The L2ToL1MessagePasser Contract](#the-l2tol1messagepasser-contract)
+<<<<<<< HEAD
   - [Address Aliasing](#address-aliasing)
+=======
+  - [Addresses are not Aliased on Withdrawals](#addresses-are-not-aliased-on-withdrawals)
+>>>>>>> v0.5.24
 - [The Optimism Portal Contract](#the-optimism-portal-contract)
 - [Withdrawal Verification and Finalization](#withdrawal-verification-and-finalization)
 - [Security Considerations](#security-considerations)
@@ -46,6 +53,7 @@ finalization.
   - [Handling Successfully Verified Messages That Fail When Relayed](#handling-successfully-verified-messages-that-fail-when-relayed)
 - [Summary of Definitions](#summary-of-definitions)
   - [Constants](#constants)
+<<<<<<< HEAD
 =======
 - [Withdrawals](#withdrawals)
   - [Withdrawal Flow](#withdrawal-flow)
@@ -61,6 +69,8 @@ finalization.
   - [Summary of Definitions](#summary-of-definitions)
     - [Constants](#constants)
 >>>>>>> v0.5.23
+=======
+>>>>>>> v0.5.24
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -103,6 +113,8 @@ interface L2ToL1MessagePasser {
         bytes data
     );
 
+    event WithdrawalInitiatedExtension1(bytes32 indexed hash);
+
     event WithdrawerBalanceBurnt(uint256 indexed amount);
 
     function burn() external;
@@ -115,6 +127,14 @@ interface L2ToL1MessagePasser {
 }
 
 ```
+
+The `WithdrawalInitiated` event includes all of the data that is hashed and
+stored in the `sentMessages` mapping. The `WithdrawalInitiatedExtension1` emits
+the hash that was computed and used as part of the storage proof used to
+finalize the withdrawal on L1.
+
+The events are separate as to preserve backwards compatibility. The hashing
+scheme could be upgraded in the future through a contract upgrade.
 
 ### Addresses are not Aliased on Withdrawals
 

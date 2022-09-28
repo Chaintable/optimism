@@ -7,9 +7,10 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ethereum-optimism/optimism/op-node/sources"
+
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum-optimism/optimism/op-node/eth"
-	"github.com/ethereum-optimism/optimism/op-proposer/rollupclient"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -27,7 +28,7 @@ type Config struct {
 	Name         string
 	L1Client     *ethclient.Client
 	L2Client     *ethclient.Client
-	RollupClient *rollupclient.RollupClient
+	RollupClient *sources.RollupClient
 	L2OOAddr     common.Address
 	ChainID      *big.Int
 	PrivKey      *ecdsa.PrivateKey
@@ -135,8 +136,17 @@ func (d *Driver) GetBlockRange(
 		d.l.Error(name+" unable to get next block number", "err", err)
 		return nil, nil, err
 	}
+<<<<<<< HEAD
 	latestHeader, err := d.cfg.L2Client.HeaderByNumber(ctx, nil)
 >>>>>>> v0.5.23
+=======
+	status, err := d.cfg.RollupClient.SyncStatus(ctx)
+	if err != nil {
+		d.l.Error(name+" unable to get sync status", "err", err)
+		return nil, nil, err
+	}
+	latestHeader, err := d.cfg.L2Client.HeaderByNumber(ctx, new(big.Int).SetUint64(status.SafeL2.Number))
+>>>>>>> v0.5.24
 	if err != nil {
 		d.l.Error(name+" unable to retrieve latest header", "err", err)
 		return nil, nil, err
@@ -245,12 +255,12 @@ func (d *Driver) CraftTx(
 	l1Header, err := d.cfg.L1Client.HeaderByNumber(ctx, nil)
 >>>>>>> v0.5.23
 	if err != nil {
-		return nil, fmt.Errorf("error resolving checkpoint block: %v", err)
+		return nil, fmt.Errorf("error resolving checkpoint block: %w", err)
 	}
 
 	l2Header, err := d.cfg.L2Client.HeaderByNumber(ctx, nextCheckpointBlock)
 	if err != nil {
-		return nil, fmt.Errorf("error resolving checkpoint block: %v", err)
+		return nil, fmt.Errorf("error resolving checkpoint block: %w", err)
 	}
 
 <<<<<<< HEAD
@@ -273,10 +283,14 @@ func (d *Driver) CraftTx(
 	opts.NoSend = true
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return d.l2ooContract.AppendL2Output(opts, l2OutputRoot, timestamp, header.Hash(), header.Number)
 =======
 	return d.l2ooContract.AppendL2Output(opts, l2OutputRoot, nextCheckpointBlock, l1Header.Hash(), l1Header.Number)
 >>>>>>> v0.5.23
+=======
+	return d.l2ooContract.ProposeL2Output(opts, l2OutputRoot, nextCheckpointBlock, l1Header.Hash(), l1Header.Number)
+>>>>>>> v0.5.24
 }
 
 // UpdateGasPrice signs an otherwise identical txn to the one provided but with

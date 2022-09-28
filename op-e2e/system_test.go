@@ -20,10 +20,13 @@ import (
 <<<<<<< HEAD
 =======
 	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
+<<<<<<< HEAD
 >>>>>>> v0.5.23
+=======
+	"github.com/ethereum-optimism/optimism/op-node/sources"
+>>>>>>> v0.5.24
 	"github.com/ethereum-optimism/optimism/op-node/testlog"
 	"github.com/ethereum-optimism/optimism/op-node/withdrawals"
-	"github.com/ethereum-optimism/optimism/op-proposer/rollupclient"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -48,7 +51,7 @@ var _ = func() bool {
 var verboseGethNodes bool
 
 func init() {
-	flag.BoolVar(&verboseGethNodes, "gethlogs", false, "Enable logs on geth nodes")
+	flag.BoolVar(&verboseGethNodes, "gethlogs", true, "Enable logs on geth nodes")
 	flag.Parse()
 }
 
@@ -98,6 +101,7 @@ func defaultSystemConfig(t *testing.T) SystemConfig {
 			FinalizationPeriod: big.NewInt(60 * 60 * 24),
 		},
 		L2OOCfg: L2OOContractConfig{
+<<<<<<< HEAD
 			// L2 Start time is set based off of the L2 Genesis time
 <<<<<<< HEAD
 			SubmissionFrequency:   big.NewInt(2),
@@ -106,6 +110,9 @@ func defaultSystemConfig(t *testing.T) SystemConfig {
 			SubmissionFrequency:   big.NewInt(4),
 			L2BlockTime:           big.NewInt(2),
 >>>>>>> v0.5.23
+=======
+			SubmissionFrequency:   big.NewInt(4),
+>>>>>>> v0.5.24
 			HistoricalTotalBlocks: big.NewInt(0),
 		},
 		L2OutputHDPath:             l2OutputHDPath,
@@ -137,6 +144,7 @@ func defaultSystemConfig(t *testing.T) SystemConfig {
 					SequencerConfDepth: 0,
 					SequencerEnabled:   false,
 				},
+				L1EpochPollInterval: time.Second * 4,
 			},
 			"sequencer": {
 				Driver: driver.Config{
@@ -147,9 +155,11 @@ func defaultSystemConfig(t *testing.T) SystemConfig {
 >>>>>>> v0.5.23
 				// Submitter PrivKey is set in system start for rollup nodes where sequencer = true
 				RPC: node.RPCConfig{
-					ListenAddr: "127.0.0.1",
-					ListenPort: 9093,
+					ListenAddr:  "127.0.0.1",
+					ListenPort:  9093,
+					EnableAdmin: true,
 				},
+				L1EpochPollInterval: time.Second * 4,
 			},
 		},
 		Loggers: map[string]log.Logger{
@@ -166,11 +176,16 @@ func defaultSystemConfig(t *testing.T) SystemConfig {
 		RollupConfig: rollup.Config{
 			BlockTime:         1,
 			MaxSequencerDrift: 10,
+<<<<<<< HEAD
 			SeqWindowSize:     2,
 <<<<<<< HEAD
 =======
 			ChannelTimeout:    20,
 >>>>>>> v0.5.23
+=======
+			SeqWindowSize:     30,
+			ChannelTimeout:    10,
+>>>>>>> v0.5.24
 			L1ChainID:         big.NewInt(900),
 			L2ChainID:         big.NewInt(901),
 			// TODO pick defaults
@@ -203,9 +218,9 @@ func TestL2OutputSubmitter(t *testing.T) {
 
 	l1Client := sys.Clients["l1"]
 
-	rollupRPCClient, err := rpc.DialContext(context.Background(), fmt.Sprintf("http://%s:%d", cfg.Nodes["sequencer"].RPC.ListenAddr, cfg.Nodes["sequencer"].RPC.ListenPort))
+	rollupRPCClient, err := rpc.DialContext(context.Background(), cfg.Nodes["sequencer"].RPC.HttpEndpoint())
 	require.Nil(t, err)
-	rollupClient := rollupclient.NewRollupClient(rollupRPCClient)
+	rollupClient := sources.NewRollupClient(rollupRPCClient)
 
 <<<<<<< HEAD
 	//  StateRootOracle is already deployed
@@ -404,6 +419,18 @@ func TestSystemE2E(t *testing.T) {
 	require.Equal(t, verifBlock.NumberU64(), seqBlock.NumberU64(), "Verifier and sequencer blocks not the same after including a batch tx")
 	require.Equal(t, verifBlock.ParentHash(), seqBlock.ParentHash(), "Verifier and sequencer blocks parent hashes not the same after including a batch tx")
 	require.Equal(t, verifBlock.Hash(), seqBlock.Hash(), "Verifier and sequencer blocks not the same after including a batch tx")
+
+	rollupRPCClient, err := rpc.DialContext(context.Background(), cfg.Nodes["sequencer"].RPC.HttpEndpoint())
+	require.Nil(t, err)
+	rollupClient := sources.NewRollupClient(rollupRPCClient)
+	// basic check that sync status works
+	seqStatus, err := rollupClient.SyncStatus(context.Background())
+	require.Nil(t, err)
+	require.LessOrEqual(t, seqBlock.NumberU64(), seqStatus.UnsafeL2.Number)
+	// basic check that version endpoint works
+	seqVersion, err := rollupClient.Version(context.Background())
+	require.Nil(t, err)
+	require.NotEqual(t, "", seqVersion)
 }
 
 // TestConfirmationDepth runs the rollup with both sequencer and verifier not immediately processing the tip of the chain.
@@ -453,7 +480,38 @@ func TestConfirmationDepth(t *testing.T) {
 	require.LessOrEqual(t, l2VerHead.Time()+cfg.L1BlockTime*verConfDepth, l2SeqHead.Time(), "the L2 verifier head should lag behind the sequencer without delay by at least the verifier conf depth")
 }
 
+<<<<<<< HEAD
 >>>>>>> v0.5.23
+=======
+// TestFinalize tests if L2 finalizes after sufficient time after L1 finalizes
+func TestFinalize(t *testing.T) {
+	if !verboseGethNodes {
+		log.Root().SetHandler(log.DiscardHandler())
+	}
+
+	cfg := defaultSystemConfig(t)
+
+	sys, err := cfg.start()
+	require.Nil(t, err, "Error starting up system")
+	defer sys.Close()
+
+	l2Seq := sys.Clients["sequencer"]
+
+	// as configured in the extra geth lifecycle in testing setup
+	finalizedDistance := uint64(8)
+	// Wait enough time for L1 to finalize and L2 to confirm its data in finalized L1 blocks
+	<-time.After(time.Duration((finalizedDistance+4)*cfg.L1BlockTime) * time.Second)
+
+	// fetch the finalizes head of geth
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	l2Finalized, err := l2Seq.BlockByNumber(ctx, big.NewInt(int64(rpc.FinalizedBlockNumber)))
+	require.NoError(t, err)
+
+	require.NotZerof(t, l2Finalized.NumberU64(), "must have finalized L2 block")
+}
+
+>>>>>>> v0.5.24
 func TestMintOnRevertedDeposit(t *testing.T) {
 	if !verboseGethNodes {
 		log.Root().SetHandler(log.DiscardHandler())
@@ -531,7 +589,14 @@ func TestMissingBatchE2E(t *testing.T) {
 	if !verboseGethNodes {
 		log.Root().SetHandler(log.DiscardHandler())
 	}
+	// Note this test zeroes the balance of the batch-submitter to make the batches unable to go into L1.
+	// The test logs may look scary, but this is expected:
+	// 'batcher unable to publish transaction    role=batcher   err="insufficient funds for gas * price + value"'
+
 	cfg := defaultSystemConfig(t)
+	// small sequence window size so the test does not take as long
+	cfg.RollupConfig.SeqWindowSize = 4
+
 	// Specifically set batch submitter balance to stop batches from being included
 	cfg.Premine[bssHDPath] = 0
 
@@ -569,7 +634,7 @@ func TestMissingBatchE2E(t *testing.T) {
 	require.Nil(t, err, "Waiting for L2 tx on sequencer")
 
 	// Wait until the block it was first included in shows up in the safe chain on the verifier
-	_, err = waitForBlock(receipt.BlockNumber, l2Verif, 4*time.Second)
+	_, err = waitForBlock(receipt.BlockNumber, l2Verif, time.Duration(cfg.RollupConfig.SeqWindowSize*cfg.L1BlockTime)*time.Second)
 	require.Nil(t, err, "Waiting for block on verifier")
 
 	// Assert that the transaction is not found on the verifier
@@ -1014,6 +1079,7 @@ func TestWithdrawals(t *testing.T) {
 	opts.Value = nil
 	tx, err = portal.FinalizeWithdrawalTransaction(
 		opts,
+<<<<<<< HEAD
 		params.Nonce,
 		params.Sender,
 		params.Target,
@@ -1023,6 +1089,16 @@ func TestWithdrawals(t *testing.T) {
 <<<<<<< HEAD
 		params.Timestamp,
 =======
+=======
+		bindings.TypesWithdrawalTransaction{
+			Nonce:    params.Nonce,
+			Sender:   params.Sender,
+			Target:   params.Target,
+			Value:    params.Value,
+			GasLimit: params.GasLimit,
+			Data:     params.Data,
+		},
+>>>>>>> v0.5.24
 		params.BlockNumber,
 >>>>>>> v0.5.23
 		params.OutputRootProof,
@@ -1081,7 +1157,7 @@ func TestFees(t *testing.T) {
 	fromAddr := crypto.PubkeyToAddress(ethPrivKey.PublicKey)
 
 	// Find gaspriceoracle contract
-	gpoContract, err := bindings.NewGasPriceOracle(common.HexToAddress(predeploys.OVM_GasPriceOracle), l2Seq)
+	gpoContract, err := bindings.NewGasPriceOracle(common.HexToAddress(predeploys.GasPriceOracle), l2Seq)
 	require.Nil(t, err)
 
 	// GPO signer

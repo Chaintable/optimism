@@ -1,8 +1,8 @@
-FROM ethereum/client-go:alltools-v1.10.17 as geth
+FROM ethereum/client-go:alltools-v1.10.21 as geth
 
 FROM ethereumoptimism/foundry:latest as foundry
 
-FROM python:3.8.12-slim-buster
+FROM python:3.8.13-slim-bullseye
 
 ENV GOPATH /go
 ENV PATH /usr/local/go/bin:$GOPATH/bin:$PATH
@@ -13,10 +13,10 @@ COPY --from=geth /usr/local/bin/abigen /usr/local/bin/abigen
 COPY check-changed.sh /usr/local/bin/check-changed
 
 RUN apt-get update && \
-  apt-get install -y curl openssh-client git build-essential ca-certificates jq musl && \
+  apt-get install -y bash curl openssh-client git build-essential ca-certificates jq musl && \
   curl -sL https://deb.nodesource.com/setup_16.x -o nodesource_setup.sh && \
-  curl -sL https://go.dev/dl/go1.18.2.linux-amd64.tar.gz -o go1.18.2.linux-amd64.tar.gz && \
-  tar -C /usr/local/ -xzvf go1.18.2.linux-amd64.tar.gz && \
+  curl -sL https://go.dev/dl/go1.19.linux-amd64.tar.gz -o go1.19.linux-amd64.tar.gz && \
+  tar -C /usr/local/ -xzvf go1.19.linux-amd64.tar.gz && \
   ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt && \
   bash nodesource_setup.sh && \
   apt-get install -y nodejs && \
@@ -24,7 +24,7 @@ RUN apt-get update && \
   npm i -g depcheck && \
   pip install slither-analyzer && \
   go install gotest.tools/gotestsum@latest && \
-  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.46.2 && \
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.48.0 && \
   curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh | bash && \
   chmod +x /usr/local/bin/check-changed
 
@@ -51,4 +51,8 @@ RUN echo "downloading solidity compilers" && \
   mkdir -p ~/.svm/0.8.10 && \
   cp solc-linux-amd64-v0.8.10+commit.fc410830 ~/.svm/0.8.10/solc-0.8.10 && \
   mkdir -p ~/.svm/0.8.12 && \
-  cp solc-linux-amd64-v0.8.12+commit.f00d7308 ~/.svm/0.8.12/solc-0.8.12
+  cp solc-linux-amd64-v0.8.12+commit.f00d7308 ~/.svm/0.8.12/solc-0.8.12 && \
+  rm solc-linux-amd64-v0.5.17+commit.d19bba13 && \
+  rm solc-linux-amd64-v0.8.9+commit.e5eed63a && \
+  rm solc-linux-amd64-v0.8.10+commit.fc410830 && \
+  rm solc-linux-amd64-v0.8.12+commit.f00d7308

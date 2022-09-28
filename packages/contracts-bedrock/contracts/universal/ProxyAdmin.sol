@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity 0.8.15;
 
 <<<<<<< HEAD
 import { Proxy } from "./Proxy.sol";
@@ -205,6 +205,7 @@ contract ProxyAdmin is Owned {
     /**
      * @custom:legacy
 <<<<<<< HEAD
+<<<<<<< HEAD
      * @notice Legacy function used by the old Chugsplash proxy to determine if an upgrade is
      *         happening.
      *
@@ -216,19 +217,69 @@ contract ProxyAdmin is Owned {
      *         upgrade is going on, since we don't currently plan to use this variable for anything
      *         other than a legacy indicator to fix a UX bug in the ChugSplash proxy.
 >>>>>>> v0.5.23
+=======
+     * @notice Set the upgrading status for the Chugsplash proxy type.
+     *
+     * @param _upgrading Whether or not the system is upgrading.
+>>>>>>> v0.5.24
      */
-    function isUpgrading() external view returns (bool) {
-        return upgrading;
+    function setUpgrading(bool _upgrading) external onlyOwner {
+        upgrading = _upgrading;
+    }
+
+    /**
+     * @notice Updates the admin of the given proxy address.
+     *
+     * @param _proxy    Address of the proxy to update.
+     * @param _newAdmin Address of the new proxy admin.
+     */
+    function changeProxyAdmin(address payable _proxy, address _newAdmin) external onlyOwner {
+        ProxyType ptype = proxyType[_proxy];
+        if (ptype == ProxyType.ERC1967) {
+            Proxy(_proxy).changeAdmin(_newAdmin);
+        } else if (ptype == ProxyType.CHUGSPLASH) {
+            L1ChugSplashProxy(_proxy).setOwner(_newAdmin);
+        } else if (ptype == ProxyType.RESOLVED) {
+            addressManager.transferOwnership(_newAdmin);
+        } else {
+            revert("ProxyAdmin: unknown proxy type");
+        }
+    }
+
+    /**
+     * @notice Changes a proxy's implementation contract and delegatecalls the new implementation
+     *         with some given data. Useful for atomic upgrade-and-initialize calls.
+     *
+     * @param _proxy          Address of the proxy to upgrade.
+     * @param _implementation Address of the new implementation address.
+     * @param _data           Data to trigger the new implementation with.
+     */
+    function upgradeAndCall(
+        address payable _proxy,
+        address _implementation,
+        bytes memory _data
+    ) external payable onlyOwner {
+        ProxyType ptype = proxyType[_proxy];
+        if (ptype == ProxyType.ERC1967) {
+            Proxy(_proxy).upgradeToAndCall{ value: msg.value }(_implementation, _data);
+        } else {
+            // reverts if proxy type is unknown
+            upgrade(_proxy, _implementation);
+            (bool success, ) = _proxy.call{ value: msg.value }(_data);
+            require(success, "ProxyAdmin: call to proxy after upgrade failed");
+        }
     }
 
     /**
      * @custom:legacy
-     * @notice Set the upgrading status for the Chugsplash proxy type.
+     * @notice Legacy function used to tell ChugSplashProxy contracts if an upgrade is happening.
      *
-     * @param _upgrading Whether or not the system is upgrading.
+     * @return Whether or not there is an upgrade going on. May not actually tell you whether an
+     *         upgrade is going on, since we don't currently plan to use this variable for anything
+     *         other than a legacy indicator to fix a UX bug in the ChugSplash proxy.
      */
-    function setUpgrading(bool _upgrading) external onlyOwner {
-        upgrading = _upgrading;
+    function isUpgrading() external view returns (bool) {
+        return upgrading;
     }
 
     /**
@@ -354,6 +405,7 @@ contract ProxyAdmin is Owned {
     }
 
     /**
+<<<<<<< HEAD
      * @notice Updates the admin of the given proxy address.
      *
      * @param _proxy    Address of the proxy to update.
@@ -394,6 +446,8 @@ contract ProxyAdmin is Owned {
             string memory name = implementationName[address(proxy)];
             Lib_AddressManager(addressManager).setAddress(name, implementation);
 =======
+=======
+>>>>>>> v0.5.24
      * @notice Changes a proxy's implementation contract.
      *
      * @param _proxy          Address of the proxy to upgrade.
@@ -416,6 +470,7 @@ contract ProxyAdmin is Owned {
 >>>>>>> v0.5.23
         }
     }
+<<<<<<< HEAD
 
     /**
 <<<<<<< HEAD
@@ -463,4 +518,6 @@ contract ProxyAdmin is Owned {
 >>>>>>> v0.5.23
         }
     }
+=======
+>>>>>>> v0.5.24
 }

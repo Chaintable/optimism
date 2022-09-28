@@ -1,8 +1,17 @@
 # @eth-optimism/hardhat-deploy-config
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## 0.2.0
 =======
+=======
+## 0.2.2
+
+### Patch Changes
+
+- 6ce47f38: Support JSON-formatted deploy configs
+
+>>>>>>> v0.5.24
 ## 0.2.1
 
 ### Patch Changes

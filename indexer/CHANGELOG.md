@@ -1,7 +1,18 @@
 # @eth-optimism/indexer
 
+<<<<<<< HEAD
 <<<<<<< HEAD:indexer/CHANGELOG.md
 =======
+=======
+## 0.1.4
+
+### Patch Changes
+
+- 74babaa4: Delete dead file
+- 3e67f784: Update go-ethereum to 1.10.21
+- ec8d6b7c: Remove some duplicated code
+
+>>>>>>> v0.5.24
 ## 0.1.3
 
 ### Patch Changes

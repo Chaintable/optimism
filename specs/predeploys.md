@@ -5,6 +5,9 @@
 **Table of Contents**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> v0.5.24
 - [Overview](#overview)
 - [OVM\_L2ToL1MessagePasser](#ovm%5C_l2tol1messagepasser)
 - [OVM\_DeployerWhitelist](#ovm%5C_deployerwhitelist)
@@ -13,12 +16,17 @@
 - [L2CrossDomainMessenger](#l2crossdomainmessenger)
 - [L2StandardBridge](#l2standardbridge)
 - [SequencerFeeVault](#sequencerfeevault)
+<<<<<<< HEAD
 - [OptimismMintableTokenFactory](#optimismmintabletokenfactory)
+=======
+- [OptimismMintableERC20Factory](#optimismmintableerc20factory)
+>>>>>>> v0.5.24
 - [L1BlockNumber](#l1blocknumber)
 - [OVM\_GasPriceOracle](#ovm%5C_gaspriceoracle)
 - [Reserved System Address 1](#reserved-system-address-1)
 - [Reserved System Address 2](#reserved-system-address-2)
 - [L1Block](#l1block)
+<<<<<<< HEAD
 =======
 - [Predeploys](#predeploys)
   - [Overview](#overview)
@@ -36,6 +44,8 @@
   - [Reserved System Address 2](#reserved-system-address-2)
   - [L1Block](#l1block)
 >>>>>>> v0.5.23
+=======
+>>>>>>> v0.5.24
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -373,12 +383,16 @@ Reserved for future use.
 
 ## L1Block
 
-[l1-block-predeploy]: glossary.md#l1-block-predeployed-contract
+[l1-block-predeploy]: glossary.md#l1-attributes-predeployed-contract
 
+<<<<<<< HEAD
 The [L1Block](l1-block-predeploy) was introduced in Bedrock and is responsible for
 <<<<<<< HEAD
 mainting L1 context in L2. This allows for L1 state to be accessed in L2.
 =======
+=======
+The [L1Block][l1-block-predeploy] was introduced in Bedrock and is responsible for
+>>>>>>> v0.5.24
 maintaining L1 context in L2. This allows for L1 state to be accessed in L2.
 >>>>>>> v0.5.23
 
@@ -414,10 +428,11 @@ interface L1Block {
      * @dev sets the latest L1 block attributes
      */
     function setL1BlockValues(
-        uint256 _number,
-        uint256 _timestamp,
+        uint64 _number,
+        uint64 _timestamp,
         uint256 _basefee,
-        bytes32 _hash
+        bytes32 _hash,
+        uint64 _sequenceNumber
     ) external;
 }
 ```

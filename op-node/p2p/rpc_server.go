@@ -2,12 +2,12 @@ package p2p
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"net"
 	"time"
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 	"github.com/ethereum-optimism/optimism/op-node/metrics"
@@ -17,6 +17,9 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+=======
+	decredSecp "github.com/decred/dcrd/dcrec/secp256k1/v4"
+>>>>>>> v0.5.24
 	"github.com/libp2p/go-libp2p-core/connmgr"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -25,6 +28,12 @@ import (
 	"github.com/libp2p/go-libp2p-core/peerstore"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p-testing/netutil"
+
+	"github.com/ethereum-optimism/optimism/op-node/metrics"
+	gcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/discover"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
 // TODO: dynamic peering
@@ -116,7 +125,7 @@ func dumpPeer(id peer.ID, nw network.Network, pstore peerstore.Peerstore, connMg
 			if !ok {
 				return nil, fmt.Errorf("unexpected pubkey type: %T", pub)
 			}
-			info.NodeID = enode.PubkeyToIDV4((*ecdsa.PublicKey)(typedPub))
+			info.NodeID = enode.PubkeyToIDV4((*decredSecp.PublicKey)(typedPub).ToECDSA())
 		}
 	}
 	if dat, err := pstore.Get(id, "ProtocolVersion"); err != nil {
@@ -417,7 +426,7 @@ func (s *APIBackend) ConnectPeer(ctx context.Context, addr string) error {
 	h := s.node.Host()
 	addrInfo, err := peer.AddrInfoFromString(addr)
 	if err != nil {
-		return fmt.Errorf("bad peer address: %v", err)
+		return fmt.Errorf("bad peer address: %w", err)
 	}
 	// Put a sanity limit on the connection time
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)

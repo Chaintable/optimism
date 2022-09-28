@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity 0.8.15;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 import { Lib_PredeployAddresses } from "../libraries/Lib_PredeployAddresses.sol";
 import { StandardBridge } from "../universal/StandardBridge.sol";
 =======
 import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
+=======
+import { Predeploys } from "../libraries/Predeploys.sol";
+>>>>>>> v0.5.24
 import { StandardBridge } from "../universal/StandardBridge.sol";
 import { Semver } from "../universal/Semver.sol";
 >>>>>>> v0.5.23
@@ -25,7 +29,6 @@ contract L2StandardBridge is StandardBridge {
  *         Examples of some token types that may not be properly supported by this contract include,
  *         but are not limited to: tokens with transfer fees, rebasing tokens, and
  *         tokens with blocklists.
- *         TODO: ensure that this has 1:1 backwards compatibility
  */
 contract L2StandardBridge is StandardBridge, Semver {
 >>>>>>> v0.5.23
@@ -149,10 +152,11 @@ contract L2StandardBridge is StandardBridge, Semver {
     );
 
     /**
-     * @custom:semver 0.0.1
+     * @custom:semver 0.0.2
      *
      * @param _otherBridge Address of the L1StandardBridge.
      */
+<<<<<<< HEAD
     constructor(address payable _otherBridge) Semver(0, 0, 1) {
         initialize(_otherBridge);
     }
@@ -166,6 +170,12 @@ contract L2StandardBridge is StandardBridge, Semver {
         __StandardBridge_init(payable(PredeployAddresses.L2_CROSS_DOMAIN_MESSENGER), _otherBridge);
 >>>>>>> v0.5.23
     }
+=======
+    constructor(address payable _otherBridge)
+        Semver(0, 0, 2)
+        StandardBridge(payable(Predeploys.L2_CROSS_DOMAIN_MESSENGER), _otherBridge)
+    {}
+>>>>>>> v0.5.24
 
     /**
      * @custom:legacy
@@ -270,7 +280,7 @@ contract L2StandardBridge is StandardBridge, Semver {
 =======
         bytes calldata _extraData
     ) external payable virtual {
-        if (_l1Token == address(0) && _l2Token == PredeployAddresses.LEGACY_ERC20_ETH) {
+        if (_l1Token == address(0) && _l2Token == Predeploys.LEGACY_ERC20_ETH) {
             finalizeBridgeETH(_from, _to, _amount, _extraData);
         } else {
             finalizeBridgeERC20(_l2Token, _l1Token, _from, _to, _amount, _extraData);
@@ -314,8 +324,12 @@ contract L2StandardBridge is StandardBridge, Semver {
         bytes calldata _extraData
     ) internal {
         address l1Token = OptimismMintableERC20(_l2Token).l1Token();
-        if (_l2Token == PredeployAddresses.LEGACY_ERC20_ETH) {
-            require(msg.value == _amount, "ETH withdrawals must include sufficient ETH value.");
+        if (_l2Token == Predeploys.LEGACY_ERC20_ETH) {
+            require(
+                msg.value == _amount,
+                "L2StandardBridge: ETH withdrawals must include sufficient ETH value"
+            );
+
             _initiateBridgeETH(_from, _to, _amount, _minGasLimit, _extraData);
         } else {
             _initiateBridgeERC20(_l2Token, l1Token, _from, _to, _amount, _minGasLimit, _extraData);

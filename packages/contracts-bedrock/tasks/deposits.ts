@@ -101,6 +101,10 @@ task('deposit', 'Deposits funds onto L2.')
     const amountWei = utils.parseEther(amountEth)
     const value = amountWei.add(utils.parseEther('0.01'))
     console.log(`Depositing ${amountEth} ETH to ${to}`)
+
+    const preL2Balance = await l2Provider.getBalance(to)
+    console.log(`${to} has ${utils.formatEther(preL2Balance)} ETH on L2`)
+
     // Below adds 0.01 ETH to account for gas.
 <<<<<<< HEAD
     const tx = await depositFeed.depositTransaction(
@@ -117,31 +121,58 @@ task('deposit', 'Deposits funds onto L2.')
     console.log(`Got TX hash ${tx.hash}. Waiting...`)
     const receipt = await tx.wait()
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     console.log(
       `Included in block ${receipt.blockHash} with index ${receipt.logIndex}`
     )
 >>>>>>> v0.5.23
+=======
+    console.log(`Included in block ${receipt.blockHash}`)
+>>>>>>> v0.5.24
 
     // find the transaction deposited event and derive
     // the deposit transaction from it
     const event = receipt.events.find(
       (e: Event) => e.event === 'TransactionDeposited'
     )
+<<<<<<< HEAD
     const l2tx = DepositTx.fromL1Event(event)
 <<<<<<< HEAD
 =======
     console.log(`Deposit has log index ${event.logIndex}`)
 >>>>>>> v0.5.23
+=======
+    console.log(`Deposit has log index ${event.logIndex}`)
+    const l2tx = DepositTx.fromL1Event(event)
+>>>>>>> v0.5.24
     const hash = l2tx.hash()
     console.log(`Waiting for L2 TX hash ${hash}`)
 
+    let i = 0
     while (true) {
       const expected = await l2Provider.send('eth_getTransactionByHash', [hash])
       if (expected) {
         console.log('Deposit success')
+        console.log(JSON.stringify(expected, null, 2))
+        console.log('Receipt:')
+        const l2Receipt = await l2Provider.getTransactionReceipt(hash)
+        console.log(JSON.stringify(l2Receipt, null, 2))
         break
       }
+
+      if (i % 100 === 0) {
+        const postL2Balance = await l2Provider.getBalance(to)
+        if (postL2Balance.gt(preL2Balance)) {
+          console.log(
+            `Unexpected balance increase without detecting deposit transaction`
+          )
+        }
+        const block = await l2Provider.getBlock('latest')
+        console.log(`latest block ${block.number}:${block.hash}`)
+      }
+
       await sleep(500)
+      i++
     }
   })

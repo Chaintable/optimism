@@ -1,6 +1,7 @@
 package rollupclient
 
 import (
+<<<<<<< HEAD
 	"context"
 	"math/big"
 
@@ -48,10 +49,17 @@ func (r *RollupClient) SyncStatus(ctx context.Context) (*driver.SyncStatus, erro
 	err := r.rpc.CallContext(ctx, &output, "optimism_syncStatus")
 	return output, err
 }
+=======
+	"github.com/ethereum-optimism/optimism/op-node/sources"
+	"github.com/ethereum/go-ethereum/rpc"
+)
 
-func (r *RollupClient) Version(ctx context.Context) (string, error) {
-	var output string
-	err := r.rpc.CallContext(ctx, &output, "optimism_version")
-	return output, err
+// Deprecated: use sources.RollupClient instead
+type RollupClient = sources.RollupClient
+>>>>>>> v0.5.24
+
+// Deprecated: use sources.NewRollupClient instead
+func NewRollupClient(rpc *rpc.Client) *sources.RollupClient {
+	return sources.NewRollupClient(rpc)
 }
 >>>>>>> v0.5.23

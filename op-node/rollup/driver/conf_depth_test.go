@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/testutils"
 	"github.com/ethereum/go-ethereum"
-	"github.com/stretchr/testify/require"
 )
 
 type confTest struct {
@@ -53,6 +54,7 @@ func TestConfDepth(t *testing.T) {
 		{name: "two conf not like 1", head: 4, req: 3, depth: 2, pass: false},
 		{name: "two conf pass", head: 4, req: 2, depth: 2, pass: true},
 		{name: "easy pass", head: 100, req: 20, depth: 5, pass: true},
+		{name: "genesis case", head: 0, req: 0, depth: 4, pass: true},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, tc.Run)

@@ -3,9 +3,12 @@ FROM golang:1.18.0-alpine3.15 as builder
 RUN apk add --no-cache make gcc musl-dev linux-headers git jq bash
 
 COPY ./indexer /go/indexer
+<<<<<<< HEAD
 COPY ./l2geth /go/l2geth
 <<<<<<< HEAD:indexer/Dockerfile
 =======
+=======
+>>>>>>> v0.5.24
 COPY ./op-bindings /go/op-bindings
 >>>>>>> v0.5.23:ops/docker/Dockerfile.indexer
 

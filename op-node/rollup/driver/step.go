@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/common"
@@ -23,6 +24,8 @@ import (
 >>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+=======
+>>>>>>> v0.5.24
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -95,6 +98,7 @@ func (d *outputImpl) createNewBlock(ctx context.Context, l2Head eth.L2BlockRef, 
 	defer cancel()
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	var l1Info derive.L1Info
 =======
 	var l1Info eth.L1Info
@@ -138,36 +142,18 @@ func (d *outputImpl) createNewBlock(ctx context.Context, l2Head eth.L2BlockRef, 
 
 	// First transaction in every block is always the L1 info transaction.
 	l1InfoTx, err := derive.L1InfoDepositBytes(seqNumber, l1Info)
+=======
+	attrs, err := derive.PreparePayloadAttributes(fetchCtx, d.Config, d.dl, l2Head, l2Head.Time+d.Config.BlockTime, l1Origin.ID())
+>>>>>>> v0.5.24
 	if err != nil {
 		return l2Head, nil, err
 	}
-	txns = append(txns, l1InfoTx)
-
-	// Next we append user deposits. If we're not the first block in an epoch, then receipts will
-	// be empty and no deposits will be derived.
-	deposits, errs := derive.DeriveDeposits(receipts, d.Config.DepositContractAddress)
-	d.log.Info("Derived deposits", "deposits", deposits, "l2Parent", l2Head, "l1Origin", l1Origin)
-	for _, err := range errs {
-		d.log.Error("Failed to derive a deposit", "l1OriginHash", l1Origin.Hash, "err", err)
-	}
-	// TODO: Should we halt if len(errs) > 0? Opens up a denial of service attack, but prevents lockup of funds.
-	txns = append(txns, deposits...)
 
 	// If our next L2 block timestamp is beyond the Sequencer drift threshold, then we must produce
 	// empty blocks (other than the L1 info deposit and any user deposits). We handle this by
 	// setting NoTxPool to true, which will cause the Sequencer to not include any transactions
 	// from the transaction pool.
-	nextL2Time := l2Head.Time + d.Config.BlockTime
-	shouldProduceEmptyBlock := nextL2Time >= l1Origin.Time+d.Config.MaxSequencerDrift
-
-	// Put together our payload attributes.
-	attrs := &eth.PayloadAttributes{
-		Timestamp:             hexutil.Uint64(nextL2Time),
-		PrevRandao:            eth.Bytes32(l1Info.MixDigest()),
-		SuggestedFeeRecipient: d.Config.FeeRecipientAddress,
-		Transactions:          txns,
-		NoTxPool:              shouldProduceEmptyBlock,
-	}
+	attrs.NoTxPool = uint64(attrs.Timestamp) >= l1Origin.Time+d.Config.MaxSequencerDrift
 
 	// And construct our fork choice state. This is our current fork choice state and will be
 	// updated as a result of executing the block based on the attributes described above.
@@ -178,6 +164,7 @@ func (d *outputImpl) createNewBlock(ctx context.Context, l2Head eth.L2BlockRef, 
 	}
 
 	// Actually execute the block and add it to the head of the chain.
+<<<<<<< HEAD
 <<<<<<< HEAD
 	payload, err := d.insertHeadBlock(ctx, fc, attrs, false)
 	if err != nil {
@@ -190,6 +177,11 @@ func (d *outputImpl) createNewBlock(ctx context.Context, l2Head eth.L2BlockRef, 
 	if payloadErr != nil {
 		return l2Head, nil, fmt.Errorf("failed to extend L2 chain, cannot produce valid payload: %v", payloadErr)
 >>>>>>> v0.5.23
+=======
+	payload, errType, err := derive.InsertHeadBlock(ctx, d.log, d.l2, fc, attrs, false)
+	if err != nil {
+		return l2Head, nil, fmt.Errorf("failed to extend L2 chain, error (%d): %w", errType, err)
+>>>>>>> v0.5.24
 	}
 
 	// Generate an L2 block ref from the payload.

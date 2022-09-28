@@ -5,6 +5,7 @@
 **Table of Contents**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 - [Token Depositing](#token-depositing)
 - [Upgradability](#upgradability)
 =======
@@ -12,6 +13,10 @@
   - [Token Depositing](#token-depositing)
   - [Upgradability](#upgradability)
 >>>>>>> v0.5.23
+=======
+- [Token Depositing](#token-depositing)
+- [Upgradability](#upgradability)
+>>>>>>> v0.5.24
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

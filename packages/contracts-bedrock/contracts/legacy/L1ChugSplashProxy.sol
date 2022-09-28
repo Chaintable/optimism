@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity 0.8.15;
 
 /**
- * @title iL1ChugSplashDeployer
+ * @title IL1ChugSplashDeployer
  */
-interface iL1ChugSplashDeployer {
+interface IL1ChugSplashDeployer {
     function isUpgrading() external view returns (bool);
 }
 
@@ -75,6 +75,7 @@ contract L1ChugSplashProxy {
 
 >>>>>>> v0.5.23
     /**
+<<<<<<< HEAD
      * @param _owner Address of the initial contract owner.
      */
     constructor(address _owner) {
@@ -91,6 +92,8 @@ contract L1ChugSplashProxy {
      * via an isUpgrading function.
 =======
     /**
+=======
+>>>>>>> v0.5.24
      * @notice Blocks a function from being called when the parent signals that the system should
      *         be paused via an isUpgrading function.
 >>>>>>> v0.5.23
@@ -102,7 +105,7 @@ contract L1ChugSplashProxy {
         // L1ChugSplashDeployer contract and Solidity will throw errors if we do a normal call and
         // it turns out that it isn't the right type of contract.
         (bool success, bytes memory returndata) = owner.staticcall(
-            abi.encodeWithSelector(iL1ChugSplashDeployer.isUpgrading.selector)
+            abi.encodeWithSelector(IL1ChugSplashDeployer.isUpgrading.selector)
         );
 
         // If the call was unsuccessful then we assume that there's no "isUpgrading" method and we
@@ -160,14 +163,24 @@ contract L1ChugSplashProxy {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     /*********************
      * Fallback Function *
      *********************/
 
 =======
 >>>>>>> v0.5.23
+=======
+    /**
+     * @param _owner Address of the initial contract owner.
+     */
+    constructor(address _owner) {
+        _setOwner(_owner);
+    }
+
+>>>>>>> v0.5.24
     // slither-disable-next-line locked-ether
-    fallback() external payable {
+    receive() external payable {
         // Proxy call by default.
         _doProxyCall();
     }
@@ -188,7 +201,7 @@ contract L1ChugSplashProxy {
     function setCode(bytes memory _code) public proxyCallIfNotOwner {
 =======
     // slither-disable-next-line locked-ether
-    receive() external payable {
+    fallback() external payable {
         // Proxy call by default.
         _doProxyCall();
     }
@@ -228,7 +241,7 @@ contract L1ChugSplashProxy {
         // should be doing this check anyway though.
         require(
             _getAccountCodeHash(newImplementation) == keccak256(_code),
-            "L1ChugSplashProxy: code was not correctly deployed."
+            "L1ChugSplashProxy: code was not correctly deployed"
         );
 
         _setImplementation(newImplementation);
@@ -334,22 +347,27 @@ contract L1ChugSplashProxy {
 
     /**
 <<<<<<< HEAD
+<<<<<<< HEAD
      * Queries the implementation address.
 =======
      * @notice Queries the implementation address.
      *
 >>>>>>> v0.5.23
      * @return Implementation address.
+=======
+     * @notice Changes the owner of the proxy contract.
+     *
+     * @param _owner New owner of the proxy contract.
+>>>>>>> v0.5.24
      */
-    function _getImplementation() internal view returns (address) {
-        address implementation;
+    function _setOwner(address _owner) internal {
         assembly {
-            implementation := sload(IMPLEMENTATION_KEY)
+            sstore(OWNER_KEY, _owner)
         }
-        return implementation;
     }
 
     /**
+<<<<<<< HEAD
 <<<<<<< HEAD
      * Changes the owner of the proxy contract.
 =======
@@ -357,11 +375,48 @@ contract L1ChugSplashProxy {
      *
 >>>>>>> v0.5.23
      * @param _owner New owner of the proxy contract.
+=======
+     * @notice Performs the proxy call via a delegatecall.
      */
-    function _setOwner(address _owner) internal {
+    function _doProxyCall() internal onlyWhenNotPaused {
+        address implementation = _getImplementation();
+
+        require(implementation != address(0), "L1ChugSplashProxy: implementation is not set yet");
+
         assembly {
-            sstore(OWNER_KEY, _owner)
+            // Copy calldata into memory at 0x0....calldatasize.
+            calldatacopy(0x0, 0x0, calldatasize())
+
+            // Perform the delegatecall, make sure to pass all available gas.
+            let success := delegatecall(gas(), implementation, 0x0, calldatasize(), 0x0, 0x0)
+
+            // Copy returndata into memory at 0x0....returndatasize. Note that this *will*
+            // overwrite the calldata that we just copied into memory but that doesn't really
+            // matter because we'll be returning in a second anyway.
+            returndatacopy(0x0, 0x0, returndatasize())
+
+            // Success == 0 means a revert. We'll revert too and pass the data up.
+            if iszero(success) {
+                revert(0x0, returndatasize())
+            }
+
+            // Otherwise we'll just return and pass the data up.
+            return(0x0, returndatasize())
         }
+    }
+
+    /**
+     * @notice Queries the implementation address.
+     *
+     * @return Implementation address.
+>>>>>>> v0.5.24
+     */
+    function _getImplementation() internal view returns (address) {
+        address implementation;
+        assembly {
+            implementation := sload(IMPLEMENTATION_KEY)
+        }
+        return implementation;
     }
 
     /**
@@ -400,6 +455,7 @@ contract L1ChugSplashProxy {
         }
         return codeHash;
     }
+<<<<<<< HEAD
 
     /**
 <<<<<<< HEAD
@@ -434,4 +490,6 @@ contract L1ChugSplashProxy {
             return(0x0, returndatasize())
         }
     }
+=======
+>>>>>>> v0.5.24
 }

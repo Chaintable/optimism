@@ -8,15 +8,19 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 )
 
-type L1ReceiptsFetcher interface {
-	Fetch(ctx context.Context, blockHash common.Hash) (eth.L1Info, types.Transactions, types.Receipts, error)
-}
+// The attributes queue sits in between the batch queue and the engine queue
+// It transforms batches into payload attributes. The outputted payload
+// attributes cannot be buffered because each batch->attributes transformation
+// pulls in data about the current L2 safe head.
+//
+// It also buffers batches that have been output because multiple batches can
+// be created at once.
+//
+// This stage can be reset by clearing it's batch buffer.
+// This stage does not need to retain any references to L1 blocks.
 
 type AttributesQueueOutput interface {
 	AddSafeAttributes(attributes *eth.PayloadAttributes)
@@ -55,11 +59,34 @@ func (aq *AttributesQueue) Step(ctx context.Context, outer Progress) error {
 	if changed, err := aq.progress.Update(outer); err != nil || changed {
 		return err
 	}
-	attr, err := aq.DeriveL2Inputs(ctx, aq.next.SafeL2Head())
+	if len(aq.batches) == 0 {
+		return io.EOF
+	}
+	batch := aq.batches[0]
+
+	safeL2Head := aq.next.SafeL2Head()
+	// sanity check parent hash
+	if batch.ParentHash != safeL2Head.Hash {
+		return NewCriticalError(fmt.Errorf("valid batch has bad parent hash %s, expected %s", batch.ParentHash, safeL2Head.Hash))
+	}
+	fetchCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+	attrs, err := PreparePayloadAttributes(fetchCtx, aq.config, aq.dl, safeL2Head, batch.Timestamp, batch.Epoch())
 	if err != nil {
 		return err
 	}
-	aq.next.AddSafeAttributes(attr)
+
+	// we are verifying, not sequencing, we've got all transactions and do not pull from the tx-pool
+	// (that would make the block derivation non-deterministic)
+	attrs.NoTxPool = true
+	attrs.Transactions = append(attrs.Transactions, batch.Transactions...)
+
+	aq.log.Info("generated attributes in payload queue", "txs", len(attrs.Transactions), "timestamp", batch.Timestamp)
+
+	// Slice off the batch once we are guaranteed to succeed
+	aq.batches = aq.batches[1:]
+
+	aq.next.AddSafeAttributes(attrs)
 	return nil
 }
 
@@ -71,66 +98,4 @@ func (aq *AttributesQueue) ResetStep(ctx context.Context, l1Fetcher L1Fetcher) e
 
 func (aq *AttributesQueue) SafeL2Head() eth.L2BlockRef {
 	return aq.next.SafeL2Head()
-}
-
-// DeriveL2Inputs turns the next L2 batch into an Payload Attributes that builds off of the safe head
-func (aq *AttributesQueue) DeriveL2Inputs(ctx context.Context, l2SafeHead eth.L2BlockRef) (*eth.PayloadAttributes, error) {
-	if len(aq.batches) == 0 {
-		return nil, io.EOF
-	}
-	batch := aq.batches[0]
-
-	seqNumber := l2SafeHead.SequenceNumber + 1
-	// Check if we need to advance an epoch & update local state
-	if l2SafeHead.L1Origin != batch.Epoch() {
-		aq.log.Info("advancing epoch in the attributes queue", "l2SafeHead", l2SafeHead, "l2SafeHead_origin", l2SafeHead.L1Origin, "batch_timestamp", batch.Timestamp, "batch_epoch", batch.Epoch())
-		seqNumber = 0
-	}
-
-	fetchCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-	defer cancel()
-	l1Info, _, receipts, err := aq.dl.Fetch(fetchCtx, batch.EpochHash)
-	if err != nil {
-		aq.log.Error("failed to fetch L1 block info", "l1Origin", batch.Epoch(), "err", err)
-		return nil, err
-	}
-
-	// Fill in deposits if we are the first block of the epoch
-	var deposits []hexutil.Bytes
-	if seqNumber == 0 {
-		var errs []error
-		deposits, errs = DeriveDeposits(receipts, aq.config.DepositContractAddress)
-		for _, err := range errs {
-			aq.log.Error("Failed to derive a deposit", "l1Origin", batch.Epoch(), "err", err)
-		}
-		if len(errs) != 0 {
-			// TODO: Multierror here
-			return nil, fmt.Errorf("failed to derive some deposits: %v", errs)
-		}
-	}
-
-	var txns []eth.Data
-	l1InfoTx, err := L1InfoDepositBytes(seqNumber, l1Info)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create l1InfoTx: %w", err)
-	}
-	txns = append(txns, l1InfoTx)
-	if seqNumber == 0 {
-		txns = append(txns, deposits...)
-	}
-	txns = append(txns, batch.Transactions...)
-	attrs := &eth.PayloadAttributes{
-		Timestamp:             hexutil.Uint64(batch.Timestamp),
-		PrevRandao:            eth.Bytes32(l1Info.MixDigest()),
-		SuggestedFeeRecipient: aq.config.FeeRecipientAddress,
-		Transactions:          txns,
-		// we are verifying, not sequencing, we've got all transactions and do not pull from the tx-pool
-		// (that would make the block derivation non-deterministic)
-		NoTxPool: true,
-	}
-	aq.log.Info("generated attributes in payload queue", "tx_count", len(txns), "timestamp", batch.Timestamp)
-
-	// Slice off the batch once we are guaranteed to succeed
-	aq.batches = aq.batches[1:]
-	return attrs, nil
 }
