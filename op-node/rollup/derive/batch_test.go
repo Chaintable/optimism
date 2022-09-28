@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"testing"
 
+<<<<<<< HEAD
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 
 =======
@@ -12,7 +13,12 @@ import (
 
 >>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum/common/hexutil"
+=======
+>>>>>>> v0.5.24
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func TestBatchRoundTrip(t *testing.T) {
@@ -20,8 +26,12 @@ func TestBatchRoundTrip(t *testing.T) {
 		{
 			BatchV1: BatchV1{
 <<<<<<< HEAD
+<<<<<<< HEAD
 				Epoch:        0,
 =======
+=======
+				ParentHash:   common.Hash{},
+>>>>>>> v0.5.24
 				EpochNum:     0,
 >>>>>>> v0.5.23
 				Timestamp:    0,
@@ -31,8 +41,12 @@ func TestBatchRoundTrip(t *testing.T) {
 		{
 			BatchV1: BatchV1{
 <<<<<<< HEAD
+<<<<<<< HEAD
 				Epoch:        1,
 =======
+=======
+				ParentHash:   common.Hash{31: 0x42},
+>>>>>>> v0.5.24
 				EpochNum:     1,
 >>>>>>> v0.5.23
 				Timestamp:    1647026951,

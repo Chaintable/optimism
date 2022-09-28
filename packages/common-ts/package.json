@@ -1,10 +1,14 @@
 {
   "name": "@eth-optimism/common-ts",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "0.4.0",
 =======
   "version": "0.6.1",
 >>>>>>> v0.5.23
+=======
+  "version": "0.6.4",
+>>>>>>> v0.5.24
   "description": "[Optimism] Advanced typescript tooling used by various services",
   "main": "dist/index",
   "types": "dist/index",
@@ -37,10 +41,14 @@
   },
   "dependencies": {
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@eth-optimism/core-utils": "0.8.7",
 =======
     "@eth-optimism/core-utils": "0.9.1",
 >>>>>>> v0.5.23
+=======
+    "@eth-optimism/core-utils": "0.10.0",
+>>>>>>> v0.5.24
     "@sentry/node": "^6.3.1",
     "bcfg": "^0.1.7",
     "body-parser": "^1.20.0",

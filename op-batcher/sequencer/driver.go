@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum-optimism/optimism/op-proposer/rollupclient"
+	"github.com/ethereum-optimism/optimism/op-node/sources"
 
 	"github.com/ethereum/go-ethereum/common"
 >>>>>>> v0.5.23
@@ -256,7 +256,7 @@ func (d *Driver) SendTransaction(
 	// API to hit for batch data
 	L2Client *ethclient.Client
 
-	RollupNode *rollupclient.RollupClient
+	RollupNode *sources.RollupClient
 
 	// Limit the size of txs
 	MinL1TxSize uint64

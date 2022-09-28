@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/ethereum-optimism/optimism/op-node/p2p"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
@@ -45,14 +46,28 @@ type Config struct {
 =======
 	Metrics MetricsConfig
 
+<<<<<<< HEAD
 >>>>>>> v0.5.23
+=======
+	Pprof PprofConfig
+
+	// Used to poll the L1 for new finalized or safe blocks
+	L1EpochPollInterval time.Duration
+
+>>>>>>> v0.5.24
 	// Optional
-	Tracer Tracer
+	Tracer    Tracer
+	Heartbeat HeartbeatConfig
 }
 
 type RPCConfig struct {
-	ListenAddr string
-	ListenPort int
+	ListenAddr  string
+	ListenPort  int
+	EnableAdmin bool
+}
+
+func (cfg *RPCConfig) HttpEndpoint() string {
+	return fmt.Sprintf("http://%s:%d", cfg.ListenAddr, cfg.ListenPort)
 }
 
 <<<<<<< HEAD
@@ -86,6 +101,22 @@ func (m MetricsConfig) Check() error {
 	return nil
 }
 
+type PprofConfig struct {
+	Enabled    bool
+	ListenAddr string
+	ListenPort string
+}
+
+func (p PprofConfig) Check() error {
+	return nil
+}
+
+type HeartbeatConfig struct {
+	Enabled bool
+	Moniker string
+	URL     string
+}
+
 // Check verifies that the given configuration makes sense
 func (cfg *Config) Check() error {
 	if err := cfg.L2.Check(); err != nil {
@@ -96,6 +127,9 @@ func (cfg *Config) Check() error {
 	}
 	if err := cfg.Metrics.Check(); err != nil {
 		return fmt.Errorf("metrics config error: %w", err)
+	}
+	if err := cfg.Pprof.Check(); err != nil {
+		return fmt.Errorf("pprof config error: %w", err)
 	}
 	if cfg.P2P != nil {
 		if err := cfg.P2P.Check(); err != nil {

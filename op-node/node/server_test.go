@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"encoding/json"
+<<<<<<< HEAD
 	"math/big"
 <<<<<<< HEAD
 =======
@@ -16,21 +17,24 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-node/version"
 
+=======
+	"math/rand"
+>>>>>>> v0.5.24
 	"testing"
 
-	"github.com/ethereum-optimism/optimism/op-node/testlog"
-
-	"github.com/ethereum-optimism/optimism/op-node/eth"
-
-	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
-	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/ethereum-optimism/optimism/op-node/l2"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
+	"github.com/ethereum-optimism/optimism/op-node/eth"
+	"github.com/ethereum-optimism/optimism/op-node/metrics"
+	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum-optimism/optimism/op-node/testlog"
+	"github.com/ethereum-optimism/optimism/op-node/testutils"
+	"github.com/ethereum-optimism/optimism/op-node/version"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/stretchr/testify/assert"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 func TestOutputAtBlock(t *testing.T) {
@@ -79,7 +83,7 @@ func TestOutputAtBlock(t *testing.T) {
 		"nonce": "0x1",
 		"storageHash": "0xc1917a80cb25ccc50d0d1921525a44fb619b4601194ca726ae32312f08a799f8"
 	}`
-	var result l2.AccountResult
+	var result eth.AccountResult
 	err = json.Unmarshal([]byte(resultTestData), &result)
 	assert.NoError(t, err)
 
@@ -91,6 +95,7 @@ func TestOutputAtBlock(t *testing.T) {
 		// ignore other rollup config info in this test
 	}
 
+<<<<<<< HEAD
 	l2Client := &mockL2Client{}
 	l2Client.mock.On("GetBlockHeader", "latest").Return(&header)
 <<<<<<< HEAD
@@ -99,6 +104,22 @@ func TestOutputAtBlock(t *testing.T) {
 	server, err := newRPCServer(context.Background(), rpcCfg, rollupCfg, l2Client, log, "0.0")
 =======
 	l2Client.mock.On("GetProof", predeploys.L2ToL1MessagePasserAddr, "latest").Return(&result)
+=======
+	l2Client := &testutils.MockL2Client{}
+	info := &testutils.MockBlockInfo{
+		InfoHash:        header.Hash(),
+		InfoParentHash:  header.ParentHash,
+		InfoCoinbase:    header.Coinbase,
+		InfoRoot:        header.Root,
+		InfoNum:         header.Number.Uint64(),
+		InfoTime:        header.Time,
+		InfoMixDigest:   header.MixDigest,
+		InfoBaseFee:     header.BaseFee,
+		InfoReceiptRoot: header.ReceiptHash,
+	}
+	l2Client.ExpectInfoByRpcNumber(rpc.LatestBlockNumber, info, nil)
+	l2Client.ExpectGetProof(predeploys.L2ToL1MessagePasserAddr, "latest", &result, nil)
+>>>>>>> v0.5.24
 
 	drClient := &mockDriverClient{}
 
@@ -108,21 +129,25 @@ func TestOutputAtBlock(t *testing.T) {
 	assert.NoError(t, server.Start())
 	defer server.Stop()
 
-	client, err := dialRPCClientWithBackoff(context.Background(), log, "http://"+server.Addr().String(), nil)
+	client, err := dialRPCClientWithBackoff(context.Background(), log, "http://"+server.Addr().String())
 	assert.NoError(t, err)
 
 	var out []eth.Bytes32
 	err = client.CallContext(context.Background(), &out, "optimism_outputAtBlock", "latest")
 	assert.NoError(t, err)
 	assert.Len(t, out, 2)
-	l2Client.mock.AssertExpectations(t)
+	l2Client.Mock.AssertExpectations(t)
 }
 
 func TestVersion(t *testing.T) {
 	log := testlog.Logger(t, log.LvlError)
+<<<<<<< HEAD
 	l2Client := &mockL2Client{}
 <<<<<<< HEAD
 =======
+=======
+	l2Client := &testutils.MockL2Client{}
+>>>>>>> v0.5.24
 	drClient := &mockDriverClient{}
 >>>>>>> v0.5.23
 	rpcCfg := &RPCConfig{
@@ -141,7 +166,7 @@ func TestVersion(t *testing.T) {
 	assert.NoError(t, server.Start())
 	defer server.Stop()
 
-	client, err := dialRPCClientWithBackoff(context.Background(), log, "http://"+server.Addr().String(), nil)
+	client, err := dialRPCClientWithBackoff(context.Background(), log, "http://"+server.Addr().String())
 	assert.NoError(t, err)
 
 	var out string
@@ -154,10 +179,10 @@ func TestVersion(t *testing.T) {
 =======
 func TestSyncStatus(t *testing.T) {
 	log := testlog.Logger(t, log.LvlError)
-	l2Client := &mockL2Client{}
+	l2Client := &testutils.MockL2Client{}
 	drClient := &mockDriverClient{}
 	rng := rand.New(rand.NewSource(1234))
-	status := driver.SyncStatus{
+	status := eth.SyncStatus{
 		CurrentL1:   testutils.RandomBlockRef(rng),
 		HeadL1:      testutils.RandomBlockRef(rng),
 		UnsafeL2:    testutils.RandomL2BlockRef(rng),
@@ -178,10 +203,10 @@ func TestSyncStatus(t *testing.T) {
 	assert.NoError(t, server.Start())
 	defer server.Stop()
 
-	client, err := dialRPCClientWithBackoff(context.Background(), log, "http://"+server.Addr().String(), nil)
+	client, err := dialRPCClientWithBackoff(context.Background(), log, "http://"+server.Addr().String())
 	assert.NoError(t, err)
 
-	var out *driver.SyncStatus
+	var out *eth.SyncStatus
 	err = client.CallContext(context.Background(), &out, "optimism_syncStatus")
 	assert.NoError(t, err)
 	assert.Equal(t, &status, out)
@@ -191,6 +216,7 @@ type mockDriverClient struct {
 	mock.Mock
 }
 
+<<<<<<< HEAD
 func (c *mockDriverClient) SyncStatus(ctx context.Context) (*driver.SyncStatus, error) {
 	return c.Mock.MethodCalled("SyncStatus").Get(0).(*driver.SyncStatus), nil
 }
@@ -214,8 +240,12 @@ func (c *mockL2Client) L2BlockRefByHash(ctx context.Context, l2Hash common.Hash)
 
 func (c *mockL2Client) GetBlockHeader(ctx context.Context, blockTag string) (*types.Header, error) {
 	return c.mock.MethodCalled("GetBlockHeader", blockTag).Get(0).(*types.Header), nil
+=======
+func (c *mockDriverClient) SyncStatus(ctx context.Context) (*eth.SyncStatus, error) {
+	return c.Mock.MethodCalled("SyncStatus").Get(0).(*eth.SyncStatus), nil
+>>>>>>> v0.5.24
 }
 
-func (c *mockL2Client) GetProof(ctx context.Context, address common.Address, blockTag string) (*l2.AccountResult, error) {
-	return c.mock.MethodCalled("GetProof", address, blockTag).Get(0).(*l2.AccountResult), nil
+func (c *mockDriverClient) ResetDerivationPipeline(ctx context.Context) error {
+	return c.Mock.MethodCalled("ResetDerivationPipeline").Get(0).(error)
 }

@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity 0.8.15;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 import { WithdrawalVerifier } from "../libraries/Lib_WithdrawalVerifier.sol";
 import { Burn } from "../libraries/Burn.sol";
 =======
+=======
+import { Types } from "../libraries/Types.sol";
+>>>>>>> v0.5.24
 import { Hashing } from "../libraries/Hashing.sol";
 import { Burn } from "../libraries/Burn.sol";
 import { Semver } from "../universal/Semver.sol";
@@ -23,6 +27,21 @@ contract L2ToL1MessagePasser {
 =======
 contract L2ToL1MessagePasser is Semver {
 >>>>>>> v0.5.23
+    /**
+     * @notice The L1 gas limit set when eth is withdrawn using the receive() function.
+     */
+    uint256 internal constant RECEIVE_DEFAULT_GAS_LIMIT = 100_000;
+
+    /**
+     * @notice Includes the message hashes for all withdrawals
+     */
+    mapping(bytes32 => bool) public sentMessages;
+
+    /**
+     * @notice A unique value hashed with each withdrawal.
+     */
+    uint256 public nonce;
+
     /**
      * @notice Emitted any time a withdrawal is initiated.
      *
@@ -43,8 +62,10 @@ contract L2ToL1MessagePasser is Semver {
     );
 
     /**
-     * @notice Emitted when the balance of this contract is burned.
+     * @notice Emitted any time a withdrawal is initiated. An extension to
+     *         WithdrawalInitiated so that the interface is maintained.
      *
+<<<<<<< HEAD
      * @param amount Amount of ETh that was burned.
      */
     event WithdrawerBalanceBurnt(uint256 indexed amount);
@@ -53,10 +74,14 @@ contract L2ToL1MessagePasser is Semver {
 <<<<<<< HEAD
 =======
      * @notice The L1 gas limit set when eth is withdrawn using the receive() function.
+=======
+     * @param hash The hash of the withdrawal
+>>>>>>> v0.5.24
      */
-    uint256 internal constant RECEIVE_DEFAULT_GAS_LIMIT = 100_000;
+    event WithdrawalInitiatedExtension1(bytes32 indexed hash);
 
     /**
+<<<<<<< HEAD
 >>>>>>> v0.5.23
      * @notice Includes the message hashes for all withdrawals
      */
@@ -64,8 +89,13 @@ contract L2ToL1MessagePasser is Semver {
 
     /**
      * @notice A unique value hashed with each withdrawal.
+=======
+     * @notice Emitted when the balance of this contract is burned.
+     *
+     * @param amount Amount of ETh that was burned.
+>>>>>>> v0.5.24
      */
-    uint256 public nonce;
+    event WithdrawerBalanceBurnt(uint256 indexed amount);
 
     /**
 <<<<<<< HEAD
@@ -87,6 +117,18 @@ contract L2ToL1MessagePasser is Semver {
     }
 
     /**
+     * @notice Removes all ETH held by this contract from the state. Used to prevent the amount of
+     *         ETH on L2 inflating when ETH is withdrawn. Currently only way to do this is to
+     *         create a contract and self-destruct it to itself. Anyone can call this function. Not
+     *         incentivized since this function is very cheap.
+     */
+    function burn() external {
+        uint256 balance = address(this).balance;
+        Burn.eth(balance);
+        emit WithdrawerBalanceBurnt(balance);
+    }
+
+    /**
      * @notice Sends a message from L2 to L1.
      *
      * @param _target   Address to call on L1 execution.
@@ -102,6 +144,7 @@ contract L2ToL1MessagePasser is Semver {
         bytes32 withdrawalHash = WithdrawalVerifier.withdrawalHash(
 =======
         bytes32 withdrawalHash = Hashing.hashWithdrawal(
+<<<<<<< HEAD
 >>>>>>> v0.5.23
             nonce,
             msg.sender,
@@ -109,25 +152,25 @@ contract L2ToL1MessagePasser is Semver {
             msg.value,
             _gasLimit,
             _data
+=======
+            Types.WithdrawalTransaction({
+                nonce: nonce,
+                sender: msg.sender,
+                target: _target,
+                value: msg.value,
+                gasLimit: _gasLimit,
+                data: _data
+            })
+>>>>>>> v0.5.24
         );
 
         sentMessages[withdrawalHash] = true;
 
         emit WithdrawalInitiated(nonce, msg.sender, _target, msg.value, _gasLimit, _data);
+        emit WithdrawalInitiatedExtension1(withdrawalHash);
+
         unchecked {
             ++nonce;
         }
-    }
-
-    /**
-     * @notice Removes all ETH held by this contract from the state. Used to prevent the amount of
-     *         ETH on L2 inflating when ETH is withdrawn. Currently only way to do this is to
-     *         create a contract and self-destruct it to itself. Anyone can call this function. Not
-     *         incentivized since this function is very cheap.
-     */
-    function burn() external {
-        uint256 balance = address(this).balance;
-        Burn.eth(balance);
-        emit WithdrawerBalanceBurnt(balance);
     }
 }

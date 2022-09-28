@@ -5,6 +5,9 @@
 **Table of Contents**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> v0.5.24
 - [Architecture Design Goals](#architecture-design-goals)
 - [Components](#components)
   - [L1 Components](#l1-components)
@@ -17,6 +20,7 @@
     - [Epochs and the Sequencing Window](#epochs-and-the-sequencing-window)
     - [Block Derivation Loop](#block-derivation-loop)
   - [Engine API](#engine-api)
+<<<<<<< HEAD
 =======
 - [Optimism Overview](#optimism-overview)
   - [Architecture Design Goals](#architecture-design-goals)
@@ -32,6 +36,8 @@
       - [Block Derivation Loop](#block-derivation-loop)
     - [Engine API](#engine-api)
 >>>>>>> v0.5.23
+=======
+>>>>>>> v0.5.24
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -105,7 +111,7 @@ and fault proofs.
 
 **Spec links:**
 
-- [Execution Engine](specs/exec-engine.md)
+- [Execution Engine](./exec-engine.md)
 
 Since the EE uses Geth under the hood, Optimism uses Geth's built-in peer-to-peer network and transaction pool to
 propagate transactions. The same network can also be used to propagate submitted blocks and support snap-sync.

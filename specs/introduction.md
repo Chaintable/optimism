@@ -5,6 +5,9 @@
 **Table of Contents**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> v0.5.24
 - [Foundations](#foundations)
   - [What is Ethereum scalability?](#what-is-ethereum-scalability)
   - [What is an Optimistic Rollup?](#what-is-an-optimistic-rollup)
@@ -19,6 +22,7 @@
   - [Depositing and Sending Transactions](#depositing-and-sending-transactions)
   - [Withdrawing](#withdrawing)
 - [Next Steps](#next-steps)
+<<<<<<< HEAD
 =======
 - [Introduction](#introduction)
   - [Foundations](#foundations)
@@ -36,6 +40,8 @@
     - [Withdrawing](#withdrawing)
   - [Next Steps](#next-steps)
 >>>>>>> v0.5.23
+=======
+>>>>>>> v0.5.24
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -156,7 +162,7 @@ Links to components mentioned in this diagram:
 - [Execution Engine](./exec-engine.md)
 - Sequencer Batch Submitter (WIP)
 - [L2 Output Oracle](./proposals.md#l2-output-oracle-smart-contract)
-- [L2 Output Submitter](./proposals#proposing-l2-output-commitments)
+- [L2 Output Submitter](./proposals.md#proposing-l2-output-commitments)
 - Fault Proof VM (WIP)
 
 ### Withdrawing

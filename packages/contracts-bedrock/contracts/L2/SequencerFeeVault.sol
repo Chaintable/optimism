@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity 0.8.15;
 
 <<<<<<< HEAD
 /* Library Imports */
@@ -10,8 +10,12 @@ import { L2StandardBridge } from "./L2StandardBridge.sol";
 =======
 import { Semver } from "../universal/Semver.sol";
 import { L2StandardBridge } from "./L2StandardBridge.sol";
+<<<<<<< HEAD
 import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
 >>>>>>> v0.5.23
+=======
+import { Predeploys } from "../libraries/Predeploys.sol";
+>>>>>>> v0.5.24
 
 /**
  * @custom:proxied
@@ -54,10 +58,10 @@ contract SequencerFeeVault is Semver {
     function withdraw() external {
         require(
             address(this).balance >= MIN_WITHDRAWAL_AMOUNT,
-            // solhint-disable-next-line max-line-length
-            "OVM_SequencerFeeVault: withdrawal amount must be greater than minimum withdrawal amount"
+            "SequencerFeeVault: withdrawal amount must be greater than minimum withdrawal amount"
         );
 
+<<<<<<< HEAD
         uint256 balance = address(this).balance;
 
 <<<<<<< HEAD
@@ -69,5 +73,10 @@ contract SequencerFeeVault is Semver {
             value: balance
         }(PredeployAddresses.LEGACY_ERC20_ETH, l1FeeWallet, balance, 0, bytes(""));
 >>>>>>> v0.5.23
+=======
+        L2StandardBridge(payable(Predeploys.L2_STANDARD_BRIDGE)).withdrawTo{
+            value: address(this).balance
+        }(Predeploys.LEGACY_ERC20_ETH, l1FeeWallet, address(this).balance, 0, bytes(""));
+>>>>>>> v0.5.24
     }
 }

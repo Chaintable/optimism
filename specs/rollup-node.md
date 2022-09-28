@@ -8,34 +8,10 @@
 [g-exec-engine]: glossary.md#execution-engine
 [g-reorg]: glossary.md#re-organization
 [g-rollup-driver]: glossary.md#rollup-driver
-[g-inception]: glossary.md#L2-chain-inception
 [g-receipts]: glossary.md#receipt
-[g-deposit-contract]: glossary.md#deposit-contract
-[g-deposits]: glossary.md#deposits
-[g-deposited]: glossary.md#deposited-transaction
-[g-l1-attr-deposit]: glossary.md#l1-attributes-deposited-transaction
-[g-user-deposited]: glossary.md#user-deposited-transaction
-[g-l1-attr-predeploy]: glossary.md#l1-attributes-predeployed-contract
-[g-depositing-call]: glossary.md#depositing-call
-[g-depositing-transaction]: glossary.md#depositing-transaction
-[g-mpt]: glossary.md#merkle-patricia-trie
-[g-sequencing-window]: glossary.md#sequencing-window
-[g-sequencing]: glossary.md#sequencing
-[g-sequencer-batch]: glossary.md#sequencer-batch
 
 The [rollup node][g-rollup-node] is the component responsible for [deriving the L2 chain][g-derivation] from L1 blocks
-(and their associated [receipts][g-receipts]). This process happens in three steps:
-
-1. Select a [sequencing window][g-sequencing-window] from the L1 chain, on top of the last L2 block:
-   a list of blocks, with transactions and associated receipts.
-2. Read L1 information, deposits, and sequencing batches in order to generate [payload attributes][g-payload-attr]
-   (essentially [a block without output properties][g-block]).
-3. Pass the payload attributes to the [execution engine][g-exec-engine], so that the L2 block (including [output block
-   properties][g-block]) may be computed.
-
-While this process is conceptually a pure function from the L1 chain to the L2 chain, it is in practice incremental. The
-L2 chain is extended whenever new L1 blocks are added to the L1 chain. Similarly, the L2 chain re-organizes whenever the
-L1 chain [re-organizes][g-reorg].
+(and their associated [receipts][g-receipts]).
 
 The part of the rollup node that derives the L2 chain is called the [rollup driver][g-rollup-driver]. This document is
 currently only concerned with the specification of the rollup driver.
@@ -44,6 +20,7 @@ currently only concerned with the specification of the rollup driver.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 - [Rollup Node Specification](#rollup-node-specification)
@@ -228,16 +205,29 @@ Each of the timestamped transaction lists translates to a `PayloadAttributesV1` 
 [`PayloadAttributesV1`]: https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#payloadattributesv1
 
 ------------------------------------------------------------------------------------------------------------------------
+=======
+- [Driver](#driver)
+  - [Derivation](#derivation)
+- [L2 Output RPC method](#l2-output-rpc-method)
+  - [Output Method API](#output-method-api)
 
-## From Payload Attributes to L2 Block
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-Once the [payload attributes] for a given L1 block `B` have been built, and if we have already derived an L2 block from
-`B`'s parent block, then we can use the payload attributes to derive a new L2 block.
+## Driver
+>>>>>>> v0.5.24
 
-### Inductive Derivation Step
+The task of the [driver][g-rollup-driver] in the [rollup node][g-rollup-node]
+is to manage the [derivation][g-derivation] process:
 
-Let
+- Keep track of L1 head block
+- Keep track of the L2 chain sync progress
+- Iterate over the derivation steps as new inputs become available
 
+### Derivation
+
+This process happens in three steps:
+
+<<<<<<< HEAD
 - `refL2` be the (hash of) the current L2 chain head
 - `refL1` be the (hash of) the L1 block from which `refL2` was derived
 - `payloadAttributes` be some previously derived [payload attributes] for the L1 block with number `l1Number(refL1) + 1`
@@ -356,13 +346,20 @@ proof window.
 The [block derivation](#from-l1-blocks-to-payload-attributes) presents an inductive process:
 given that we know the last L2 block derived from the previous [sequencing window][g-sequencing-window], as well as the
 next [sequencing window][g-sequencing-window], then we can derive [payload attributes] of the next L2 blocks.
+=======
+1. Select inputs from the L1 chain, on top of the last L2 block:
+   a list of blocks, with transactions and associated data and receipts.
+2. Read L1 information, deposits, and sequencing batches in order to generate [payload attributes][g-payload-attr]
+   (essentially [a block without output properties][g-block]).
+3. Pass the payload attributes to the [execution engine][g-exec-engine], so that the L2 block (including [output block
+   properties][g-block]) may be computed.
+>>>>>>> v0.5.24
 
-To derive the whole L2 chain from scratch, we simply start with the L2 genesis block as the last L2 block, and the
-block at height `L2_CHAIN_INCEPTION + 1` as the start of the next sequencing window.
-Then we iteratively apply the derivation process from the previous section by shifting the sequencing window one L1
-block forward each step, until there is an insufficient number of L1 blocks left for a complete sequencing window.
+While this process is conceptually a pure function from the L1 chain to the L2 chain, it is in practice incremental. The
+L2 chain is extended whenever new L1 blocks are added to the L1 chain. Similarly, the L2 chain re-organizes whenever the
+L1 chain [re-organizes][g-reorg].
 
-> **TODO** specify genesis block
+For a complete specification of the L2 block derivation, refer to the [L2 block derivation document](./derivation.md).
 
 ## L2 Output RPC method
 
@@ -384,63 +381,3 @@ The input and return types here are as defined by the [engine API specs][engine-
 - returns:
   1. `version`: `DATA`, 32 Bytes - the output root version number, beginning with 0.
   1. `l2OutputRoot`: `DATA`, 32 Bytes - the output root
-
-# Handling L1 Re-Orgs
-
-[l1-reorgs]: #handling-L1-re-orgs
-
-The [previous section on L2 chain derivation][l2-chain-derivation] assumes linear progression of the L1 chain. It is
-also applicable for batch processing, meaning that any given point in time, the canonical L2 chain is given by
-processing the whole L1 chain since the [L2 chain inception][g-inception].
-
-If the L1 Chain re-orgs, the rollup node must re-derive sections of the L2 chain such that it derives the same L2 chain
-that a rollup node would derive if it only followed the new L1 chain.
-
-> By itself, the previous section fully specifies the behavior of the rollup driver. **The current section is
-> non-specificative** but shows how L1 re-orgs can be handled in practice.
-
-In practice, the L1 chain is processed incrementally. However, the L1 chain may occasionally [re-organize][g-reorg],
-meaning the head of the L1 chain changes to a block that is not the child of the previous head but rather another
-descendant of an ancestor of the previous head. In that case, the rollup driver must first search for the common L1
-ancestor, and can re-derive the L2 chain from that L1 block and onward.
-
-The rollup node maintains two heads of the L2 Chain: the unsafe head (often called head) and the safe head.
-Each L2 block has an L1 origin block (corresponding to its epoch) that it references in the
-[L1 attributes deposited transaction][l1-attr-deposit]. The unsafe head is the head of the L2 chain.
-Its L1 origin block should be canonical or potentially extending the canonical chain
-(if the rollup node has not yet seen the L1 block that it is based upon).
-The safe head is the the last L2 block of the last epoch whose sequencing window is complete
-(i.e. the epoch with number `L1Head.number` - `SEQUENCING_WINDOW_SIZE`).
-
-[l1-attr-deposit]: glossary.md#l1-attributes-deposited-transaction
-
-Steps during a reorg:
-
-1. Set "unsafe head" to equal the l2 head we retrieved, just as default
-2. Set "latest block" to equal the l2 head we retrieved, also just as default
-3. Walk back L2, and stop until block.l1Origin is found AND canonical, and update "latest block" to this block.
-And don't override "unsafe head" if it's not found, but do override it when block.l1Origin does not match the
-canonical L1 block at that height.
-4. Walk back L2 from the "latest block" until a full sequencing window of L1 blocks has been passed.
-This is the "safe block".
-
-The purpose of this is to ensure that if the sequencing window for a L2 block has changed since it was derived,
-that L2 block is re-derived.
-
-The first L1 block of the sequencing window is the L1 attributes for that L2 block. The end of the sequencing
-window is the canonical L1 block whose number is `SEQUENCING_WINDOW` larger than the start. The end of the
-window must be selected by number otherwise the sequencer would not be able to create batches. The problem
-with selecting the end of the window by number is that when an L1 reorg occurs, the blocks (and thus batches)
-in the window could change. We must find the find the first L2 block whose complete sequencing window is
-unchanged in the reorg.
-
-When walking back on the L2 chain, care should be taken to not walk past the rollup genesis.
-
-Note that post-[merge], the depth of re-orgs will be bounded by the [L1 finality delay][l1-finality] (every 2 epochs,
-approximately 12 minutes).
-
-(\*) Post-merge, this is only possible for 12 minutes. In practice, we'll pick an already-finalized L1 block as L2
-inception point to preclude the possibility of a re-org past genesis, at the cost of a few empty blocks at the start of
-the L2 chain.
-
-[merge]: https://ethereum.org/en/eth2/merge/

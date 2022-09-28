@@ -1,11 +1,15 @@
-//SPDX-License-Identifier: MIT
-pragma solidity 0.8.10;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.15;
 
 import { CommonTest } from "./CommonTest.t.sol";
 import { L2ToL1MessagePasser } from "../L2/L2ToL1MessagePasser.sol";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { WithdrawalVerifier } from "../libraries/Lib_WithdrawalVerifier.sol";
 =======
+=======
+import { Types } from "../libraries/Types.sol";
+>>>>>>> v0.5.24
 import { Hashing } from "../libraries/Hashing.sol";
 >>>>>>> v0.5.23
 
@@ -20,6 +24,8 @@ contract L2ToL1MessagePasserTest is CommonTest {
         uint256 gasLimit,
         bytes data
     );
+
+    event WithdrawalInitiatedExtension1(bytes32 indexed hash);
 
     event WithdrawerBalanceBurnt(uint256 indexed amount);
 
@@ -38,6 +44,20 @@ contract L2ToL1MessagePasserTest is CommonTest {
             64000,
             hex""
         );
+
+        bytes32 withdrawalHash = Hashing.hashWithdrawal(
+            Types.WithdrawalTransaction(
+                messagePasser.nonce(),
+                address(this),
+                address(4),
+                100,
+                64000,
+                hex""
+            )
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit WithdrawalInitiatedExtension1(withdrawalHash);
 
         vm.deal(address(this), 2**64);
         messagePasser.initiateWithdrawal{ value: 100 }(
@@ -72,6 +92,7 @@ contract L2ToL1MessagePasserTest is CommonTest {
         bytes32 withdrawalHash = WithdrawalVerifier.withdrawalHash(
 =======
         bytes32 withdrawalHash = Hashing.hashWithdrawal(
+<<<<<<< HEAD
 >>>>>>> v0.5.23
             nonce,
             alice,
@@ -79,6 +100,16 @@ contract L2ToL1MessagePasserTest is CommonTest {
             value,
             gasLimit,
             data
+=======
+            Types.WithdrawalTransaction(
+                nonce,
+                alice,
+                target,
+                value,
+                gasLimit,
+                data
+            )
+>>>>>>> v0.5.24
         );
 
         messagePasser.initiateWithdrawal{ value: value }(

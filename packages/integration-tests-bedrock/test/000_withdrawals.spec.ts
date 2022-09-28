@@ -34,6 +34,7 @@ const getTargetOutput = async (
 ) => {
   const submissionInterval = (await oracle.SUBMISSION_INTERVAL()).toNumber()
 <<<<<<< HEAD
+<<<<<<< HEAD
   const startingBlockTimestamp = (
     await oracle.STARTING_BLOCK_TIMESTAMP()
 =======
@@ -41,6 +42,9 @@ const getTargetOutput = async (
     await oracle.STARTING_TIMESTAMP()
 >>>>>>> v0.5.23
   ).toNumber()
+=======
+  const startingTimestamp = (await oracle.STARTING_TIMESTAMP()).toNumber()
+>>>>>>> v0.5.24
   const nextTimestamp = (await oracle.nextTimestamp()).toNumber()
   let targetOutputTimestamp
   if (withdrawalTimestamp < nextTimestamp) {

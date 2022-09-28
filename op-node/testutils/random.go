@@ -11,10 +11,14 @@ import (
 	"math/rand"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
+<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/crypto"
 
 >>>>>>> v0.5.23
+=======
+>>>>>>> v0.5.24
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func RandomHash(rng *rand.Rand) (out common.Hash) {

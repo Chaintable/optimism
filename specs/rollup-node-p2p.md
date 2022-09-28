@@ -30,6 +30,9 @@ and are adopted by several other blockchains, most notably the [L1 consensus lay
 **Table of Contents**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> v0.5.24
 - [P2P configuration](#p2p-configuration)
   - [Identification](#identification)
   - [Discv5](#discv5)
@@ -58,6 +61,7 @@ and are adopted by several other blockchains, most notably the [L1 consensus lay
     - [Block validation](#block-validation)
       - [Block processing](#block-processing)
       - [Block topic scoring parameters](#block-topic-scoring-parameters)
+<<<<<<< HEAD
 =======
 - [Rollup-node P2P interface](#rollup-node-p2p-interface)
   - [P2P configuration](#p2p-configuration)
@@ -89,6 +93,8 @@ and are adopted by several other blockchains, most notably the [L1 consensus lay
         - [Block processing](#block-processing)
         - [Block topic scoring parameters](#block-topic-scoring-parameters)
 >>>>>>> v0.5.23
+=======
+>>>>>>> v0.5.24
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -203,7 +209,7 @@ For async communication over different channels over the same connection, multip
 
 #### GossipSub
 
-[GossipSub 1.1](gossipsub) (`/meshsub/1.1.0`, i.e. with peer-scoring extension) is a pubsub protocol for mesh-networks,
+[GossipSub 1.1][gossipsub] (`/meshsub/1.1.0`, i.e. with peer-scoring extension) is a pubsub protocol for mesh-networks,
 deployed on L1 consensus (Eth2) and other protocols such as Filecoin, offering lots of customization options.
 
 ##### Content-based message identification

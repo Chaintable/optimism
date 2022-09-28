@@ -5,12 +5,16 @@
 **Table of Contents**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> v0.5.24
 - [Message Passing](#message-passing)
 - [Upgradability](#upgradability)
 - [Message Versioning](#message-versioning)
   - [Message Version 0](#message-version-0)
   - [Message Version 1](#message-version-1)
 - [Backwards Compatibility Notes](#backwards-compatibility-notes)
+<<<<<<< HEAD
 =======
 - [Cross Domain Messengers](#cross-domain-messengers)
   - [Message Passing](#message-passing)
@@ -20,6 +24,8 @@
     - [Message Version 1](#message-version-1)
   - [Backwards Compatibility Notes](#backwards-compatibility-notes)
 >>>>>>> v0.5.23
+=======
+>>>>>>> v0.5.24
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

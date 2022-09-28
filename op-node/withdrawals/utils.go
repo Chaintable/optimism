@@ -1,6 +1,7 @@
 package withdrawals
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -207,8 +208,12 @@ type FinalizedWithdrawalParameters struct {
 =======
 	BlockNumber     *big.Int
 	Data            []byte
+<<<<<<< HEAD
 	OutputRootProof bindings.HashingOutputRootProof
 >>>>>>> v0.5.23
+=======
+	OutputRootProof bindings.TypesOutputRootProof
+>>>>>>> v0.5.24
 	WithdrawalProof []byte // RLP Encoded list of trie nodes to prove L2 storage
 }
 
@@ -230,8 +235,15 @@ func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txH
 	if err != nil {
 		return FinalizedWithdrawalParameters{}, err
 	}
+	ev1, err := ParseWithdrawalInitiatedExtension1(receipt)
+	if err != nil {
+		return FinalizedWithdrawalParameters{}, err
+	}
 	// Generate then verify the withdrawal proof
 	withdrawalHash, err := WithdrawalHash(ev)
+	if !bytes.Equal(withdrawalHash[:], ev1.Hash[:]) {
+		return FinalizedWithdrawalParameters{}, errors.New("Computed withdrawal hash incorrectly")
+	}
 	if err != nil {
 		return FinalizedWithdrawalParameters{}, err
 	}
@@ -282,8 +294,12 @@ func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txH
 		GasLimit:    ev.GasLimit,
 		BlockNumber: new(big.Int).Set(header.Number),
 		Data:        ev.Data,
+<<<<<<< HEAD
 		OutputRootProof: bindings.HashingOutputRootProof{
 >>>>>>> v0.5.23
+=======
+		OutputRootProof: bindings.TypesOutputRootProof{
+>>>>>>> v0.5.24
 			Version:               [32]byte{}, // Empty for version 1
 			StateRoot:             header.Root,
 			WithdrawerStorageRoot: p.StorageHash,
@@ -302,9 +318,9 @@ var (
 
 // WithdrawalHash computes the hash of the withdrawal that was stored in the L2 withdrawal contract state.
 // TODO:
-// 	- I don't like having to use the ABI Generated struct
-// 	- There should be a better way to run the ABI encoding
-//	- These needs to be fuzzed against the solidity
+//   - I don't like having to use the ABI Generated struct
+//   - There should be a better way to run the ABI encoding
+//   - These needs to be fuzzed against the solidity
 func WithdrawalHash(ev *bindings.L2ToL1MessagePasserWithdrawalInitiated) (common.Hash, error) {
 	//  abi.encode(nonce, msg.sender, _target, msg.value, _gasLimit, _data)
 	args := abi.Arguments{
@@ -328,14 +344,52 @@ func ParseWithdrawalInitiated(receipt *types.Receipt) (*bindings.L2ToL1MessagePa
 	if err != nil {
 		return nil, err
 	}
-	if len(receipt.Logs) != 1 {
-		return nil, errors.New("invalid length of logs")
-	}
-	ev, err := contract.ParseWithdrawalInitiated(*receipt.Logs[0])
+	abi, err := bindings.L2ToL1MessagePasserMetaData.GetAbi()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse log: %w", err)
+		return nil, err
 	}
-	return ev, nil
+
+	for _, log := range receipt.Logs {
+		event, err := abi.EventByID(log.Topics[0])
+		if err != nil {
+			return nil, err
+		}
+		if event.Name == "WithdrawalInitiated" {
+			ev, err := contract.ParseWithdrawalInitiated(*log)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse log: %w", err)
+			}
+			return ev, nil
+		}
+	}
+	return nil, errors.New("Unable to find WithdrawalInitiated event")
+}
+
+// ParseWithdrawalInitiatedExtension1 parses
+func ParseWithdrawalInitiatedExtension1(receipt *types.Receipt) (*bindings.L2ToL1MessagePasserWithdrawalInitiatedExtension1, error) {
+	contract, err := bindings.NewL2ToL1MessagePasser(common.Address{}, nil)
+	if err != nil {
+		return nil, err
+	}
+	abi, err := bindings.L2ToL1MessagePasserMetaData.GetAbi()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, log := range receipt.Logs {
+		event, err := abi.EventByID(log.Topics[0])
+		if err != nil {
+			return nil, err
+		}
+		if event.Name == "WithdrawalInitiatedExtension1" {
+			ev, err := contract.ParseWithdrawalInitiatedExtension1(*log)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse log: %w", err)
+			}
+			return ev, nil
+		}
+	}
+	return nil, errors.New("Unable to find WithdrawalInitiatedExtension1 event")
 }
 
 // StorageSlotOfWithdrawalHash determines the storage slot of the Withdrawer contract to look at
@@ -346,6 +400,5 @@ func StorageSlotOfWithdrawalHash(hash common.Hash) common.Hash {
 	// Where p is the 32 byte value of the storage slot and ++ is concatenation
 	buf := make([]byte, 64)
 	copy(buf, hash[:])
-	buf[63] = 1
 	return crypto.Keccak256Hash(buf)
 }
