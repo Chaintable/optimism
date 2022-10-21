@@ -1,16 +1,8 @@
 package driver
 
 import (
-<<<<<<< HEAD
-	"bytes"
-	"context"
-	"errors"
-	"fmt"
-	"math/big"
-=======
 	"context"
 	"fmt"
->>>>>>> v0.5.23
 	"time"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"

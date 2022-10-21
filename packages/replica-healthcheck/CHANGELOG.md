@@ -2,8 +2,29 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
+=======
+## 1.1.10
+
+### Patch Changes
+
+- Updated dependencies [ce7da914]
+  - @eth-optimism/common-ts@0.6.6
+
+## 1.1.9
+
+### Patch Changes
+
+- 7215f4ce: Bump ethers to 5.7.0 globally
+- Updated dependencies [7215f4ce]
+- Updated dependencies [206f6033]
+- Updated dependencies [d7679ca4]
+  - @eth-optimism/common-ts@0.6.5
+  - @eth-optimism/core-utils@0.10.1
+
+>>>>>>> @eth-optimism/l2geth@0.5.27
 ## 1.1.8
 
 ### Patch Changes

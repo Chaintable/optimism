@@ -1,17 +1,7 @@
-<<<<<<< HEAD
-//SPDX-License-Identifier: MIT
-pragma solidity 0.8.10;
-
-import { L2OutputOracle } from "./L2OutputOracle.sol";
-import { WithdrawalVerifier } from "../libraries/Lib_WithdrawalVerifier.sol";
-import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
-import { ExcessivelySafeCall } from "../libraries/ExcessivelySafeCall.sol";
-import { ResourceMetering } from "./ResourceMetering.sol";
-=======
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { SafeCall } from "../libraries/SafeCall.sol";
 import { L2OutputOracle } from "./L2OutputOracle.sol";
 import { Types } from "../libraries/Types.sol";
@@ -20,7 +10,6 @@ import { SecureMerkleTrie } from "../libraries/trie/SecureMerkleTrie.sol";
 import { AddressAliasHelper } from "../vendor/AddressAliasHelper.sol";
 import { ResourceMetering } from "./ResourceMetering.sol";
 import { Semver } from "../universal/Semver.sol";
->>>>>>> v0.5.23
 
 /**
  * @custom:proxied
@@ -29,11 +18,7 @@ import { Semver } from "../universal/Semver.sol";
  *         and L2. Messages sent directly to the OptimismPortal have no form of replayability.
  *         Users are encouraged to use the L1CrossDomainMessenger for a higher-level interface.
  */
-<<<<<<< HEAD
-contract OptimismPortal is ResourceMetering {
-=======
 contract OptimismPortal is Initializable, ResourceMetering, Semver {
->>>>>>> v0.5.23
     /**
      * @notice Version of the deposit event.
      */
@@ -61,9 +46,6 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
      *         of this variable is the default L2 sender address, then we are NOT inside of a call
      *         to finalizeWithdrawalTransaction.
      */
-<<<<<<< HEAD
-    address public l2Sender = DEFAULT_L2_SENDER;
-=======
     address public l2Sender;
 
     /**
@@ -75,7 +57,6 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
      * @notice Additional gas reserved for clean up after finalizing a transaction withdrawal.
      */
     uint256 internal constant FINALIZE_GAS_BUFFER = 20_000;
->>>>>>> v0.5.23
 
     /**
      * @notice A list of withdrawal hashes which have been successfully finalized.
@@ -83,6 +64,7 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
     mapping(bytes32 => bool) public finalizedWithdrawals;
 
     /**
+<<<<<<< HEAD
 <<<<<<< HEAD
      * @param _l2Oracle                  Address of the L2OutputOracle.
      * @param _finalizationPeriodSeconds Finalization time in seconds.
@@ -96,6 +78,8 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
     uint256[48] private __gap;
 
     /**
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.27
      * @notice Emitted when a transaction is deposited from L1 to L2. The parameters of this event
      *         are read by the rollup node and used to derive deposit transactions on L2.
      *
@@ -133,17 +117,27 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
 
     /**
 <<<<<<< HEAD
+<<<<<<< HEAD
      * @notice Intializes mutable variables.
+=======
+     * @notice Initializer;
+>>>>>>> @eth-optimism/l2geth@0.5.27
      */
     function initialize() public initializer {
         l2Sender = DEFAULT_L2_SENDER;
         __ResourceMetering_init();
+<<<<<<< HEAD
 >>>>>>> v0.5.23
     }
 
     /**
 =======
 >>>>>>> v0.5.24
+=======
+    }
+
+    /**
+>>>>>>> @eth-optimism/l2geth@0.5.27
      * @notice Accepts value so that users can send ETH directly to this contract and have the
      *         funds be deposited to their address on L2. This is intended as a convenience
 <<<<<<< HEAD
@@ -252,9 +246,14 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
      * @param _tx              Withdrawal transaction to finalize.
 >>>>>>> v0.5.24
      * @param _l2BlockNumber   L2 block number of the outputRoot.
+<<<<<<< HEAD
 >>>>>>> v0.5.23
      * @param _outputRootProof Inclusion proof of the withdrawer contracts storage root.
      * @param _withdrawalProof Inclusion proof for the given withdrawal in the withdrawer contract.
+=======
+     * @param _outputRootProof Inclusion proof of the L2ToL1MessagePasser contract's storage root.
+     * @param _withdrawalProof Inclusion proof of the withdrawal in L2ToL1MessagePasser contract.
+>>>>>>> @eth-optimism/l2geth@0.5.27
      */
     function finalizeWithdrawalTransaction(
 <<<<<<< HEAD
@@ -277,7 +276,7 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
         uint256 _l2BlockNumber,
         Types.OutputRootProof calldata _outputRootProof,
         bytes calldata _withdrawalProof
-    ) external payable {
+    ) external {
         // Prevent nested withdrawals within withdrawals.
 >>>>>>> v0.5.23
         require(
@@ -342,9 +341,9 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
         bytes32 withdrawalHash = Hashing.hashWithdrawal(_tx);
 >>>>>>> v0.5.24
 
-        // Verify that the hash of this withdrawal was stored in the withdrawal contract on L2. If
-        // this is true, then we know that this withdrawal was actually triggered on L2 can can
-        // therefore be relayed on L1.
+        // Verify that the hash of this withdrawal was stored in the L2toL1MessagePasser contract on
+        //  L2. If this is true, then we know that this withdrawal was actually triggered on L2
+        // and can therefore be relayed on L1.
         require(
 <<<<<<< HEAD
             WithdrawalVerifier._verifyWithdrawalInclusion(
@@ -352,7 +351,7 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
             _verifyWithdrawalInclusion(
 >>>>>>> v0.5.23
                 withdrawalHash,
-                _outputRootProof.withdrawerStorageRoot,
+                _outputRootProof.messagePasserStorageRoot,
                 _withdrawalProof
             ),
             "OptimismPortal: invalid withdrawal inclusion proof"
@@ -410,14 +409,6 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
     function isBlockFinalized(uint256 _l2BlockNumber) external view returns (bool) {
         Types.OutputProposal memory proposal = L2_ORACLE.getL2Output(_l2BlockNumber);
         return _isOutputFinalized(proposal);
-    }
-
-    /**
-     * @notice Initializer;
-     */
-    function initialize() public initializer {
-        l2Sender = DEFAULT_L2_SENDER;
-        __ResourceMetering_init();
     }
 
     /**

@@ -29,6 +29,7 @@ const NAME_REMAPPING = {
   AddressManager: 'Lib_AddressManager' as const,
   OVM_L1BlockNumber: 'iOVM_L1BlockNumber' as const,
   WETH: 'WETH9' as const,
+  BedrockMessagePasser: 'L2ToL1MessagePasser' as const,
 }
 
 /**
@@ -160,6 +161,7 @@ export const getBridgeAdapters = (
   messenger: CrossChainMessenger,
   opts?: {
     overrides?: BridgeAdapterData
+    contracts?: DeepPartial<OEContractsLike>
   }
 ): BridgeAdapters => {
   const adapterData: BridgeAdapterData = {
@@ -167,12 +169,16 @@ export const getBridgeAdapters = (
       ? {
           Standard: {
             Adapter: StandardBridgeAdapter,
-            l1Bridge: CONTRACT_ADDRESSES[l2ChainId].l1.L1StandardBridge,
+            l1Bridge:
+              opts.contracts?.l1?.L1StandardBridge ||
+              CONTRACT_ADDRESSES[l2ChainId].l1.L1StandardBridge,
             l2Bridge: predeploys.L2StandardBridge,
           },
           ETH: {
             Adapter: ETHBridgeAdapter,
-            l1Bridge: CONTRACT_ADDRESSES[l2ChainId].l1.L1StandardBridge,
+            l1Bridge:
+              opts.contracts?.l1?.L1StandardBridge ||
+              CONTRACT_ADDRESSES[l2ChainId].l1.L1StandardBridge,
             l2Bridge: predeploys.L2StandardBridge,
           },
         }

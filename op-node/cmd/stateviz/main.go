@@ -50,7 +50,7 @@ type SnapshotState struct {
 	L1Head          eth.L1BlockRef `json:"l1Head"`          // what we see as head on L1
 	L1Current       eth.L1BlockRef `json:"l1Current"`       // l1 block that the derivation is currently using
 	L2Head          eth.L2BlockRef `json:"l2Head"`          // l2 block that was last optimistically accepted (unsafe head)
-	L2SafeHead      eth.L2BlockRef `json:"l2SafeHead"`      // l2 block that was last derived
+	L2Safe          eth.L2BlockRef `json:"l2Safe"`          // l2 block that was last derived
 	L2FinalizedHead eth.BlockID    `json:"l2FinalizedHead"` // l2 block that is irreversible
 >>>>>>> v0.5.23
 }
@@ -69,7 +69,7 @@ func (e *SnapshotState) UnmarshalJSON(data []byte) error {
 =======
 		L1Current       json.RawMessage `json:"l1Current"`
 		L2Head          json.RawMessage `json:"l2Head"`
-		L2SafeHead      json.RawMessage `json:"l2SafeHead"`
+		L2Safe          json.RawMessage `json:"l2Safe"`
 		L2FinalizedHead json.RawMessage `json:"l2FinalizedHead"`
 >>>>>>> v0.5.23
 	}{}
@@ -97,7 +97,7 @@ func (e *SnapshotState) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(unquote(t.L2Head), &e.L2Head); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(unquote(t.L2SafeHead), &e.L2SafeHead); err != nil {
+	if err := json.Unmarshal(unquote(t.L2Safe), &e.L2Safe); err != nil {
 		return err
 	}
 	if err := json.Unmarshal(unquote(t.L2FinalizedHead), &e.L2FinalizedHead); err != nil {

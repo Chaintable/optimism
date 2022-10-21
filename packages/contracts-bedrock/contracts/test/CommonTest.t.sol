@@ -7,11 +7,7 @@ import { L2OutputOracle } from "../L1/L2OutputOracle.sol";
 import { L2ToL1MessagePasser } from "../L2/L2ToL1MessagePasser.sol";
 import { L1StandardBridge } from "../L1/L1StandardBridge.sol";
 import { L2StandardBridge } from "../L2/L2StandardBridge.sol";
-<<<<<<< HEAD
-import { OptimismMintableTokenFactory } from "../universal/OptimismMintableTokenFactory.sol";
-=======
 import { OptimismMintableERC20Factory } from "../universal/OptimismMintableERC20Factory.sol";
->>>>>>> v0.5.23
 import { OptimismMintableERC20 } from "../universal/OptimismMintableERC20.sol";
 import { OptimismPortal } from "../L1/OptimismPortal.sol";
 import { L1CrossDomainMessenger } from "../L1/L1CrossDomainMessenger.sol";
@@ -132,14 +128,14 @@ contract L2OutputOracle_Initializer is CommonTest {
         L2ToL1MessagePasser(payable(Predeploys.L2_TO_L1_MESSAGE_PASSER));
 
     // Constructor arguments
-    address proposer = 0x000000000000000000000000000000000000AbBa;
-    address owner = 0x000000000000000000000000000000000000ACDC;
-    uint256 submissionInterval = 1800;
-    uint256 l2BlockTime = 2;
-    bytes32 genesisL2Output = keccak256(abi.encode(0));
-    uint256 historicalTotalBlocks = 199;
-    uint256 startingBlockNumber = 200;
-    uint256 startingTimestamp = 1000;
+    address internal proposer = 0x000000000000000000000000000000000000AbBa;
+    address internal owner = 0x000000000000000000000000000000000000ACDC;
+    uint256 internal submissionInterval = 1800;
+    uint256 internal l2BlockTime = 2;
+    bytes32 internal genesisL2Output = keccak256(abi.encode(0));
+    uint256 internal historicalTotalBlocks = 199;
+    uint256 internal startingBlockNumber = 200;
+    uint256 internal startingTimestamp = 1000;
 
     // Test data
     uint256 initL1Time;
@@ -187,22 +183,20 @@ contract L2OutputOracle_Initializer is CommonTest {
         vm.prank(multisig);
         proxy.upgradeToAndCall(
             address(oracleImpl),
-            abi.encodeWithSelector(
-                L2OutputOracle.initialize.selector,
-                genesisL2Output,
-                startingBlockNumber,
-                proposer,
-                owner
+            abi.encodeCall(
+                L2OutputOracle.initialize,
+                (
+                    genesisL2Output,
+                    proposer,
+                    owner
+                )
             )
         );
         oracle = L2OutputOracle(address(proxy));
         vm.label(address(oracle), "L2OutputOracle");
 
         // Set the L2ToL1MessagePasser at the correct address
-        vm.etch(
-            Predeploys.L2_TO_L1_MESSAGE_PASSER,
-            address(new L2ToL1MessagePasser()).code
-        );
+        vm.etch(Predeploys.L2_TO_L1_MESSAGE_PASSER, address(new L2ToL1MessagePasser()).code);
 
         vm.label(Predeploys.L2_TO_L1_MESSAGE_PASSER, "L2ToL1MessagePasser");
     }
@@ -255,12 +249,9 @@ contract Messenger_Initializer is L2OutputOracle_Initializer {
         uint256 gasLimit
     );
 
-    event SentMessageExtension1(
-        address indexed sender,
-        uint256 value
-    );
+    event SentMessageExtension1(address indexed sender, uint256 value);
 
-    event WithdrawalInitiated(
+    event MessagePassed(
         uint256 indexed nonce,
         address indexed sender,
         address indexed target,
@@ -270,6 +261,7 @@ contract Messenger_Initializer is L2OutputOracle_Initializer {
     );
 
     event RelayedMessage(bytes32 indexed msgHash);
+    event FailedRelayedMessage(bytes32 indexed msgHash);
 
     event TransactionDeposited(
         address indexed from,
@@ -326,7 +318,7 @@ contract Messenger_Initializer is L2OutputOracle_Initializer {
 >>>>>>> v0.5.23
         );
 
-        L2Messenger.initialize(address(L1Messenger));
+        L2Messenger.initialize();
 
 <<<<<<< HEAD
         // Set the L2ToL1MessagePasser at the correct address
@@ -395,6 +387,7 @@ contract Bridge_Initializer is Messenger_Initializer {
     ERC20 BadL2Token;
     OptimismMintableERC20 RemoteL1Token;
 
+<<<<<<< HEAD
     event ETHDepositInitiated(
 <<<<<<< HEAD
         address indexed _from,
@@ -500,6 +493,9 @@ contract Bridge_Initializer is Messenger_Initializer {
         uint256 amount,
         bytes data
     );
+=======
+    event ETHDepositInitiated(address indexed from, address indexed to, uint256 amount, bytes data);
+>>>>>>> @eth-optimism/l2geth@0.5.27
 
     event ETHWithdrawalFinalized(
         address indexed from,
@@ -553,19 +549,9 @@ contract Bridge_Initializer is Messenger_Initializer {
         bytes data
     );
 
-    event ETHBridgeInitiated(
-        address indexed from,
-        address indexed to,
-        uint256 amount,
-        bytes data
-    );
+    event ETHBridgeInitiated(address indexed from, address indexed to, uint256 amount, bytes data);
 
-    event ETHBridgeFinalized(
-        address indexed from,
-        address indexed to,
-        uint256 amount,
-        bytes data
-    );
+    event ETHBridgeFinalized(address indexed from, address indexed to, uint256 amount, bytes data);
 
     event ERC20BridgeInitiated(
         address indexed localToken,
@@ -585,6 +571,7 @@ contract Bridge_Initializer is Messenger_Initializer {
         bytes data
     );
 
+<<<<<<< HEAD
     event ERC20BridgeFailed(
         address indexed localToken,
         address indexed remoteToken,
@@ -595,6 +582,8 @@ contract Bridge_Initializer is Messenger_Initializer {
 >>>>>>> v0.5.23
     );
 
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.27
     function setUp() public virtual override {
         super.setUp();
 
@@ -670,9 +659,7 @@ contract Bridge_Initializer is Messenger_Initializer {
             Predeploys.L2_STANDARD_BRIDGE
         );
         vm.etch(Predeploys.OPTIMISM_MINTABLE_ERC20_FACTORY, address(factory).code);
-        L2TokenFactory = OptimismMintableERC20Factory(
-            Predeploys.OPTIMISM_MINTABLE_ERC20_FACTORY
-        );
+        L2TokenFactory = OptimismMintableERC20Factory(Predeploys.OPTIMISM_MINTABLE_ERC20_FACTORY);
 
 <<<<<<< HEAD
         vm.etch(PredeployAddresses.LEGACY_ERC20_ETH, address(new LegacyERC20ETH()).code);
@@ -824,7 +811,7 @@ contract FFIInterface is Test {
     function hashOutputRootProof(
         bytes32 _version,
         bytes32 _stateRoot,
-        bytes32 _withdrawerStorageRoot,
+        bytes32 _messagePasserStorageRoot,
         bytes32 _latestBlockhash
     ) external returns (bytes32) {
         string[] memory cmds = new string[](7);
@@ -833,7 +820,7 @@ contract FFIInterface is Test {
         cmds[2] = "hashOutputRootProof";
         cmds[3] = Strings.toHexString(uint256(_version));
         cmds[4] = Strings.toHexString(uint256(_stateRoot));
-        cmds[5] = Strings.toHexString(uint256(_withdrawerStorageRoot));
+        cmds[5] = Strings.toHexString(uint256(_messagePasserStorageRoot));
         cmds[6] = Strings.toHexString(uint256(_latestBlockhash));
 
         bytes memory result = vm.ffi(cmds);
@@ -866,9 +853,10 @@ contract FFIInterface is Test {
         return abi.decode(result, (bytes32));
     }
 
-    function encodeDepositTransaction(
-        Types.UserDepositTransaction calldata txn
-    ) external returns (bytes memory) {
+    function encodeDepositTransaction(Types.UserDepositTransaction calldata txn)
+        external
+        returns (bytes memory)
+    {
         string[] memory cmds = new string[](12);
         cmds[0] = "node";
         cmds[1] = "dist/scripts/differential-testing.js";
@@ -949,18 +937,19 @@ contract Reverter {
 
 // Useful for testing reentrancy guards
 contract CallerCaller {
-    event WhatHappened(
-        bool success,
-        bytes returndata
-    );
+    event WhatHappened(bool success, bytes returndata);
 
     fallback() external {
         (bool success, bytes memory returndata) = msg.sender.call(msg.data);
         emit WhatHappened(success, returndata);
         assembly {
             switch success
-            case 0 { revert(add(returndata, 0x20), mload(returndata)) }
-            default { return(add(returndata, 0x20), mload(returndata)) }
+            case 0 {
+                revert(add(returndata, 0x20), mload(returndata))
+            }
+            default {
+                return(add(returndata, 0x20), mload(returndata))
+            }
         }
     }
 }

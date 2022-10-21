@@ -74,7 +74,7 @@ services:
       --sequencer.enabled
       --sequencer.l1-confs=0
       --verifier.l1-confs=0
-      --p2p.sequencer.key=/config/p2p-sequencer-key.txt
+      --p2p.sequencer.key=8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba
       --rollup.config=/rollup.json
       --rpc.addr=0.0.0.0
       --rpc.port=8545
@@ -123,7 +123,11 @@ services:
 =======
     ports:
       - "6062:6060"
+<<<<<<< HEAD
 >>>>>>> v0.5.24
+=======
+      - "7302:7300"
+>>>>>>> @eth-optimism/l2geth@0.5.27
     environment:
       OP_PROPOSER_L1_ETH_RPC: http://l1:8545
       OP_PROPOSER_L2_ETH_RPC: http://l2:8545
@@ -137,6 +141,7 @@ services:
       OP_PROPOSER_LOG_TERMINAL: "true"
       OP_PROPOSER_L2OO_ADDRESS: "${L2OO_ADDRESS}"
       OP_PROPOSER_PPROF_ENABLED: "true"
+      OP_PROPOSER_METRICS_ENABLED: "true"
 
   op-batcher:
     depends_on:
@@ -174,6 +179,7 @@ services:
 =======
     ports:
       - "6061:6060"
+      - "7301:7300"
     environment:
       OP_BATCHER_L1_ETH_RPC: http://l1:8545
       OP_BATCHER_L2_ETH_RPC: http://l2:8545
@@ -191,7 +197,11 @@ services:
       OP_BATCHER_SEQUENCER_BATCH_INBOX_ADDRESS: "${SEQUENCER_BATCH_INBOX_ADDRESS}"
       OP_BATCHER_LOG_TERMINAL: "true"
       OP_BATCHER_PPROF_ENABLED: "true"
+<<<<<<< HEAD
 >>>>>>> v0.5.24
+=======
+      OP_BATCHER_METRICS_ENABLED: "true"
+>>>>>>> @eth-optimism/l2geth@0.5.27
 
   stateviz:
     build:

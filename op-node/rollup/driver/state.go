@@ -5,19 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-<<<<<<< HEAD
-=======
 	"io"
->>>>>>> v0.5.23
 	gosync "sync"
 	"time"
 
-	"github.com/ethereum-optimism/optimism/op-node/backoff"
+	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 <<<<<<< HEAD
 <<<<<<< HEAD
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
+<<<<<<< HEAD
 	"github.com/ethereum-optimism/optimism/op-node/rollup/sync"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -38,16 +37,16 @@ type state struct {
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 >>>>>>> v0.5.24
 	"github.com/ethereum/go-ethereum/log"
+=======
+	"github.com/ethereum-optimism/optimism/op-service/backoff"
+>>>>>>> @eth-optimism/l2geth@0.5.27
 )
 
 // Deprecated: use eth.SyncStatus instead.
 type SyncStatus = eth.SyncStatus
 
-type state struct {
-	// Latest recorded head, safe block and finalized block of the L1 Chain, independent of derivation work
-	l1Head      eth.L1BlockRef
-	l1Safe      eth.L1BlockRef
-	l1Finalized eth.L1BlockRef
+type Driver struct {
+	l1State L1StateIface
 
 	// The derivation pipeline is reset whenever we reorg.
 	// The derivation pipeline determines the new l2Safe.
@@ -64,11 +63,15 @@ type state struct {
 	forceReset chan chan struct{}
 
 	// Rollup config: rollup chain configuration
-	Config *rollup.Config
+	config *rollup.Config
 
 	// Driver config: verifier and sequencer settings
+<<<<<<< HEAD
 	DriverConfig *Config
 >>>>>>> v0.5.23
+=======
+	driverConfig *Config
+>>>>>>> @eth-optimism/l2geth@0.5.27
 
 	// L1 Signals:
 	//
@@ -83,10 +86,11 @@ type state struct {
 	// L2 Signals:
 	unsafeL2Payloads chan *eth.ExecutionPayload
 
-	l1      L1Chain
-	l2      L2Chain
-	output  outputInterface
-	network Network // may be nil, network for is optional
+	l1               L1Chain
+	l2               L2Chain
+	l1OriginSelector L1OriginSelectorIface
+	sequencer        SequencerIface
+	network          Network // may be nil, network for is optional
 
 	metrics     Metrics
 	log         log.Logger
@@ -96,6 +100,7 @@ type state struct {
 	wg gosync.WaitGroup
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 // NewState creates a new driver state. State changes take effect though the given output.
 // Optionally a network can be provided to publish things to other nodes than the engine of the driver.
@@ -190,6 +195,11 @@ func (s *state) Start(ctx context.Context) error {
 =======
 func (s *state) Start(_ context.Context) error {
 >>>>>>> v0.5.24
+=======
+// Start starts up the state loop.
+// The loop will have been started iff err is not nil.
+func (s *Driver) Start() error {
+>>>>>>> @eth-optimism/l2geth@0.5.27
 	s.derivation.Reset()
 
 	s.wg.Add(1)
@@ -199,10 +209,14 @@ func (s *state) Start(_ context.Context) error {
 	return nil
 }
 
+<<<<<<< HEAD
 func (s *state) Close() error {
 <<<<<<< HEAD
 	close(s.done)
 =======
+=======
+func (s *Driver) Close() error {
+>>>>>>> @eth-optimism/l2geth@0.5.27
 	s.done <- struct{}{}
 >>>>>>> v0.5.23
 	s.wg.Wait()
@@ -211,7 +225,7 @@ func (s *state) Close() error {
 
 // OnL1Head signals the driver that the L1 chain changed the "unsafe" block,
 // also known as head of the chain, or "latest".
-func (s *state) OnL1Head(ctx context.Context, unsafe eth.L1BlockRef) error {
+func (s *Driver) OnL1Head(ctx context.Context, unsafe eth.L1BlockRef) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -222,7 +236,7 @@ func (s *state) OnL1Head(ctx context.Context, unsafe eth.L1BlockRef) error {
 
 // OnL1Safe signals the driver that the L1 chain changed the "safe",
 // also known as the justified checkpoint (as seen on L1 beacon-chain).
-func (s *state) OnL1Safe(ctx context.Context, safe eth.L1BlockRef) error {
+func (s *Driver) OnL1Safe(ctx context.Context, safe eth.L1BlockRef) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -231,7 +245,7 @@ func (s *state) OnL1Safe(ctx context.Context, safe eth.L1BlockRef) error {
 	}
 }
 
-func (s *state) OnL1Finalized(ctx context.Context, finalized eth.L1BlockRef) error {
+func (s *Driver) OnL1Finalized(ctx context.Context, finalized eth.L1BlockRef) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -240,7 +254,7 @@ func (s *state) OnL1Finalized(ctx context.Context, finalized eth.L1BlockRef) err
 	}
 }
 
-func (s *state) OnUnsafeL2Payload(ctx context.Context, payload *eth.ExecutionPayload) error {
+func (s *Driver) OnUnsafeL2Payload(ctx context.Context, payload *eth.ExecutionPayload) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -249,6 +263,7 @@ func (s *state) OnUnsafeL2Payload(ctx context.Context, payload *eth.ExecutionPay
 	}
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 // l1WindowBufEnd returns the last block that should be used as `base` to L1ChainWindow.
@@ -412,11 +427,17 @@ func (s *state) findL1Origin(ctx context.Context) (eth.L1BlockRef, error) {
 	return currentOrigin, nil
 }
 
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.27
 // createNewL2Block builds a L2 block on top of the L2 Head (unsafe). Used by Sequencer nodes to
 // construct new L2 blocks. Verifier nodes will use handleEpoch instead.
-func (s *state) createNewL2Block(ctx context.Context) error {
+func (s *Driver) createNewL2Block(ctx context.Context) error {
+	l2Head := s.derivation.UnsafeL2Head()
+	l2Safe := s.derivation.SafeL2Head()
+	l2Finalized := s.derivation.Finalized()
+
 	// Figure out which L1 origin block we're going to be building on top of.
-	l1Origin, err := s.findL1Origin(ctx)
+	l1Origin, err := s.l1OriginSelector.FindL1Origin(ctx, s.l1State.L1Head(), l2Head)
 	if err != nil {
 		s.log.Error("Error finding next L1 Origin", "err", err)
 		return err
@@ -424,17 +445,13 @@ func (s *state) createNewL2Block(ctx context.Context) error {
 
 	// Rollup is configured to not start producing blocks until a specific L1 block has been
 	// reached. Don't produce any blocks until we're at that genesis block.
-	if l1Origin.Number < s.Config.Genesis.L1.Number {
-		s.log.Info("Skipping block production because the next L1 Origin is behind the L1 genesis", "next", l1Origin.ID(), "genesis", s.Config.Genesis.L1)
+	if l1Origin.Number < s.config.Genesis.L1.Number {
+		s.log.Info("Skipping block production because the next L1 Origin is behind the L1 genesis", "next", l1Origin.ID(), "genesis", s.config.Genesis.L1)
 		return nil
 	}
 
-	l2Head := s.derivation.UnsafeL2Head()
-	l2Safe := s.derivation.SafeL2Head()
-	l2Finalized := s.derivation.Finalized()
-
 	// Should never happen. Sequencer will halt if we get into this situation somehow.
-	nextL2Time := l2Head.Time + s.Config.BlockTime
+	nextL2Time := l2Head.Time + s.config.BlockTime
 	if nextL2Time < l1Origin.Time {
 		s.log.Error("Cannot build L2 block for time before L1 origin",
 			"l2Unsafe", l2Head, "nextL2Time", nextL2Time, "l1Origin", l1Origin, "l1OriginTime", l1Origin.Time)
@@ -445,6 +462,7 @@ func (s *state) createNewL2Block(ctx context.Context) error {
 	// Actually create the new block.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	newUnsafeL2Head, payload, err := s.output.createNewBlock(ctx, s.l2Head, s.l2SafeHead.ID(), s.l2Finalized, l1Origin)
 =======
 	newUnsafeL2Head, payload, err := s.output.createNewBlock(ctx, s.l2Head, s.l2SafeHead.ID(), s.l2Finalized.ID(), l1Origin)
@@ -452,6 +470,9 @@ func (s *state) createNewL2Block(ctx context.Context) error {
 =======
 	newUnsafeL2Head, payload, err := s.output.createNewBlock(ctx, l2Head, l2Safe.ID(), l2Finalized.ID(), l1Origin)
 >>>>>>> v0.5.24
+=======
+	newUnsafeL2Head, payload, err := s.sequencer.CreateNewBlock(ctx, l2Head, l2Safe.ID(), l2Finalized.ID(), l1Origin)
+>>>>>>> @eth-optimism/l2geth@0.5.27
 	if err != nil {
 		s.log.Error("Could not extend chain as sequencer", "err", err, "l2_parent", l2Head, "l1_origin", l1Origin)
 		return err
@@ -556,8 +577,12 @@ func (s *state) handleUnsafeL2Payload(ctx context.Context, payload *eth.Executio
 func (s *state) loop() {
 =======
 // the eventLoop responds to L1 changes and internal timers to produce L2 blocks.
+<<<<<<< HEAD
 func (s *state) eventLoop() {
 >>>>>>> v0.5.23
+=======
+func (s *Driver) eventLoop() {
+>>>>>>> @eth-optimism/l2geth@0.5.27
 	defer s.wg.Done()
 	s.log.Info("State loop started")
 
@@ -568,11 +593,16 @@ func (s *state) eventLoop() {
 	// running in Sequencer mode.
 	var l2BlockCreationTickerCh <-chan time.Time
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if s.sequencer {
 =======
 	if s.DriverConfig.SequencerEnabled {
 >>>>>>> v0.5.23
 		l2BlockCreationTicker := time.NewTicker(time.Duration(s.Config.BlockTime) * time.Second)
+=======
+	if s.driverConfig.SequencerEnabled {
+		l2BlockCreationTicker := time.NewTicker(time.Duration(s.config.BlockTime) * time.Second)
+>>>>>>> @eth-optimism/l2geth@0.5.27
 		defer l2BlockCreationTicker.Stop()
 		l2BlockCreationTickerCh = l2BlockCreationTicker.C
 	}
@@ -651,13 +681,21 @@ func (s *state) eventLoop() {
 		case <-l2BlockCreationReqCh:
 			s.snapshot("L2 Block Creation Request")
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+			l1Head := s.l1State.L1Head()
+>>>>>>> @eth-optimism/l2geth@0.5.27
 			if !s.idleDerivation {
-				s.log.Warn("not creating block, node is deriving new l2 data", "head_l1", s.l1Head)
+				s.log.Warn("not creating block, node is deriving new l2 data", "head_l1", l1Head)
 				break
 			}
+<<<<<<< HEAD
 >>>>>>> v0.5.23
 			ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+=======
+			ctx, cancel := context.WithTimeout(ctx, 20*time.Minute)
+>>>>>>> @eth-optimism/l2geth@0.5.27
 			err := s.createNewL2Block(ctx)
 			cancel()
 			if err != nil {
@@ -679,9 +717,14 @@ func (s *state) eventLoop() {
 				s.log.Trace("Asking for a second L2 block asap", "l2Head", s.l2Head)
 =======
 			l2Head := s.derivation.UnsafeL2Head()
+<<<<<<< HEAD
 			if s.l1Head.Number > l2Head.L1Origin.Number+s.DriverConfig.SequencerConfDepth {
 				s.log.Trace("Building another L2 block asap to catch up with L1 head", "l2_unsafe", l2Head, "l2_unsafe_l1_origin", l2Head.L1Origin, "l1_head", s.l1Head)
 >>>>>>> v0.5.24
+=======
+			if l1Head.Number > l2Head.L1Origin.Number+s.driverConfig.SequencerConfDepth {
+				s.log.Trace("Building another L2 block asap to catch up with L1 head", "l2_unsafe", l2Head, "l2_unsafe_l1_origin", l2Head.L1Origin, "l1_head", l1Head)
+>>>>>>> @eth-optimism/l2geth@0.5.27
 				// But not too quickly to minimize busy-waiting for new blocks
 				time.AfterFunc(time.Millisecond*10, reqL2BlockCreation)
 			}
@@ -751,13 +794,14 @@ func (s *state) eventLoop() {
 			reqStep()
 
 		case newL1Head := <-s.l1HeadSig:
-			s.handleNewL1HeadBlock(newL1Head)
+			s.l1State.HandleNewL1HeadBlock(newL1Head)
 			reqStep() // a new L1 head may mean we have the data to not get an EOF again.
 		case newL1Safe := <-s.l1SafeSig:
-			s.handleNewL1SafeBlock(newL1Safe)
+			s.l1State.HandleNewL1SafeBlock(newL1Safe)
 			// no step, justified L1 information does not do anything for L2 derivation or status
 		case newL1Finalized := <-s.l1FinalizedSig:
-			s.handleNewL1FinalizedBlock(newL1Finalized)
+			s.l1State.HandleNewL1FinalizedBlock(newL1Finalized)
+			s.derivation.Finalize(newL1Finalized.ID())
 			reqStep() // we may be able to mark more L2 data as finalized now
 		case <-delayedStepReq:
 			delayedStepReq = nil
@@ -765,13 +809,11 @@ func (s *state) eventLoop() {
 		case <-stepReqCh:
 			s.metrics.SetDerivationIdle(false)
 			s.idleDerivation = false
-			s.log.Debug("Derivation process step", "onto_origin", s.derivation.Progress().Origin, "onto_closed", s.derivation.Progress().Closed, "attempts", stepAttempts)
-			stepCtx, cancel := context.WithTimeout(ctx, time.Second*10) // TODO pick a timeout for executing a single step
-			err := s.derivation.Step(stepCtx)
-			cancel()
+			s.log.Debug("Derivation process step", "onto_origin", s.derivation.Origin(), "attempts", stepAttempts)
+			err := s.derivation.Step(context.Background())
 			stepAttempts += 1 // count as attempt by default. We reset to 0 if we are making healthy progress.
 			if err == io.EOF {
-				s.log.Debug("Derivation process went idle", "progress", s.derivation.Progress().Origin)
+				s.log.Debug("Derivation process went idle", "progress", s.derivation.Origin())
 				s.idleDerivation = true
 				stepAttempts = 0
 				s.metrics.SetDerivationIdle(true)
@@ -789,6 +831,10 @@ func (s *state) eventLoop() {
 			} else if err != nil && errors.Is(err, derive.ErrCritical) {
 				s.log.Error("Derivation process critical error", "err", err)
 				return
+			} else if err != nil && errors.Is(err, derive.NotEnoughData) {
+				stepAttempts = 0 // don't do a backoff for this error
+				reqStep()
+				continue
 			} else if err != nil {
 				s.log.Error("Derivation process error", "attempts", stepAttempts, "err", err)
 				reqStep()
@@ -799,10 +845,10 @@ func (s *state) eventLoop() {
 			}
 		case respCh := <-s.syncStatusReq:
 			respCh <- eth.SyncStatus{
-				CurrentL1:   s.derivation.Progress().Origin,
-				HeadL1:      s.l1Head,
-				SafeL1:      s.l1Safe,
-				FinalizedL1: s.l1Finalized,
+				CurrentL1:   s.derivation.Origin(),
+				HeadL1:      s.l1State.L1Head(),
+				SafeL1:      s.l1State.L1Safe(),
+				FinalizedL1: s.l1State.L1Finalized(),
 				UnsafeL2:    s.derivation.UnsafeL2Head(),
 				SafeL2:      s.derivation.SafeL2Head(),
 				FinalizedL2: s.derivation.Finalized(),
@@ -845,8 +891,8 @@ func (s *state) SyncStatus(ctx context.Context) (*SyncStatus, error) {
 // ResetDerivationPipeline forces a reset of the derivation pipeline.
 // It waits for the reset to occur. It simply unblocks the caller rather
 // than fully cancelling the reset request upon a context cancellation.
-func (s *state) ResetDerivationPipeline(ctx context.Context) error {
-	respCh := make(chan struct{})
+func (s *Driver) ResetDerivationPipeline(ctx context.Context) error {
+	respCh := make(chan struct{}, 1)
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -860,9 +906,14 @@ func (s *state) ResetDerivationPipeline(ctx context.Context) error {
 	}
 }
 
+<<<<<<< HEAD
 func (s *state) SyncStatus(ctx context.Context) (*eth.SyncStatus, error) {
 	respCh := make(chan eth.SyncStatus)
 >>>>>>> v0.5.24
+=======
+func (s *Driver) SyncStatus(ctx context.Context) (*eth.SyncStatus, error) {
+	respCh := make(chan eth.SyncStatus, 1)
+>>>>>>> @eth-optimism/l2geth@0.5.27
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -886,9 +937,10 @@ func (v deferJSONString) String() string {
 	return string(out)
 }
 
-func (s *state) snapshot(event string) {
+func (s *Driver) snapshot(event string) {
 	s.snapshotLog.Info("Rollup State Snapshot",
 		"event", event,
+<<<<<<< HEAD
 		"l1Head", deferJSONString{s.l1Head},
 		"l1Current", deferJSONString{s.derivation.Progress().Origin},
 <<<<<<< HEAD
@@ -897,6 +949,10 @@ func (s *state) snapshot(event string) {
 		"l2FinalizedHead", deferJSONString{s.l2Finalized})
 >>>>>>> v0.5.23
 =======
+=======
+		"l1Head", deferJSONString{s.l1State.L1Head()},
+		"l1Current", deferJSONString{s.derivation.Origin()},
+>>>>>>> @eth-optimism/l2geth@0.5.27
 		"l2Head", deferJSONString{s.derivation.UnsafeL2Head()},
 		"l2Safe", deferJSONString{s.derivation.SafeL2Head()},
 		"l2FinalizedHead", deferJSONString{s.derivation.Finalized()})

@@ -1,11 +1,5 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
-<<<<<<< HEAD
-cloud.google.com/go v0.31.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
-cloud.google.com/go v0.37.0/go.mod h1:TS1dMSSfndXH133OKGwekG838Om/cQT0BUHV3HcBgoo=
-=======
-cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
->>>>>>> v0.5.23
 cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSRU=
 cloud.google.com/go v0.43.0/go.mod h1:BOSR3VbTLkk6FDC/TcffxP4NF/FFBGA5ku+jvKOP7pg=
 cloud.google.com/go v0.44.1/go.mod h1:iSa0KzasP4Uvy3f1mN/7PiObzGgflwredwwASm/v6AU=
@@ -418,6 +412,7 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 <<<<<<< HEAD
+<<<<<<< HEAD
 <<<<<<< HEAD:bss-core/go.sum
 github.com/etcd-io/bbolt v1.3.3/go.mod h1:ZF2nL25h33cCyBtcyWeZ2/I3HQOfTP+0PIEvHjkjCrw=
 github.com/ethereum/go-ethereum v1.10.17 h1:XEcumY+qSr1cZQaWsQs5Kck3FHB0V2RiMHPdTBJ+oT8=
@@ -451,6 +446,18 @@ github.com/ethereum-optimism/optimism/op-proposer v0.8.6/go.mod h1:tuCLnXcO4MrtV
 github.com/ethereum-optimism/optimism/op-service v0.8.6 h1:ruZp/BxL8TGn1y9EJmygypPTeVAFlAA0A/h8LsCoV+M=
 github.com/ethereum-optimism/optimism/op-service v0.8.6/go.mod h1:gm8YNzERrL/CHBPWx3+01mR/NOVpLLw4GEUSnnTdyFU=
 >>>>>>> v0.5.24
+=======
+github.com/ethereum-optimism/op-geth v0.0.0-20220926184707-53d23c240afd h1:NchOnosWOkH9wlix8QevGHE+6vuRa+OMGvDNsczv2kQ=
+github.com/ethereum-optimism/op-geth v0.0.0-20220926184707-53d23c240afd/go.mod h1:/6CsT5Ceen2WPLI/oCA3xMcZ5sWMF/D46SjM/ayY0Oo=
+github.com/ethereum-optimism/optimism/op-bindings v0.8.10 h1:aSAWCQwBQnbmv03Gvtuvn3qfTWrZu/sTlRAWrpQhiHc=
+github.com/ethereum-optimism/optimism/op-bindings v0.8.10/go.mod h1:pyTCbh2o/SY+5/AL2Qo5GgAao3Gtt9Ff6tfK9Pa9emM=
+github.com/ethereum-optimism/optimism/op-node v0.8.10 h1:1Gc4FtR5B+HgfQ+byNn3P+tiJarpMZSYjj5iLvA3YtU=
+github.com/ethereum-optimism/optimism/op-node v0.8.10/go.mod h1:6NkgIThuQbPY6fA9lI2A52DaeLM2FvrcwGCBVEY2fS8=
+github.com/ethereum-optimism/optimism/op-proposer v0.8.10 h1:dLzbYmaoMBViqCPlIUFB+bagSuwsd173P8kDhUMbBTQ=
+github.com/ethereum-optimism/optimism/op-proposer v0.8.10/go.mod h1:tdUw40bNis2G1uDT3jNv7BWWM+FzTar+fS5zv6o2YPA=
+github.com/ethereum-optimism/optimism/op-service v0.8.10 h1:K3IABHI1b0MDrDXALvTKTbzy6IogGD6NgmbqfKEcEwM=
+github.com/ethereum-optimism/optimism/op-service v0.8.10/go.mod h1:K0uybOhICTc2yfhrRj0cD1m7aPkOf5C9e6bUmvf4rGA=
+>>>>>>> @eth-optimism/l2geth@0.5.27
 github.com/ethereum/go-ethereum v1.10.4/go.mod h1:nEE0TP5MtxGzOMd7egIrbPJMQBnhVU3ELNxhBglIzhg=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5/go.mod h1:VvhXpOYNQvB+uIk2RvXzuaQtkQJzzIx6lSBe1xv7hi0=

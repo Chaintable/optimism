@@ -7,11 +7,15 @@ import (
 <<<<<<< HEAD
 =======
 	"github.com/ethereum-optimism/optimism/op-node/client"
+<<<<<<< HEAD
 <<<<<<< HEAD:op-node/l1/request_sema.go
 
 >>>>>>> v0.5.23
 =======
 >>>>>>> v0.5.24:op-node/sources/limit.go
+=======
+	"github.com/ethereum/go-ethereum"
+>>>>>>> @eth-optimism/l2geth@0.5.27
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -54,7 +58,7 @@ func (lc *limitClient) CallContext(ctx context.Context, result interface{}, meth
 	return lc.c.CallContext(ctx, result, method, args...)
 }
 
-func (lc *limitClient) EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*rpc.ClientSubscription, error) {
+func (lc *limitClient) EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (ethereum.Subscription, error) {
 	// subscription doesn't count towards request limit
 	return lc.c.EthSubscribe(ctx, channel, args...)
 }

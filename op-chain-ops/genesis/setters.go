@@ -62,7 +62,7 @@ func setProxies(db vm.StateDB, proxyAdminAddr common.Address, namespace *big.Int
 // SetImplementations will set the implmentations of the contracts in the state
 // and configure the proxies to point to the implementations. It also sets
 // the appropriate storage values for each contract at the proxy address.
-func SetImplementations(db vm.StateDB, storage StorageConfig, immutable immutables.ImmutableConfig) error {
+func SetImplementations(db vm.StateDB, storage state.StorageConfig, immutable immutables.ImmutableConfig) error {
 	deployResults, err := immutables.BuildOptimism(immutable)
 	if err != nil {
 		return err
@@ -102,17 +102,8 @@ func SetImplementations(db vm.StateDB, storage StorageConfig, immutable immutabl
 
 		// Set the storage values
 		if storageConfig, ok := storage[name]; ok {
-			layout, err := bindings.GetStorageLayout(name)
-			if err != nil {
+			if err := state.SetStorage(name, *address, storageConfig, db); err != nil {
 				return err
-			}
-			slots, err := state.ComputeStorageSlots(layout, storageConfig)
-			if err != nil {
-				return fmt.Errorf("%s: %w", name, err)
-			}
-			// The storage values must go in the proxy address
-			for _, slot := range slots {
-				db.SetState(*address, slot.Key, slot.Value)
 			}
 		}
 
@@ -122,36 +113,6 @@ func SetImplementations(db vm.StateDB, storage StorageConfig, immutable immutabl
 		}
 	}
 	return nil
-}
-
-// Get the storage layout of the L2ToL1MessagePasser
-// Iterate over the storage layout to know which storage slots to ignore
-// Iterate over each storage slot, compute the migration
-func MigrateDepositHashes(db vm.StateDB) error {
-	layout, err := bindings.GetStorageLayout("L2ToL1MessagePasser")
-	if err != nil {
-		return err
-	}
-
-	// Build a list of storage slots to ignore. The values in the
-	// mapping are guaranteed to not be in this list because they are
-	// hashes.
-	ignore := make(map[common.Hash]bool)
-	for _, entry := range layout.Storage {
-		encoded, err := state.EncodeUintValue(entry.Slot, 0)
-		if err != nil {
-			return err
-		}
-		ignore[encoded] = true
-	}
-
-	return db.ForEachStorage(predeploys.L2ToL1MessagePasserAddr, func(key, value common.Hash) bool {
-		if _, ok := ignore[key]; ok {
-			return true
-		}
-		// TODO(tynes): Do the value migration here
-		return true
-	})
 }
 
 // SetPrecompileBalances will set a single wei at each precompile address.

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { SignedMath } from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import { FixedPointMathLib } from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
 import { Burn } from "../libraries/Burn.sol";
 
 /**
+ * @custom:upgradeable
  * @title ResourceMetering
  * @notice ResourceMetering implements an EIP-1559 style resource metering system where pricing
  *         updates automatically based on current demand.
@@ -66,7 +67,7 @@ abstract contract ResourceMetering is Initializable {
 =======
      * @notice Reserve extra slots (to a total of 50) in the storage layout for future upgrades.
      */
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 
     /**
 <<<<<<< HEAD

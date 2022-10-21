@@ -3,6 +3,7 @@
   "name": "@eth-optimism/replica-healthcheck",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "1.1.2",
 =======
   "version": "1.1.5",
@@ -10,6 +11,9 @@
 =======
   "version": "1.1.8",
 >>>>>>> v0.5.24
+=======
+  "version": "1.1.10",
+>>>>>>> @eth-optimism/l2geth@0.5.27
   "description": "[Optimism] Service for monitoring the health of replica nodes",
   "main": "dist/index",
   "types": "dist/index",
@@ -42,6 +46,7 @@
   "dependencies": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@eth-optimism/common-ts": "0.4.0",
     "@eth-optimism/core-utils": "0.8.7",
 =======
@@ -53,6 +58,11 @@
     "@eth-optimism/core-utils": "0.10.0",
 >>>>>>> v0.5.24
     "@ethersproject/abstract-provider": "^5.6.1"
+=======
+    "@eth-optimism/common-ts": "0.6.6",
+    "@eth-optimism/core-utils": "0.10.1",
+    "@ethersproject/abstract-provider": "^5.7.0"
+>>>>>>> @eth-optimism/l2geth@0.5.27
   },
   "devDependencies": {
     "ts-node": "^10.0.0"

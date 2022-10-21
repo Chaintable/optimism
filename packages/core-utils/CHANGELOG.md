@@ -2,8 +2,18 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
+=======
+## 0.10.1
+
+### Patch Changes
+
+- 7215f4ce: Bump ethers to 5.7.0 globally
+- 206f6033: Fix outdated references to 'withdrawal contract'
+
+>>>>>>> @eth-optimism/l2geth@0.5.27
 ## 0.10.0
 
 ### Minor Changes

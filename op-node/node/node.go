@@ -22,6 +22,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/libp2p/go-libp2p-core/peer"
 
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/ethereum-optimism/optimism/op-node/client"
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/metrics"
@@ -29,6 +33,7 @@ import (
 >>>>>>> v0.5.23
 	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
 	"github.com/ethereum-optimism/optimism/op-node/sources"
+<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -36,6 +41,8 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 =======
 >>>>>>> v0.5.23
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.27
 )
 
 type OpNode struct {
@@ -267,7 +274,7 @@ func (n *OpNode) initRPCServer(ctx context.Context, cfg *Config) error {
 >>>>>>> v0.5.23
 	}
 	if cfg.RPC.EnableAdmin {
-		n.server.EnableAdminAPI(newAdminAPI(n.l2Driver, n.metrics))
+		n.server.EnableAdminAPI(NewAdminAPI(n.l2Driver, n.metrics))
 	}
 	n.log.Info("Starting JSON-RPC server")
 	if err := n.server.Start(); err != nil {
@@ -295,7 +302,7 @@ func (n *OpNode) initMetricsServer(ctx context.Context, cfg *Config) error {
 >>>>>>> v0.5.23
 func (n *OpNode) initP2P(ctx context.Context, cfg *Config) error {
 	if cfg.P2P != nil {
-		p2pNode, err := p2p.NewNodeP2P(n.resourcesCtx, &cfg.Rollup, n.log, cfg.P2P, n)
+		p2pNode, err := p2p.NewNodeP2P(n.resourcesCtx, &cfg.Rollup, n.log, cfg.P2P, n, n.metrics)
 		if err != nil || p2pNode == nil {
 			return err
 		}
@@ -320,11 +327,8 @@ func (n *OpNode) initP2PSigner(ctx context.Context, cfg *Config) error {
 
 func (n *OpNode) Start(ctx context.Context) error {
 	n.log.Info("Starting execution engine driver")
-	// Request initial head update, default to genesis otherwise
-	reqCtx, reqCancel := context.WithTimeout(ctx, time.Second*10)
 	// start driving engine: sync blocks by deriving them from L1 and driving them into the engine
-	err := n.l2Driver.Start(reqCtx)
-	reqCancel()
+	err := n.l2Driver.Start()
 	if err != nil {
 		n.log.Error("Could not start a rollup node", "err", err)
 		return err
@@ -454,4 +458,12 @@ func (n *OpNode) Close() error {
 		n.l1Source.Close()
 	}
 	return result.ErrorOrNil()
+}
+
+func (n *OpNode) ListenAddr() string {
+	return n.server.listenAddr.String()
+}
+
+func (n *OpNode) HTTPEndpoint() string {
+	return fmt.Sprintf("http://%s", n.ListenAddr())
 }

@@ -21,9 +21,9 @@ more specific terms to differentiate:
 - A *withdrawal finalizing transaction* refers specifically to an L1 transaction which finalizes and relays the
   withdrawal.
 
-Withdrawals are initiated on L2 via a call to the Withdrawals predeploy contract, which records the important properties
-of the message in its storage. Withdrawals are finalized on L1 via a call to the `L2WithdrawalVerifier` contract, which
-proves the inclusion of this withdrawal message.
+Withdrawals are initiated on L2 via a call to the Message Passer predeploy contract, which records the important
+properties of the message in its storage. Withdrawals are finalized on L1 via a call to the `L2WithdrawalVerifier`
+contract, which proves the inclusion of this withdrawal message.
 
 In this way, withdrawals are different from [deposits][g-deposits] which make use of a special transaction type in the
 [execution engine][g-execution-engine] client. Rather, withdrawals transaction must use smart contracts on L1 for
@@ -99,12 +99,12 @@ An L2 account sends a withdrawal message (and possibly also ETH) to the `L2ToL1M
 [message-passer-contract]: #the-l2tol1messagepasser-contract
 
 A withdrawal is initiated by calling the L2ToL1MessagePasser contract's `initiateWithdrawal` function.
-The L2ToL1MessagePasser is a simple predeploy contract at `0x4200000000000000000000000000000000000000`
+The L2ToL1MessagePasser is a simple predeploy contract at `0x4200000000000000000000000000000000000016`
 which stores messages to be withdrawn.
 
 ```js
 interface L2ToL1MessagePasser {
-    event WithdrawalInitiated(
+    event MessagePassed(
         uint256 indexed nonce, // this is a global nonce value for all withdrawal messages
         address indexed sender,
         address indexed target,
@@ -113,7 +113,7 @@ interface L2ToL1MessagePasser {
         bytes data
     );
 
-    event WithdrawalInitiatedExtension1(bytes32 indexed hash);
+    event MessagePassedExtension1(bytes32 indexed hash);
 
     event WithdrawerBalanceBurnt(uint256 indexed amount);
 
@@ -128,8 +128,8 @@ interface L2ToL1MessagePasser {
 
 ```
 
-The `WithdrawalInitiated` event includes all of the data that is hashed and
-stored in the `sentMessages` mapping. The `WithdrawalInitiatedExtension1` emits
+The `MessagePassed` event includes all of the data that is hashed and
+stored in the `sentMessages` mapping. The `MessagePassedExtension1` emits
 the hash that was computed and used as part of the storage proof used to
 finalize the withdrawal on L1.
 

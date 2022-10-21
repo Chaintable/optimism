@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
 	"github.com/ethereum-optimism/optimism/op-chain-ops/state"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -28,6 +29,14 @@ func BuildL2DeveloperGenesis(config *DeployConfig, l1StartBlock *types.Block, l2
 		FundDevAccounts(db)
 	}
 	SetPrecompileBalances(db)
+
+	if l2Addrs == nil {
+		l2Addrs = &L2Addresses{
+			ProxyAdmin:                  predeploys.DevProxyAdminAddr,
+			L1StandardBridgeProxy:       predeploys.DevL1StandardBridgeAddr,
+			L1CrossDomainMessengerProxy: predeploys.DevL1CrossDomainMessengerAddr,
+		}
+	}
 
 	return BuildL2Genesis(db, config, l1StartBlock, l2Addrs)
 }
@@ -63,10 +72,6 @@ func BuildL2Genesis(db *state.MemoryStateDB, config *DeployConfig, l1Block *type
 	}
 
 	if err := SetImplementations(db, storage, immutable); err != nil {
-		return nil, err
-	}
-
-	if err := MigrateDepositHashes(db); err != nil {
 		return nil, err
 	}
 

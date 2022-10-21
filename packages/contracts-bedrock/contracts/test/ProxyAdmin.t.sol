@@ -6,28 +6,17 @@ import { Proxy } from "../universal/Proxy.sol";
 import { ProxyAdmin } from "../universal/ProxyAdmin.sol";
 import { SimpleStorage } from "./Proxy.t.sol";
 import { L1ChugSplashProxy } from "../legacy/L1ChugSplashProxy.sol";
-<<<<<<< HEAD
-import { Lib_ResolvedDelegateProxy } from "../legacy/Lib_ResolvedDelegateProxy.sol";
-import { Lib_AddressManager } from "../legacy/Lib_AddressManager.sol";
-=======
 import { ResolvedDelegateProxy } from "../legacy/ResolvedDelegateProxy.sol";
 import { AddressManager } from "../legacy/AddressManager.sol";
->>>>>>> v0.5.23
 
 contract ProxyAdmin_Test is Test {
     address alice = address(64);
 
     Proxy proxy;
     L1ChugSplashProxy chugsplash;
-<<<<<<< HEAD
-    Lib_ResolvedDelegateProxy resolved;
-
-    Lib_AddressManager addressManager;
-=======
     ResolvedDelegateProxy resolved;
 
     AddressManager addressManager;
->>>>>>> v0.5.23
 
     ProxyAdmin admin;
 
@@ -42,32 +31,6 @@ contract ProxyAdmin_Test is Test {
         // Deploy the legacy L1ChugSplashProxy with the admin as the owner
         chugsplash = new L1ChugSplashProxy(address(admin));
 
-<<<<<<< HEAD
-        // Deploy the legacy Lib_AddressManager
-        addressManager = new Lib_AddressManager();
-        // The proxy admin must be the new owner of the address manager
-        addressManager.transferOwnership(address(admin));
-        // Deploy a legacy Lib_ResolvedDelegateProxy with the name `a`.
-        // Whatever `a` is set to in Lib_AddressManager will be the address
-        // that is used for the implementation.
-        resolved = new Lib_ResolvedDelegateProxy(address(addressManager), "a");
-
-        // Set the address of the address manager in the admin so that it
-        // can resolve the implementation address of legacy
-        // Lib_ResolvedDelegateProxy based proxies.
-        vm.prank(alice);
-        admin.setAddressManager(address(addressManager));
-        // Set the reverse lookup of the Lib_ResolvedDelegateProxy
-        // proxy
-        vm.prank(alice);
-        admin.setImplementationName(address(resolved), "a");
-
-        // Set the proxy types
-        vm.prank(alice);
-        admin.setProxyType(address(chugsplash), ProxyAdmin.ProxyType.Chugsplash);
-        vm.prank(alice);
-        admin.setProxyType(address(resolved), ProxyAdmin.ProxyType.ResolvedDelegate);
-=======
         // Deploy the legacy AddressManager
         addressManager = new AddressManager();
         // The proxy admin must be the new owner of the address manager
@@ -92,7 +55,6 @@ contract ProxyAdmin_Test is Test {
         admin.setProxyType(address(chugsplash), ProxyAdmin.ProxyType.CHUGSPLASH);
         admin.setProxyType(address(resolved), ProxyAdmin.ProxyType.RESOLVED);
         vm.stopPrank();
->>>>>>> v0.5.23
 
         implementation = new SimpleStorage();
     }
@@ -100,19 +62,12 @@ contract ProxyAdmin_Test is Test {
     function test_setImplementationName() external {
         vm.prank(alice);
         admin.setImplementationName(address(1), "foo");
-        assertEq(
-            admin.implementationName(address(1)),
-            "foo"
-        );
+        assertEq(admin.implementationName(address(1)), "foo");
     }
 
     function test_onlyOwnerSetAddressManager() external {
         vm.expectRevert("UNAUTHORIZED");
-<<<<<<< HEAD
-        admin.setAddressManager(address(0));
-=======
         admin.setAddressManager(AddressManager((address(0))));
->>>>>>> v0.5.23
     }
 
     function test_onlyOwnerSetImplementationName() external {
@@ -122,11 +77,7 @@ contract ProxyAdmin_Test is Test {
 
     function test_onlyOwnerSetProxyType() external {
         vm.expectRevert("UNAUTHORIZED");
-<<<<<<< HEAD
-        admin.setProxyType(address(0), ProxyAdmin.ProxyType.Chugsplash);
-=======
         admin.setProxyType(address(0), ProxyAdmin.ProxyType.CHUGSPLASH);
->>>>>>> v0.5.23
     }
 
     function test_owner() external {
@@ -134,6 +85,7 @@ contract ProxyAdmin_Test is Test {
     }
 
     function test_proxyType() external {
+<<<<<<< HEAD
         assertEq(
             uint256(admin.proxyType(address(proxy))),
 <<<<<<< HEAD
@@ -165,6 +117,9 @@ contract ProxyAdmin_Test is Test {
 =======
             uint256(ProxyAdmin.ProxyType.ERC1967)
         );
+=======
+        assertEq(uint256(admin.proxyType(address(proxy))), uint256(ProxyAdmin.ProxyType.ERC1967));
+>>>>>>> @eth-optimism/l2geth@0.5.27
         assertEq(
             uint256(admin.proxyType(address(chugsplash))),
             uint256(ProxyAdmin.ProxyType.CHUGSPLASH)
@@ -307,6 +262,7 @@ contract ProxyAdmin_Test is Test {
         if (proxyType == ProxyAdmin.ProxyType.ERC1967) {
             assertEq(Proxy(payable(_proxy)).admin(), address(128));
         } else if (proxyType == ProxyAdmin.ProxyType.CHUGSPLASH) {
+<<<<<<< HEAD
 >>>>>>> v0.5.23
             assertEq(
                 L1ChugSplashProxy(payable(_proxy)).getOwner(),
@@ -321,6 +277,11 @@ contract ProxyAdmin_Test is Test {
                 addressManager.owner(),
                 address(128)
             );
+=======
+            assertEq(L1ChugSplashProxy(payable(_proxy)).getOwner(), address(128));
+        } else if (proxyType == ProxyAdmin.ProxyType.RESOLVED) {
+            assertEq(addressManager.owner(), address(128));
+>>>>>>> @eth-optimism/l2geth@0.5.27
         } else {
             assert(false);
         }

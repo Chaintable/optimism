@@ -28,11 +28,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ethereum-optimism/optimism/op-batcher/sequencer"
+	"github.com/ethereum-optimism/optimism/op-node/client"
+	"github.com/ethereum-optimism/optimism/op-node/eth"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-node/sources"
+	"github.com/ethereum-optimism/optimism/op-proposer/txmgr"
 	oplog "github.com/ethereum-optimism/optimism/op-service/log"
 	opmetrics "github.com/ethereum-optimism/optimism/op-service/metrics"
 	oppprof "github.com/ethereum-optimism/optimism/op-service/pprof"
 	oprpc "github.com/ethereum-optimism/optimism/op-service/rpc"
+<<<<<<< HEAD
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/urfave/cli"
 
@@ -45,6 +51,8 @@ import (
 =======
 >>>>>>> v0.5.24
 	"github.com/ethereum-optimism/optimism/op-proposer/txmgr"
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.27
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 <<<<<<< HEAD
@@ -56,6 +64,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
+	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
+	"github.com/urfave/cli"
 )
 
 const (
@@ -118,6 +128,7 @@ func Main(version string) func(cliCtx *cli.Context) error {
 					l.Error("error starting metrics server", err)
 				}
 			}()
+			opmetrics.LaunchBalanceMetrics(ctx, l, registry, "", batchSubmitter.cfg.L1Client, batchSubmitter.addr)
 		}
 
 		rpcCfg := cfg.RPCConfig
@@ -153,6 +164,7 @@ type BatchSubmitter struct {
 	sequencerService *proposer.Service
 =======
 	txMgr txmgr.TxManager
+	addr  common.Address
 	cfg   sequencer.Config
 	wg    sync.WaitGroup
 	done  chan struct{}
@@ -357,6 +369,7 @@ func NewBatchSubmitter(cfg Config, l log.Logger) (*BatchSubmitter, error) {
 
 	return &BatchSubmitter{
 		cfg:   batcherCfg,
+		addr:  addr,
 		txMgr: txmgr.NewSimpleTxManager("batcher", txManagerConfig, l1Client),
 		done:  make(chan struct{}),
 		log:   l,
@@ -431,7 +444,14 @@ mainLoop:
 				l.ch = ch
 			}
 			prevID := l.lastSubmittedBlock
-			for i := l.lastSubmittedBlock.Number + 1; i <= syncStatus.UnsafeL2.Number; i++ {
+			maxBlocksPerChannel := uint64(100)
+			// Hacky min() here to ensure that we don't batch submit more than 100 blocks per channel.
+			// TODO: use proper channel size here instead.
+			upToBlockNumber := syncStatus.UnsafeL2.Number
+			if l.lastSubmittedBlock.Number+1+maxBlocksPerChannel < upToBlockNumber {
+				upToBlockNumber = l.lastSubmittedBlock.Number + 1 + maxBlocksPerChannel
+			}
+			for i := l.lastSubmittedBlock.Number + 1; i <= upToBlockNumber; i++ {
 				ctx, cancel := context.WithTimeout(l.ctx, time.Second*10)
 				block, err := l.cfg.L2Client.BlockByNumber(ctx, new(big.Int).SetUint64(i))
 				cancel()
@@ -617,12 +637,12 @@ func dialRollupClientWithTimeout(ctx context.Context, url string) (*sources.Roll
 	ctxt, cancel := context.WithTimeout(ctx, defaultDialTimeout)
 	defer cancel()
 
-	client, err := rpc.DialContext(ctxt, url)
+	rpcCl, err := rpc.DialContext(ctxt, url)
 	if err != nil {
 		return nil, err
 	}
 
-	return sources.NewRollupClient(client), nil
+	return sources.NewRollupClient(client.NewBaseRPCClient(rpcCl)), nil
 }
 
 // parseAddress parses an ETH address from a hex string. This method will fail if

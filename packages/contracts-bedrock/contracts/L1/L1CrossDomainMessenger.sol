@@ -54,7 +54,10 @@ contract L1CrossDomainMessenger is CrossDomainMessenger, Semver {
      *
      * @param _portal Address of the OptimismPortal contract on this network.
      */
-    constructor(OptimismPortal _portal) Semver(0, 0, 1) {
+    constructor(OptimismPortal _portal)
+        Semver(0, 0, 1)
+        CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER)
+    {
         portal = _portal;
         initialize();
     }
@@ -63,6 +66,7 @@ contract L1CrossDomainMessenger is CrossDomainMessenger, Semver {
      * @notice Initializer.
      */
     function initialize() public initializer {
+<<<<<<< HEAD
         address[] memory blockedSystemAddresses = new address[](1);
         blockedSystemAddresses[0] = address(this);
 <<<<<<< HEAD
@@ -83,15 +87,13 @@ contract L1CrossDomainMessenger is CrossDomainMessenger, Semver {
 =======
         __CrossDomainMessenger_init(Predeploys.L2_CROSS_DOMAIN_MESSENGER, blockedSystemAddresses);
 >>>>>>> v0.5.24
+=======
+        __CrossDomainMessenger_init();
+>>>>>>> @eth-optimism/l2geth@0.5.27
     }
 
     /**
-     * @notice Sends a message via the OptimismPortal contract.
-     *
-     * @param _to       Address of the recipient on L2.
-     * @param _gasLimit Minimum gas limit that the message can be executed with.
-     * @param _value    ETH value to attach to the message and send to the recipient.
-     * @param _data     Data to attach to the message and call the recipient with.
+     * @inheritdoc CrossDomainMessenger
      */
     function _sendMessage(
         address _to,
@@ -103,11 +105,16 @@ contract L1CrossDomainMessenger is CrossDomainMessenger, Semver {
     }
 
     /**
-     * @notice Checks whether the message being sent from the other messenger.
-     *
-     * @return True if the message was sent from the messenger, false otherwise.
+     * @inheritdoc CrossDomainMessenger
      */
     function _isOtherMessenger() internal view override returns (bool) {
         return msg.sender == address(portal) && portal.l2Sender() == otherMessenger;
+    }
+
+    /**
+     * @inheritdoc CrossDomainMessenger
+     */
+    function _isUnsafeTarget(address _target) internal view override returns (bool) {
+        return _target == address(this) || _target == address(portal);
     }
 }

@@ -2,8 +2,33 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
+=======
+## 0.5.37
+
+### Patch Changes
+
+- 628affc7: Add prefunded accounts to L2 genesis when doing local network
+- 740e1bcc: Expose the deployments in the deployer image
+
+## 0.5.36
+
+### Patch Changes
+
+- 7215f4ce: Bump ethers to 5.7.0 globally
+- Updated dependencies [7215f4ce]
+- Updated dependencies [206f6033]
+  - @eth-optimism/core-utils@0.10.1
+
+## 0.5.35
+
+### Patch Changes
+
+- 334a3eb0: Quick patch to fix a build issue in the contracts package
+
+>>>>>>> @eth-optimism/l2geth@0.5.27
 ## 0.5.34
 
 ### Patch Changes

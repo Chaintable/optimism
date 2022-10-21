@@ -1,3 +1,5 @@
+import { promises as fs } from 'fs'
+
 import { task, types } from 'hardhat/config'
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import '@nomiclabs/hardhat-ethers'
@@ -8,7 +10,13 @@ import {
 } from '@eth-optimism/contracts-bedrock'
 import { Event, Contract, Wallet, providers, utils } from 'ethers'
 
-import { CrossChainMessenger, MessageStatus, CONTRACT_ADDRESSES } from '../src'
+import {
+  CrossChainMessenger,
+  MessageStatus,
+  CONTRACT_ADDRESSES,
+  OEContractsLike,
+  DEFAULT_L2_CONTRACT_ADDRESSES,
+} from '../src'
 
 const deployWETH9 = async (
   hre: HardhatRuntimeEnvironment,
@@ -75,9 +83,7 @@ const createOptimismMintableERC20 = async (
     throw new Error('Unable to find OptimismMintableERC20Created event')
   }
 
-  // TODO(tynes): may need to be updated based on
-  // https://github.com/ethereum-optimism/optimism/pull/3104
-  const l2WethAddress = event.args.remoteToken
+  const l2WethAddress = event.args.localToken
   console.log(`Deployed to ${l2WethAddress}`)
 
   return new Contract(
@@ -102,6 +108,12 @@ task('deposit-erc20', 'Deposits WETH9 onto L2.')
     'opNodeProviderUrl',
     'op-node provider URL',
     'http://localhost:7545',
+    types.string
+  )
+  .addOptionalParam(
+    'l1ContractsJsonPath',
+    'Path to a JSON with L1 contract addresses in it',
+    '',
     types.string
   )
   .setAction(async (args, hre) => {
@@ -129,7 +141,14 @@ task('deposit-erc20', 'Deposits WETH9 onto L2.')
     )
 
     const l2ChainId = await l2Signer.getChainId()
-    const contractAddrs = CONTRACT_ADDRESSES[l2ChainId]
+    let contractAddrs = CONTRACT_ADDRESSES[l2ChainId]
+    if (args.l1ContractsJsonPath) {
+      const data = await fs.readFile(args.l1ContractsJsonPath)
+      contractAddrs = {
+        l1: JSON.parse(data.toString()),
+        l2: DEFAULT_L2_CONTRACT_ADDRESSES,
+      } as OEContractsLike
+    }
 
     const Artifact__L2ToL1MessagePasser = await getContractDefinition(
       'L2ToL1MessagePasser'
@@ -194,6 +213,7 @@ task('deposit-erc20', 'Deposits WETH9 onto L2.')
       l1ChainId: await signer.getChainId(),
       l2ChainId,
       bedrock: true,
+      contracts: contractAddrs,
     })
 
     console.log('Deploying WETH9 to L1')

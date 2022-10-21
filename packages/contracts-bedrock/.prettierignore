@@ -1,9 +1,12 @@
 # Deps and test files
 node_modules
 lib
+<<<<<<< HEAD
 contracts/test/*.t.sol
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.27
 contracts/vendor/*.sol
 >>>>>>> v0.5.23
 

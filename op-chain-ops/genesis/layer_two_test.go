@@ -32,7 +32,7 @@ var testKey, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d
 
 func TestBuildL2DeveloperGenesis(t *testing.T) {
 	hh, err := hardhat.New(
-		"goerli",
+		"alpha-1",
 		nil,
 		[]string{"../../packages/contracts-bedrock/deployments"},
 	)
@@ -77,7 +77,7 @@ func TestBuildL2DeveloperGenesis(t *testing.T) {
 		require.Equal(t, adminSlot, proxyAdmin.Address.Hash())
 		require.Equal(t, account.Code, depB)
 	}
-	require.Equal(t, 2337, len(gen.Alloc))
+	require.Equal(t, 2339, len(gen.Alloc))
 
 	if writeFile {
 		file, _ := json.MarshalIndent(gen, "", " ")
@@ -102,5 +102,5 @@ func TestBuildL2DeveloperGenesisDevAccountsFunding(t *testing.T) {
 		ProxyAdmin: common.Address{},
 	})
 	require.NoError(t, err)
-	require.Equal(t, 2316, len(gen.Alloc))
+	require.Equal(t, 2317, len(gen.Alloc))
 }

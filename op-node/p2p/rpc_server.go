@@ -67,13 +67,18 @@ type APIBackend struct {
 	node Node
 	log  log.Logger
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	m    *metrics.Metrics
 >>>>>>> v0.5.23
+=======
+	m    metrics.Metricer
+>>>>>>> @eth-optimism/l2geth@0.5.27
 }
 
 var _ API = (*APIBackend)(nil)
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 func NewP2PAPIBackend(node Node, log log.Logger) *APIBackend {
 	return &APIBackend{
@@ -81,6 +86,13 @@ func NewP2PAPIBackend(node Node, log log.Logger) *APIBackend {
 		log:  log,
 =======
 func NewP2PAPIBackend(node Node, log log.Logger, m *metrics.Metrics) *APIBackend {
+=======
+func NewP2PAPIBackend(node Node, log log.Logger, m metrics.Metricer) *APIBackend {
+	if m == nil {
+		m = metrics.NoopMetrics
+	}
+
+>>>>>>> @eth-optimism/l2geth@0.5.27
 	return &APIBackend{
 		node: node,
 		log:  log,
