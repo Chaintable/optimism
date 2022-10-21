@@ -73,6 +73,10 @@ devnet-up:
 	@bash ./ops-bedrock/devnet-up.sh
 .PHONY: devnet-up
 
+devnet-up-deploy:
+	PYTHONPATH=./bedrock-devnet python3 ./bedrock-devnet/main.py --monorepo-dir=.
+.PHONY: devnet-up-deploy
+
 devnet-down:
 	@(cd ./ops-bedrock && GENESIS_TIMESTAMP=$(shell date +%s) docker-compose stop)
 .PHONY: devnet-down
@@ -128,3 +132,7 @@ clean-node-modules:
 tag-bedrock-go-modules:
 	./ops/scripts/tag-bedrock-go-modules.sh $(BEDROCK_TAGS_REMOTE) $(VERSION)
 .PHONY: tag-bedrock-go-modules
+
+update-op-geth:
+	./ops/scripts/update-op-geth.py
+.PHONY: update-op-geth

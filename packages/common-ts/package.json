@@ -2,6 +2,7 @@
   "name": "@eth-optimism/common-ts",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "0.4.0",
 =======
   "version": "0.6.1",
@@ -9,11 +10,15 @@
 =======
   "version": "0.6.4",
 >>>>>>> v0.5.24
+=======
+  "version": "0.6.6",
+>>>>>>> @eth-optimism/l2geth@0.5.27
   "description": "[Optimism] Advanced typescript tooling used by various services",
   "main": "dist/index",
   "types": "dist/index",
   "files": [
-    "dist/*"
+    "dist/*",
+    "src/*"
   ],
   "scripts": {
     "all": "yarn clean && yarn build && yarn test && yarn lint:fix && yarn lint",
@@ -42,6 +47,7 @@
   "dependencies": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@eth-optimism/core-utils": "0.8.7",
 =======
     "@eth-optimism/core-utils": "0.9.1",
@@ -49,13 +55,16 @@
 =======
     "@eth-optimism/core-utils": "0.10.0",
 >>>>>>> v0.5.24
+=======
+    "@eth-optimism/core-utils": "0.10.1",
+>>>>>>> @eth-optimism/l2geth@0.5.27
     "@sentry/node": "^6.3.1",
     "bcfg": "^0.1.7",
     "body-parser": "^1.20.0",
     "commander": "^9.0.0",
     "dotenv": "^16.0.0",
     "envalid": "^7.2.2",
-    "ethers": "^5.6.8",
+    "ethers": "^5.7.0",
     "express": "^4.17.1",
     "express-prom-bundle": "^6.4.1",
     "lodash": "^4.17.21",
@@ -67,8 +76,8 @@
     "qs": "^6.10.5"
   },
   "devDependencies": {
-    "@ethersproject/abstract-provider": "^5.6.1",
-    "@ethersproject/abstract-signer": "^5.6.2",
+    "@ethersproject/abstract-provider": "^5.7.0",
+    "@ethersproject/abstract-signer": "^5.7.0",
     "@types/express": "^4.17.13",
     "@types/morgan": "^1.9.3",
     "@types/pino": "^6.3.6",

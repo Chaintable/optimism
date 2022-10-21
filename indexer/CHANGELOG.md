@@ -1,9 +1,24 @@
 # @eth-optimism/indexer
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 <<<<<<< HEAD:indexer/CHANGELOG.md
 =======
 =======
+=======
+## 0.3.0
+
+### Minor Changes
+
+- 19e581d8: Bedrock support
+
+## 0.2.0
+
+### Minor Changes
+
+- 4b0d5109: This release supports bedrock contracts and is configured for the public alpha testnet on goerli.
+
+>>>>>>> @eth-optimism/l2geth@0.5.27
 ## 0.1.4
 
 ### Patch Changes

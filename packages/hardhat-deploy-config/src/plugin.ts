@@ -109,7 +109,7 @@ extendConfig(
   (config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) => {
     config.paths.deployConfig = normalizePath(
       config,
-      userConfig.paths.deployConfig,
+      userConfig.paths?.deployConfig,
       'deploy-config'
     )
   }

@@ -2,6 +2,7 @@ import {
   predeploys,
   getDeployedContractDefinition,
 } from '@eth-optimism/contracts'
+import { predeploys as bedrockPredeploys } from '@eth-optimism/contracts-bedrock'
 
 import {
   L1ChainID,
@@ -22,6 +23,7 @@ export const DEPOSIT_CONFIRMATION_BLOCKS: {
   [L2ChainID.OPTIMISM_HARDHAT_LOCAL]: 2 as const,
   [L2ChainID.OPTIMISM_HARDHAT_DEVNET]: 2 as const,
   [L2ChainID.OPTIMISM_BEDROCK_LOCAL_DEVNET]: 2 as const,
+  [L2ChainID.OPTIMISM_BEDROCK_ALPHA_TESTNET]: 12 as const,
 }
 
 export const CHAIN_BLOCK_TIMES: {
@@ -49,6 +51,7 @@ export const DEFAULT_L2_CONTRACT_ADDRESSES: OEL2ContractsLike = {
   OVM_GasPriceOracle: predeploys.OVM_GasPriceOracle,
   OVM_SequencerFeeVault: predeploys.OVM_SequencerFeeVault,
   WETH: predeploys.WETH9,
+  BedrockMessagePasser: bedrockPredeploys.L2ToL1MessagePasser,
 }
 
 /**
@@ -144,6 +147,22 @@ export const CONTRACT_ADDRESSES: {
     },
     l2: DEFAULT_L2_CONTRACT_ADDRESSES,
   },
+  [L2ChainID.OPTIMISM_BEDROCK_ALPHA_TESTNET]: {
+    l1: {
+      AddressManager: '0xb4e08DcE1F323608229265c9d4125E22a4B9dbAF' as const,
+      L1CrossDomainMessenger:
+        '0x838a6DC4E37CA45D4Ef05bb776bf05eEf50798De' as const,
+      L1StandardBridge: '0xFf94B6C486350aD92561Ba09bad3a59df764Da92' as const,
+      StateCommitmentChain:
+        '0x0000000000000000000000000000000000000000' as const,
+      CanonicalTransactionChain:
+        '0x0000000000000000000000000000000000000000' as const,
+      BondManager: '0x0000000000000000000000000000000000000000' as const,
+      OptimismPortal: '0xA581Ca3353DB73115C4625FFC7aDF5dB379434A8' as const,
+      L2OutputOracle: '0x3A234299a14De50027eA65dCdf1c0DaC729e04A6' as const,
+    },
+    l2: DEFAULT_L2_CONTRACT_ADDRESSES,
+  },
 }
 
 /**
@@ -188,6 +207,13 @@ export const BRIDGE_ADAPTER_DATA: {
     DAI: {
       Adapter: DAIBridgeAdapter,
       l1Bridge: '0xb415e822C4983ecD6B1c1596e8a5f976cf6CD9e3' as const,
+      l2Bridge: '0x467194771dAe2967Aef3ECbEDD3Bf9a310C76C65' as const,
+    },
+  },
+  [L2ChainID.OPTIMISM_GOERLI]: {
+    DAI: {
+      Adapter: DAIBridgeAdapter,
+      l1Bridge: '0x05a388Db09C2D44ec0b00Ee188cD42365c42Df23' as const,
       l2Bridge: '0x467194771dAe2967Aef3ECbEDD3Bf9a310C76C65' as const,
     },
   },

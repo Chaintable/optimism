@@ -1,6 +1,7 @@
 {
   "name": "@eth-optimism/indexer",
 <<<<<<< HEAD
+<<<<<<< HEAD
 <<<<<<< HEAD:indexer/package.json
   "version": "0.1.1",
 =======
@@ -9,6 +10,9 @@
 =======
   "version": "0.1.4",
 >>>>>>> v0.5.24
+=======
+  "version": "0.3.0",
+>>>>>>> @eth-optimism/l2geth@0.5.27
   "private": true,
   "license": "MIT"
 }

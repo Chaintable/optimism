@@ -2,18 +2,27 @@ import dotenv from 'dotenv'
 <<<<<<< HEAD
 =======
 import { HardhatUserConfig } from 'hardhat/config'
+<<<<<<< HEAD
 >>>>>>> v0.5.23
+=======
+import { getenv } from '@eth-optimism/core-utils'
+>>>>>>> @eth-optimism/l2geth@0.5.27
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-waffle'
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { task, types } from 'hardhat/config'
 import { providers, utils, Wallet } from 'ethers'
 import { CrossChainMessenger } from '@eth-optimism/sdk'
 =======
 >>>>>>> v0.5.23
+=======
+import '@eth-optimism/hardhat-deploy-config'
+import 'hardhat-deploy'
+>>>>>>> @eth-optimism/l2geth@0.5.27
 
 import './scripts/deploy-token'
 import './scripts/multi-send'
@@ -149,12 +158,28 @@ const config: HardhatUserConfig = {
 >>>>>>> v0.5.23
     },
   },
+  paths: {
+    deployConfig: 'deploy-config',
+  },
+  deployConfigSpec: {
+    upgrader: {
+      type: 'address',
+    },
+  },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: 'USD',
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  namedAccounts: {
+    deployer: {
+      default: getenv('LEDGER_ADDRESS')
+        ? `ledger://${getenv('LEDGER_ADDRESS')}`
+        : 0,
+      hardhat: 0,
+    },
   },
 }
 <<<<<<< HEAD

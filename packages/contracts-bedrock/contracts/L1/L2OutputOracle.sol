@@ -255,8 +255,8 @@ contract L2OutputOracle is OwnableUpgradeable, Semver {
         address _owner
     ) Semver(0, 0, 1) {
         require(
-            _l2BlockTime < block.timestamp,
-            "L2OutputOracle: initial L2 block time must be less than current time"
+            _startingTimestamp <= block.timestamp,
+            "L2OutputOracle: starting L2 timestamp must be less than current time"
         );
 
         SUBMISSION_INTERVAL = _submissionInterval;
@@ -265,7 +265,27 @@ contract L2OutputOracle is OwnableUpgradeable, Semver {
         STARTING_TIMESTAMP = _startingTimestamp;
         L2_BLOCK_TIME = _l2BlockTime;
 
-        initialize(_genesisL2Output, _startingBlockNumber, _proposer, _owner);
+        initialize(_genesisL2Output, _proposer, _owner);
+    }
+
+    /**
+     * @notice Initializer.
+     *
+     * @param _genesisL2Output     The initial L2 output of the L2 chain.
+     * @param _proposer            The address of the proposer.
+     * @param _owner               The address of the owner.
+     */
+    function initialize(
+        bytes32 _genesisL2Output,
+        address _proposer,
+        address _owner
+    ) public initializer {
+        require(_proposer != _owner, "L2OutputOracle: proposer cannot be the same as the owner");
+        l2Outputs[STARTING_BLOCK_NUMBER] = Types.OutputProposal(_genesisL2Output, block.timestamp);
+        latestBlockNumber = STARTING_BLOCK_NUMBER;
+        __Ownable_init();
+        changeProposer(_proposer);
+        _transferOwnership(_owner);
     }
 
     /**
@@ -458,24 +478,13 @@ contract L2OutputOracle is OwnableUpgradeable, Semver {
     }
 
     /**
-     * @notice Initializer.
-     *
-     * @param _genesisL2Output     The initial L2 output of the L2 chain.
-     * @param _startingBlockNumber The timestamp to start L2 block at.
-     * @param _proposer            The address of the proposer.
-     * @param _owner               The address of the owner.
+     * @notice Overrides the standard implementation of transferOwnership
+     *         to add the requirement that the owner and proposer are distinct.
+     *         Can only be called by the current owner.
      */
-    function initialize(
-        bytes32 _genesisL2Output,
-        uint256 _startingBlockNumber,
-        address _proposer,
-        address _owner
-    ) public initializer {
-        l2Outputs[_startingBlockNumber] = Types.OutputProposal(_genesisL2Output, block.timestamp);
-        latestBlockNumber = _startingBlockNumber;
-        __Ownable_init();
-        changeProposer(_proposer);
-        _transferOwnership(_owner);
+    function transferOwnership(address _newOwner) public override onlyOwner {
+        require(_newOwner != proposer, "L2OutputOracle: owner cannot be the same as the proposer");
+        super.transferOwnership(_newOwner);
     }
 
     /**
@@ -506,7 +515,8 @@ contract L2OutputOracle is OwnableUpgradeable, Semver {
 
     /**
      * @notice Returns the L2 timestamp corresponding to a given L2 block number.
-     *         Returns a null output proposal if none is found.
+     *         If the L2 block number provided is between checkpoints, this function will return the
+     *         timestamp of the previous checkpoint.
      *
      * @param _l2BlockNumber The L2 block number of the target block.
      */

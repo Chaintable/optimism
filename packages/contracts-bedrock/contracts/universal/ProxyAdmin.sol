@@ -1,18 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-<<<<<<< HEAD
-import { Proxy } from "./Proxy.sol";
-import { Owned } from "@rari-capital/solmate/src/auth/Owned.sol";
-import { Lib_AddressManager } from "../legacy/Lib_AddressManager.sol";
-import { L1ChugSplashProxy } from "../legacy/L1ChugSplashProxy.sol";
-
-/**
- * @title ProxyAdmin
- * @dev This is an auxiliary contract meant to be assigned as the admin of a Proxy, based on
- *      the OpenZeppelin implementation. It has backwards compatibility logic to work with the
- *      various types of proxies that have been deployed by Optimism.
-=======
 import { Owned } from "@rari-capital/solmate/src/auth/Owned.sol";
 import { Proxy } from "./Proxy.sol";
 import { AddressManager } from "../legacy/AddressManager.sol";
@@ -43,25 +31,11 @@ interface IStaticL1ChugSplashProxy {
  * @notice This is an auxiliary contract meant to be assigned as the admin of an ERC1967 Proxy,
  *         based on the OpenZeppelin implementation. It has backwards compatibility logic to work
  *         with the various types of proxies that have been deployed by Optimism in the past.
->>>>>>> v0.5.23
  */
 contract ProxyAdmin is Owned {
     /**
      * @notice The proxy types that the ProxyAdmin can manage.
      *
-<<<<<<< HEAD
-     * @custom:value OpenZeppelin     Represents the OpenZeppelin style transparent proxy
-     *                                interface, this is the standard.
-     * @custom:value Chugsplash       Represents the Chugsplash proxy interface,
-     *                                this is legacy.
-     * @custom:value ResolvedDelegate Represents the ResolvedDelegate proxy
-     *                                interface, this is legacy.
-     */
-    enum ProxyType {
-        OpenZeppelin,
-        Chugsplash,
-        ResolvedDelegate
-=======
      * @custom:value ERC1967    Represents an ERC1967 compliant transparent proxy interface.
      * @custom:value CHUGSPLASH Represents the Chugsplash proxy interface (legacy).
      * @custom:value RESOLVED   Represents the ResolvedDelegate proxy (legacy).
@@ -70,16 +44,11 @@ contract ProxyAdmin is Owned {
         ERC1967,
         CHUGSPLASH,
         RESOLVED
->>>>>>> v0.5.23
     }
 
     /**
      * @custom:legacy
-<<<<<<< HEAD
-     * @notice         A mapping of proxy types, used for backwards compatibility.
-=======
      * @notice A mapping of proxy types, used for backwards compatibility.
->>>>>>> v0.5.23
      */
     mapping(address => ProxyType) public proxyType;
 
@@ -87,26 +56,16 @@ contract ProxyAdmin is Owned {
      * @custom:legacy
      * @notice A reverse mapping of addresses to names held in the AddressManager. This must be
      *         manually kept up to date with changes in the AddressManager for this contract
-<<<<<<< HEAD
-     *         to be able to work as an admin for the Lib_ResolvedDelegateProxy type.
-=======
      *         to be able to work as an admin for the ResolvedDelegateProxy type.
->>>>>>> v0.5.23
      */
     mapping(address => string) public implementationName;
 
     /**
      * @custom:legacy
      * @notice The address of the address manager, this is required to manage the
-<<<<<<< HEAD
-     *         Lib_ResolvedDelegateProxy type.
-     */
-    Lib_AddressManager public addressManager;
-=======
      *         ResolvedDelegateProxy type.
      */
     AddressManager public addressManager;
->>>>>>> v0.5.23
 
     /**
      * @custom:legacy
@@ -115,17 +74,6 @@ contract ProxyAdmin is Owned {
     bool internal upgrading = false;
 
     /**
-<<<<<<< HEAD
-     * @notice Set the owner of the ProxyAdmin via constructor argument.
-     */
-    constructor(address owner) Owned(owner) {}
-
-    /**
-     * @notice
-     *
-     * @param _address   The address of the proxy.
-     * @param _type The type of the proxy.
-=======
      * @param _owner Address of the initial owner of this contract.
      */
     constructor(address _owner) Owned(_owner) {}
@@ -136,41 +84,23 @@ contract ProxyAdmin is Owned {
      *
      * @param _address Address of the proxy.
      * @param _type    Type of the proxy.
->>>>>>> v0.5.23
      */
     function setProxyType(address _address, ProxyType _type) external onlyOwner {
         proxyType[_address] = _type;
     }
 
     /**
-<<<<<<< HEAD
-     * @notice Set the proxy type in the mapping. This needs to be kept up to date by the owner of
-     *         the contract.
-     *
-     * @param _address The address to be named.
-     * @param _name    The name of the address.
-=======
      * @notice Sets the implementation name for a given address. Only required for
      *         ResolvedDelegateProxy type proxies that have an implementation name.
      *
      * @param _address Address of the ResolvedDelegateProxy.
      * @param _name    Name of the implementation for the proxy.
->>>>>>> v0.5.23
      */
     function setImplementationName(address _address, string memory _name) external onlyOwner {
         implementationName[_address] = _name;
     }
 
     /**
-<<<<<<< HEAD
-     * @notice Set the address of the address manager. This is required to manage the legacy
-     *         `Lib_ResolvedDelegateProxy`.
-     *
-     * @param _address The address of the address manager.
-     */
-    function setAddressManager(address _address) external onlyOwner {
-        addressManager = Lib_AddressManager(_address);
-=======
      * @notice Set the address of the AddressManager. This is required to manage legacy
      *         ResolvedDelegateProxy type proxy contracts.
      *
@@ -178,25 +108,16 @@ contract ProxyAdmin is Owned {
      */
     function setAddressManager(AddressManager _address) external onlyOwner {
         addressManager = _address;
->>>>>>> v0.5.23
     }
 
     /**
      * @custom:legacy
-<<<<<<< HEAD
-     * @notice Set an address in the address manager. This is required because only the owner of
-     *         the AddressManager can set the addresses in it.
-     *
-     * @param _name    The name of the address to set in the address manager.
-     * @param _address The address to set in the address manager.
-=======
      * @notice Set an address in the address manager. Since only the owner of the AddressManager
      *         can directly modify addresses and the ProxyAdmin will own the AddressManager, this
      *         gives the owner of the ProxyAdmin the ability to modify addresses directly.
      *
      * @param _name    Name to set within the AddressManager.
      * @param _address Address to attach to the given name.
->>>>>>> v0.5.23
      */
     function setAddress(string memory _name, address _address) external onlyOwner {
         addressManager.setAddress(_name, _address);
@@ -459,6 +380,7 @@ contract ProxyAdmin is Owned {
             Proxy(_proxy).upgradeTo(_implementation);
         } else if (ptype == ProxyType.CHUGSPLASH) {
             L1ChugSplashProxy(_proxy).setStorage(
+                // bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)
                 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc,
                 bytes32(uint256(uint160(_implementation)))
             );
@@ -466,8 +388,14 @@ contract ProxyAdmin is Owned {
             string memory name = implementationName[_proxy];
             addressManager.setAddress(name, _implementation);
         } else {
+<<<<<<< HEAD
             revert("ProxyAdmin: unknown proxy type");
 >>>>>>> v0.5.23
+=======
+            // It should not be possible to retrieve a ProxyType value which is not matched by
+            // one of the previous conditions.
+            assert(false);
+>>>>>>> @eth-optimism/l2geth@0.5.27
         }
     }
 <<<<<<< HEAD

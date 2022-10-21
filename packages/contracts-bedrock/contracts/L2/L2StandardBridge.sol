@@ -20,11 +20,16 @@ import { OptimismMintableERC20 } from "../universal/OptimismMintableERC20.sol";
  * @custom:predeploy 0x4200000000000000000000000000000000000010
  * @title L2StandardBridge
  * @notice The L2StandardBridge is responsible for transfering ETH and ERC20 tokens between L1 and
+<<<<<<< HEAD
  *         L2. ERC20 tokens sent to L1 are escrowed within this contract.
 <<<<<<< HEAD
  */
 contract L2StandardBridge is StandardBridge {
 =======
+=======
+ *         L2. In the case that an ERC20 token is native to L2, it will be escrowed within this
+ *         contract. If the ERC20 token is native to L1, it will be burnt.
+>>>>>>> @eth-optimism/l2geth@0.5.27
  *         Note that this contract is not intended to support all variations of ERC20 tokens.
  *         Examples of some token types that may not be properly supported by this contract include,
  *         but are not limited to: tokens with transfer fees, rebasing tokens, and
@@ -107,6 +112,7 @@ contract L2StandardBridge is StandardBridge, Semver {
     );
 
     /**
+<<<<<<< HEAD
      * @custom:legacy
      * @notice Emitted whenever a deposit fails.
      *
@@ -152,6 +158,8 @@ contract L2StandardBridge is StandardBridge, Semver {
     );
 
     /**
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.27
      * @custom:semver 0.0.2
      *
      * @param _otherBridge Address of the L1StandardBridge.
@@ -285,6 +293,7 @@ contract L2StandardBridge is StandardBridge, Semver {
         } else {
             finalizeBridgeERC20(_l2Token, _l1Token, _from, _to, _amount, _extraData);
         }
+
         emit DepositFinalized(_l1Token, _l2Token, _from, _to, _amount, _extraData);
 >>>>>>> v0.5.23
     }
@@ -325,15 +334,11 @@ contract L2StandardBridge is StandardBridge, Semver {
     ) internal {
         address l1Token = OptimismMintableERC20(_l2Token).l1Token();
         if (_l2Token == Predeploys.LEGACY_ERC20_ETH) {
-            require(
-                msg.value == _amount,
-                "L2StandardBridge: ETH withdrawals must include sufficient ETH value"
-            );
-
             _initiateBridgeETH(_from, _to, _amount, _minGasLimit, _extraData);
         } else {
             _initiateBridgeERC20(_l2Token, l1Token, _from, _to, _amount, _minGasLimit, _extraData);
         }
+
         emit WithdrawalInitiated(l1Token, _l2Token, _from, _to, _amount, _extraData);
 >>>>>>> v0.5.23
     }

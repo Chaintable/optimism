@@ -2,6 +2,7 @@
   "name": "@eth-optimism/contracts-governance",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "0.1.2",
 =======
   "version": "0.1.4",
@@ -9,6 +10,9 @@
 =======
   "version": "0.1.5",
 >>>>>>> v0.5.24
+=======
+  "version": "0.1.6",
+>>>>>>> @eth-optimism/l2geth@0.5.27
   "author": "Optimism PBC",
   "license": "MIT",
   "main": "dist/index",
@@ -38,6 +42,7 @@
   "dependencies": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@eth-optimism/sdk": "^1.1.9",
 =======
     "@eth-optimism/core-utils": "^0.9.1",
@@ -48,6 +53,12 @@
     "@eth-optimism/sdk": "^1.6.1",
 >>>>>>> v0.5.24
     "@ethersproject/hardware-wallets": "^5.6.1",
+=======
+    "@eth-optimism/core-utils": "^0.10.1",
+    "@eth-optimism/sdk": "^1.6.4",
+    "@eth-optimism/hardhat-deploy-config": "^0.2.3",
+    "@ethersproject/hardware-wallets": "^5.7.0",
+>>>>>>> @eth-optimism/l2geth@0.5.27
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^3.0.1",
     "@nomiclabs/hardhat-waffle": "^2.0.2",
@@ -61,8 +72,12 @@
 =======
     "eth-sig-util": "^3.0.1",
     "ethereumjs-util": "^7.1.4",
+<<<<<<< HEAD
 >>>>>>> v0.5.23
     "ethers": "^5.6.8",
+=======
+    "ethers": "^5.7.0",
+>>>>>>> @eth-optimism/l2geth@0.5.27
     "hardhat": "^2.9.6"
   },
   "devDependencies": {
@@ -72,6 +87,7 @@
     "eslint": "^8.9.0",
     "ethereum-waffle": "^3.4.0",
     "hardhat-gas-reporter": "^1.0.7",
+    "hardhat-deploy": "^0.11.4",
     "prettier": "^2.3.1",
     "prettier-plugin-solidity": "^1.0.0-beta.18",
     "solhint": "^3.3.6",

@@ -67,9 +67,9 @@ or `Bedrock`. Deprecated contracts should not be used.
 
 | Name                         | Address                                    | Introduced | Deprecated |
 | ---------------------------- | ------------------------------------------ | ---------- | ---------- |
-| OVM\_L2ToL1MessagePasser     | 0x4200000000000000000000000000000000000000 | Legacy     | No         |
-| OVM\_DeployerWhitelist       | 0x4200000000000000000000000000000000000002 | Legacy     | Yes        |
-| OVM\_ETH                     | 0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000 | Legacy     | Yes        |
+| LegacyMessagePasser          | 0x4200000000000000000000000000000000000000 | Legacy     | Yes        |
+| DeployerWhitelist            | 0x4200000000000000000000000000000000000002 | Legacy     | Yes        |
+| LegacyERC20ETH               | 0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000 | Legacy     | Yes        |
 | WETH9                        | 0x4200000000000000000000000000000000000006 | Legacy     | No         |
 | L2CrossDomainMessenger       | 0x4200000000000000000000000000000000000007 | Legacy     | No         |
 | L2StandardBridge             | 0x4200000000000000000000000000000000000010 | Legacy     | No         |
@@ -80,10 +80,11 @@ or `Bedrock`. Deprecated contracts should not be used.
 | OptimismMintableERC20Factory | 0x4200000000000000000000000000000000000012 | Legacy     | No         |
 >>>>>>> v0.5.23
 | L1BlockNumber                | 0x4200000000000000000000000000000000000013 | Legacy     | Yes        |
-| OVM\_GasPriceOracle          | 0x420000000000000000000000000000000000000F | Legacy     | No         |
+| GasPriceOracle               | 0x420000000000000000000000000000000000000F | Legacy     | No         |
 | Reserved System Address 1    | 0x4200000000000000000000000000000000000014 | Legacy     | No         |
 | Reserved System Address 2    | 0x4200000000000000000000000000000000000042 | Legacy     | No         |
 | L1Block                      | 0x4200000000000000000000000000000000000015 | Bedrock    | No         |
+| L2ToL1MessagePasser          | 0x4200000000000000000000000000000000000016 | Bedrock    | No         |
 
 ## OVM\_L2ToL1MessagePasser
 

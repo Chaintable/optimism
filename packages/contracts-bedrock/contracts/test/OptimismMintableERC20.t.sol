@@ -3,6 +3,7 @@ pragma solidity 0.8.15;
 
 import { Bridge_Initializer } from "./CommonTest.t.sol";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { LibRLP } from "./Lib_RLP.t.sol";
 
 contract OptimismMintableERC20_Test is Bridge_Initializer {
@@ -10,6 +11,9 @@ contract OptimismMintableERC20_Test is Bridge_Initializer {
     event Burn(address indexed _account, uint256 _amount);
 =======
 import "../universal/SupportedInterfaces.sol";
+=======
+import { ILegacyMintableERC20, IOptimismMintableERC20 } from "../universal/SupportedInterfaces.sol";
+>>>>>>> @eth-optimism/l2geth@0.5.27
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 contract OptimismMintableERC20_Test is Bridge_Initializer {
@@ -92,11 +96,14 @@ contract OptimismMintableERC20_Test is Bridge_Initializer {
         assert(L2Token.supportsInterface(iface1));
 
         bytes4 iface2 = L2Token.l1Token.selector ^ L2Token.mint.selector ^ L2Token.burn.selector;
-        assertEq(iface2, type(IL1Token).interfaceId);
+        assertEq(iface2, type(ILegacyMintableERC20).interfaceId);
         assert(L2Token.supportsInterface(iface2));
 
-        bytes4 iface3 = L2Token.remoteToken.selector ^ L2Token.mint.selector ^ L2Token.burn.selector;
-        assertEq(iface3, type(IRemoteToken).interfaceId);
+        bytes4 iface3 = L2Token.remoteToken.selector ^
+            L2Token.bridge.selector ^
+            L2Token.mint.selector ^
+            L2Token.burn.selector;
+        assertEq(iface3, type(IOptimismMintableERC20).interfaceId);
         assert(L2Token.supportsInterface(iface3));
     }
 >>>>>>> v0.5.23

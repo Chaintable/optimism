@@ -8,35 +8,35 @@ You can find detailed specifications for the contracts contained within this pac
 
 ### Contracts deployed to L1
 
-| Name | Proxy Type | Description |
-| ---- | ---------- | ----------- |
-| [`L1CrossDomainMessenger`](../../specs/messengers.md) | [`ResolvedDelegateProxy`](./contracts/legacy/ResolvedDelegateProxy.sol) | High-level interface for sending messages to and receiving messages from Optimism |
-| [`L1StandardBridge`](../../specs/bridges.md) | [`L1ChugSplashProxy`](./contracts/legacy/L1ChugSplashProxy.sol) | Standardized system for transfering ERC20 tokens to/from Optimism |
-| [`L2OutputOracle`](../../specs/proposals.md#l2-output-oracle-smart-contract) | [`Proxy`](./contracts/universal/Proxy.sol) | Stores commitments to the state of Optimism which can be used by contracts on L1 to access L2 state |
-| [`OptimismPortal`](../../specs/deposits.md#deposit-contract) | [`Proxy`](./contracts/universal/Proxy.sol) | Low-level message passing interface |
-| [`OptimismMintableERC20Factory`](../../specs/predeploys.md#optimismmintableerc20factory) | [`Proxy`](./contracts/universal/Proxy.sol) | Deploys standard `OptimismMintableERC20` tokens that are compatible with either `StandardBridge` |
-| [`ProxyAdmin`](../../specs/TODO) | - | Contract that can upgrade L1 contracts |
+| Name                                                                                     | Proxy Type                                                              | Description                                                                                         |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [`L1CrossDomainMessenger`](../../specs/messengers.md)                                    | [`ResolvedDelegateProxy`](./contracts/legacy/ResolvedDelegateProxy.sol) | High-level interface for sending messages to and receiving messages from Optimism                   |
+| [`L1StandardBridge`](../../specs/bridges.md)                                             | [`L1ChugSplashProxy`](./contracts/legacy/L1ChugSplashProxy.sol)         | Standardized system for transfering ERC20 tokens to/from Optimism                                   |
+| [`L2OutputOracle`](../../specs/proposals.md#l2-output-oracle-smart-contract)             | [`Proxy`](./contracts/universal/Proxy.sol)                              | Stores commitments to the state of Optimism which can be used by contracts on L1 to access L2 state |
+| [`OptimismPortal`](../../specs/deposits.md#deposit-contract)                             | [`Proxy`](./contracts/universal/Proxy.sol)                              | Low-level message passing interface                                                                 |
+| [`OptimismMintableERC20Factory`](../../specs/predeploys.md#optimismmintableerc20factory) | [`Proxy`](./contracts/universal/Proxy.sol)                              | Deploys standard `OptimismMintableERC20` tokens that are compatible with either `StandardBridge`    |
+| [`ProxyAdmin`](../../specs/TODO)                                                         | -                                                                       | Contract that can upgrade L1 contracts                                                              |
 
 ### Contracts deployed to L2
 
-| Name | Proxy Type | Description |
-| ---- | ---------- | ----------- |
-| [`GasPriceOracle`](../../specs/predeploys.md#ovm_gaspriceoracle) | [`Proxy`](./contracts/universal/Proxy.sol) | Stores L2 gas price configuration values |
-| [`L1Block`](../../specs/predeploys.md#l1block) | [`Proxy`](./contracts/universal/Proxy.sol) | Stores L1 block context information (e.g., latest known L1 block hash) |
-| [`L2CrossDomainMessenger`](../../specs/predeploys.md#l2crossdomainmessenger) | [`Proxy`](./contracts/universal/Proxy.sol) | High-level interface for sending messages to and receiving messages from L1 |
-| [`L2StandardBridge`](../../specs/predeploys.md#l2standardbridge) | [`Proxy`](./contracts/universal/Proxy.sol) | Standardized system for transferring ERC20 tokens to/from L1 |
-| [`L2ToL1MessagePasser`](../../specs/predeploys.md#ovm_l2tol1messagepasser) | [`Proxy`](./contracts/universal/Proxy.sol) | Low-level message passing interface |
-| [`SequencerFeeVault`](../../specs/predeploys.md#sequencerfeevault) | [`Proxy`](./contracts/universal/Proxy.sol) | Vault for L2 transaction fees |
+| Name                                                                                     | Proxy Type                                 | Description                                                                                      |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| [`GasPriceOracle`](../../specs/predeploys.md#ovm_gaspriceoracle)                         | [`Proxy`](./contracts/universal/Proxy.sol) | Stores L2 gas price configuration values                                                         |
+| [`L1Block`](../../specs/predeploys.md#l1block)                                           | [`Proxy`](./contracts/universal/Proxy.sol) | Stores L1 block context information (e.g., latest known L1 block hash)                           |
+| [`L2CrossDomainMessenger`](../../specs/predeploys.md#l2crossdomainmessenger)             | [`Proxy`](./contracts/universal/Proxy.sol) | High-level interface for sending messages to and receiving messages from L1                      |
+| [`L2StandardBridge`](../../specs/predeploys.md#l2standardbridge)                         | [`Proxy`](./contracts/universal/Proxy.sol) | Standardized system for transferring ERC20 tokens to/from L1                                     |
+| [`L2ToL1MessagePasser`](../../specs/predeploys.md#ovm_l2tol1messagepasser)               | [`Proxy`](./contracts/universal/Proxy.sol) | Low-level message passing interface                                                              |
+| [`SequencerFeeVault`](../../specs/predeploys.md#sequencerfeevault)                       | [`Proxy`](./contracts/universal/Proxy.sol) | Vault for L2 transaction fees                                                                    |
 | [`OptimismMintableERC20Factory`](../../specs/predeploys.md#optimismmintableerc20factory) | [`Proxy`](./contracts/universal/Proxy.sol) | Deploys standard `OptimismMintableERC20` tokens that are compatible with either `StandardBridge` |
-| [`L2ProxyAdmin`](../../specs/TODO) | - | Contract that can upgrade L2 contracts when sent a transaction from L1 |
+| [`L2ProxyAdmin`](../../specs/TODO)                                                       | -                                          | Contract that can upgrade L2 contracts when sent a transaction from L1                           |
 
 ### Legacy and deprecated contracts
 
-| Name | Location | Proxy Type | Description |
-| ---- | -------- | ---------- | ----------- |
-| [`AddressManager`](./contracts/legacy/AddressManager.sol) | L1 | - | Legacy upgrade mechanism (unused in Bedrock) |
-| [`DeployerWhitelist`](./contracts/legacy/DeployerWhitelist.sol) | L2 | [`Proxy`](./contracts/universal/Proxy.sol) | Legacy contract for managing allowed deployers (unused since EVM Equivalence upgrade)
-| [`L1BlockNumber`](./contracts/legacy/L1BlockNumber.sol) | L2 | [`Proxy`](./contracts/universal/Proxy.sol) | Legacy contract for accessing latest known L1 block number, replaced by `L1Block` |
+| Name                                                            | Location | Proxy Type                                 | Description                                                                           |
+| --------------------------------------------------------------- | -------- | ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| [`AddressManager`](./contracts/legacy/AddressManager.sol)       | L1       | -                                          | Legacy upgrade mechanism (unused in Bedrock)                                          |
+| [`DeployerWhitelist`](./contracts/legacy/DeployerWhitelist.sol) | L2       | [`Proxy`](./contracts/universal/Proxy.sol) | Legacy contract for managing allowed deployers (unused since EVM Equivalence upgrade) |
+| [`L1BlockNumber`](./contracts/legacy/L1BlockNumber.sol)         | L2       | [`Proxy`](./contracts/universal/Proxy.sol) | Legacy contract for accessing latest known L1 block number, replaced by `L1Block`     |
 
 ## Installation
 
@@ -55,9 +55,9 @@ We work on this repository with a combination of [Hardhat](https://hardhat.org) 
 1. Install Foundry by following [the instructions located here](https://getfoundry.sh/).
 2. Install node modules with yarn (v1) and Node.js (16+):
 
-    ```shell
-    yarn install
-    ```
+   ```shell
+   yarn install
+   ```
 
 ### Build
 
@@ -110,6 +110,8 @@ Some basic rules:
 We also have the following custom tags:
 
 - `@custom:proxied`: Add to a contract whenever it's meant to live behind a proxy.
+- `@custom:upgradeable`: Add to a contract whenever it's meant to be used in an upgradeable contract.
+- `@custom:semver`: Add to a constructor to indicate the version of a contract.
 - `@custom:legacy`: Add to an event or function when it only exists for legacy support.
 
 #### Errors
@@ -126,6 +128,12 @@ We also have the following custom tags:
 
 - Event parameters should NOT be prefixed with an underscore.
 
+#### Spacers
+
+We use spacer variables to account for old storage slots that are no longer being used.
+The name of a spacer variable MUST be in the format `spacer_<slot>_<offset>_<length>` where `<slot>` is the original storage slot number, `<offset>` is the original offset position within the storage slot, and `<length>` is the original size of the variable.
+Spacers MUST be `private`.
+
 ### Proxy by Default
 
 All contracts should be assumed to live behind proxies (except in certain special circumstances).
@@ -138,4 +146,23 @@ Unless explicitly discussed otherwise, you MUST include the following basic upgr
 2. Include a `uint8 public constant VERSION = X` at the TOP of your contract.
 3. Include a function `initialize` with the modifier `reinitializer(VERSION)`.
 4. In the `constructor`, set any `immutable` variables and call the `initialize` function for setting mutables.
+<<<<<<< HEAD
 >>>>>>> v0.5.23
+=======
+
+### Versioning
+
+All (non-library and non-abstract) contracts MUST extend the `Semver` base contract which exposes a `version()` function that returns a semver-compliant version string.
+During the Bedrock development process the `Semver` value for all contracts SHOULD return `0.0.1` (this is not particularly important, but it's an easy standard to follow).
+When the initial Bedrock upgrade is released, the `Semver` value MUST be updated to `1.0.0`.
+
+After the initial Bedrock upgrade, contracts MUST use the following versioning scheme:
+
+- `patch` releases are to be used only for changes that do NOT modify contract bytecode (such as updating comments).
+- `minor` releases are to be used for changes that modify bytecode OR changes that expand the contract ABI provided that these changes do NOT break the existing interface.
+- `major` releases are to be used for changes that break the existing contract interface OR changes that modify the security model of a contract.
+
+#### Exceptions
+
+We have made an exception to the `Semver` rule for the `WETH` contract to avoid making changes to a well-known, simple, and recognizable contract.
+>>>>>>> @eth-optimism/l2geth@0.5.27

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@eth-optimism/integration-tests-bedrock",
-  "version": "0.5.11",
+  "version": "0.5.12",
   "description": "[Optimism] Bedrock Integration tests",
   "scripts": {
     "lint": "yarn lint:fix && yarn lint:check",
@@ -29,6 +29,7 @@
   "devDependencies": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@eth-optimism/contracts": "0.5.28",
     "@eth-optimism/core-utils": "0.8.7",
     "@eth-optimism/sdk": "1.1.9",
@@ -43,12 +44,18 @@
     "@eth-optimism/sdk": "1.6.1",
 >>>>>>> v0.5.24
     "@ethersproject/abstract-provider": "^5.6.1",
+=======
+    "@eth-optimism/contracts": "0.5.37",
+    "@eth-optimism/core-utils": "0.10.1",
+    "@eth-optimism/sdk": "1.6.8",
+    "@ethersproject/abstract-provider": "^5.7.0",
+>>>>>>> @eth-optimism/l2geth@0.5.27
     "chai-as-promised": "^7.1.1",
     "chai": "^4.3.4",
     "dotenv": "^10.0.0",
     "envalid": "^7.1.0",
     "ethereum-waffle": "^3.3.0",
-    "ethers": "^5.6.8",
+    "ethers": "^5.7.0",
     "rimraf": "^3.0.2",
     "ts-node": "^10.7.0"
   },

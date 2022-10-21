@@ -23,14 +23,19 @@ contract SequencerFeeVault_Test is Bridge_Initializer {
 import { Predeploys } from "../libraries/Predeploys.sol";
 
 contract SequencerFeeVault_Test is Bridge_Initializer {
+<<<<<<< HEAD
     SequencerFeeVault vault =
         SequencerFeeVault(payable(Predeploys.SEQUENCER_FEE_WALLET));
 >>>>>>> v0.5.24
+=======
+    SequencerFeeVault vault = SequencerFeeVault(payable(Predeploys.SEQUENCER_FEE_WALLET));
+>>>>>>> @eth-optimism/l2geth@0.5.27
     address constant recipient = address(256);
 
     function setUp() public override {
         super.setUp();
 
+<<<<<<< HEAD
         vm.etch(
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -43,6 +48,9 @@ contract SequencerFeeVault_Test is Bridge_Initializer {
 >>>>>>> v0.5.24
             address(new SequencerFeeVault()).code
         );
+=======
+        vm.etch(Predeploys.SEQUENCER_FEE_WALLET, address(new SequencerFeeVault()).code);
+>>>>>>> @eth-optimism/l2geth@0.5.27
 
         vm.store(
 <<<<<<< HEAD
@@ -60,33 +68,21 @@ contract SequencerFeeVault_Test is Bridge_Initializer {
     }
 
     function test_minWithdrawalAmount() external {
-        assertEq(
-            vault.MIN_WITHDRAWAL_AMOUNT(),
-            15 ether
-        );
+        assertEq(vault.MIN_WITHDRAWAL_AMOUNT(), 15 ether);
     }
 
     function test_constructor() external {
-        assertEq(
-            vault.l1FeeWallet(),
-            recipient
-        );
+        assertEq(vault.l1FeeWallet(), recipient);
     }
 
     function test_receive() external {
-        assertEq(
-            address(vault).balance,
-            0
-        );
+        assertEq(address(vault).balance, 0);
 
         vm.prank(alice);
-        (bool success,) = address(vault).call{ value: 100 }(hex"");
+        (bool success, ) = address(vault).call{ value: 100 }(hex"");
 
         assertEq(success, true);
-        assertEq(
-            address(vault).balance,
-            100
-        );
+        assertEq(address(vault).balance, 100);
     }
 
     function test_revertWithdraw() external {

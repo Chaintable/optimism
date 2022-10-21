@@ -15,7 +15,6 @@ import { Predeploys } from "../libraries/Predeploys.sol";
 >>>>>>> v0.5.24
 
 contract GasPriceOracle_Test is CommonTest {
-
     event OverheadUpdated(uint256);
     event ScalarUpdated(uint256);
     event DecimalsUpdated(uint256);
@@ -26,6 +25,7 @@ contract GasPriceOracle_Test is CommonTest {
 
     function setUp() external {
         // place the L1Block contract at the predeploy address
+<<<<<<< HEAD
         vm.etch(
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -45,6 +45,9 @@ contract GasPriceOracle_Test is CommonTest {
             Predeploys.L1_BLOCK_ATTRIBUTES,
             address(new L1Block()).code
         );
+=======
+        vm.etch(Predeploys.L1_BLOCK_ATTRIBUTES, address(new L1Block()).code);
+>>>>>>> @eth-optimism/l2geth@0.5.27
 
         l1Block = L1Block(Predeploys.L1_BLOCK_ATTRIBUTES);
 >>>>>>> v0.5.24
@@ -63,13 +66,7 @@ contract GasPriceOracle_Test is CommonTest {
         uint64 sequenceNumber = 0;
 
         vm.prank(depositor);
-        l1Block.setL1BlockValues(
-            number,
-            timestamp,
-            basefee,
-            hash,
-            sequenceNumber
-        );
+        l1Block.setL1BlockValues(number, timestamp, basefee, hash, sequenceNumber);
     }
 
     function test_owner() external {
@@ -81,26 +78,17 @@ contract GasPriceOracle_Test is CommonTest {
         // the overhead is at slot 3
         vm.prank(gasOracle.owner());
         gasOracle.setOverhead(456);
-        assertEq(
-            456,
-            uint256(vm.load(address(gasOracle), bytes32(uint256(3))))
-        );
+        assertEq(456, uint256(vm.load(address(gasOracle), bytes32(uint256(3)))));
 
         // scalar is at slot 4
         vm.prank(gasOracle.owner());
         gasOracle.setScalar(333);
-        assertEq(
-            333,
-            uint256(vm.load(address(gasOracle), bytes32(uint256(4))))
-        );
+        assertEq(333, uint256(vm.load(address(gasOracle), bytes32(uint256(4)))));
 
         // decimals is at slot 5
         vm.prank(gasOracle.owner());
         gasOracle.setDecimals(222);
-        assertEq(
-            222,
-            uint256(vm.load(address(gasOracle), bytes32(uint256(5))))
-        );
+        assertEq(222, uint256(vm.load(address(gasOracle), bytes32(uint256(5)))));
     }
 
     function test_l1BaseFee() external {
@@ -123,10 +111,7 @@ contract GasPriceOracle_Test is CommonTest {
     function test_setGasPriceReverts() external {
         vm.prank(gasOracle.owner());
         (bool success, bytes memory returndata) = address(gasOracle).call(
-            abi.encodeWithSignature(
-                "setGasPrice(uint256)",
-                1
-            )
+            abi.encodeWithSignature("setGasPrice(uint256)", 1)
         );
 
         assertEq(success, false);
@@ -136,10 +121,7 @@ contract GasPriceOracle_Test is CommonTest {
     function test_setL1BaseFeeReverts() external {
         vm.prank(gasOracle.owner());
         (bool success, bytes memory returndata) = address(gasOracle).call(
-            abi.encodeWithSignature(
-                "setL1BaseFee(uint256)",
-                1
-            )
+            abi.encodeWithSignature("setL1BaseFee(uint256)", 1)
         );
 
         assertEq(success, false);

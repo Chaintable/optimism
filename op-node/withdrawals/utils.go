@@ -22,6 +22,7 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // WaitForFinalizationPeriod waits until the timestamp has been submitted to the L2 Output Oracle on L1 and
 // then waits for the finalization period to be up.
 // This functions polls and can block for a very long time if used on mainnet.
@@ -30,6 +31,11 @@ func WaitForFinalizationPeriod(ctx context.Context, client *ethclient.Client, po
 	opts := &bind.CallOpts{Context: ctx}
 	timestampBig := new(big.Int).SetUint64(timestamp)
 =======
+=======
+var MessagePassedTopic = crypto.Keccak256Hash([]byte("MessagePassed(uint256,address,address,uint256,uint256,bytes)"))
+var MessagePassedExtension1Topic = crypto.Keccak256Hash([]byte("MessagePassedExtension1(bytes32)"))
+
+>>>>>>> @eth-optimism/l2geth@0.5.27
 // WaitForFinalizationPeriod waits until there is OutputProof for an L2 block number larger than the supplied l2BlockNumber
 // and that the output is finalized.
 // This functions polls and can block for a very long time if used on mainnet.
@@ -231,11 +237,11 @@ func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txH
 		return FinalizedWithdrawalParameters{}, err
 	}
 	// Parse the receipt
-	ev, err := ParseWithdrawalInitiated(receipt)
+	ev, err := ParseMessagePassed(receipt)
 	if err != nil {
 		return FinalizedWithdrawalParameters{}, err
 	}
-	ev1, err := ParseWithdrawalInitiatedExtension1(receipt)
+	ev1, err := ParseMessagePassedExtension1(receipt)
 	if err != nil {
 		return FinalizedWithdrawalParameters{}, err
 	}
@@ -299,11 +305,18 @@ func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txH
 >>>>>>> v0.5.23
 =======
 		OutputRootProof: bindings.TypesOutputRootProof{
+<<<<<<< HEAD
 >>>>>>> v0.5.24
 			Version:               [32]byte{}, // Empty for version 1
 			StateRoot:             header.Root,
 			WithdrawerStorageRoot: p.StorageHash,
 			LatestBlockhash:       header.Hash(),
+=======
+			Version:                  [32]byte{}, // Empty for version 1
+			StateRoot:                header.Root,
+			MessagePasserStorageRoot: p.StorageHash,
+			LatestBlockhash:          header.Hash(),
+>>>>>>> @eth-optimism/l2geth@0.5.27
 		},
 		WithdrawalProof: withdrawalProof,
 	}, nil
@@ -316,12 +329,13 @@ var (
 	AddressType, _ = abi.NewType("address", "", nil)
 )
 
-// WithdrawalHash computes the hash of the withdrawal that was stored in the L2 withdrawal contract state.
+// WithdrawalHash computes the hash of the withdrawal that was stored in the L2toL1MessagePasser
+// contract state.
 // TODO:
 //   - I don't like having to use the ABI Generated struct
 //   - There should be a better way to run the ABI encoding
 //   - These needs to be fuzzed against the solidity
-func WithdrawalHash(ev *bindings.L2ToL1MessagePasserWithdrawalInitiated) (common.Hash, error) {
+func WithdrawalHash(ev *bindings.L2ToL1MessagePasserMessagePassed) (common.Hash, error) {
 	//  abi.encode(nonce, msg.sender, _target, msg.value, _gasLimit, _data)
 	args := abi.Arguments{
 		{Name: "nonce", Type: Uint256Type},
@@ -338,58 +352,50 @@ func WithdrawalHash(ev *bindings.L2ToL1MessagePasserWithdrawalInitiated) (common
 	return crypto.Keccak256Hash(enc), nil
 }
 
-// ParseWithdrawalInitiated parses
-func ParseWithdrawalInitiated(receipt *types.Receipt) (*bindings.L2ToL1MessagePasserWithdrawalInitiated, error) {
+// ParseMessagePassed parses MessagePassed events from
+// a transaction receipt. It does not support multiple withdrawals
+// per receipt.
+func ParseMessagePassed(receipt *types.Receipt) (*bindings.L2ToL1MessagePasserMessagePassed, error) {
 	contract, err := bindings.NewL2ToL1MessagePasser(common.Address{}, nil)
-	if err != nil {
-		return nil, err
-	}
-	abi, err := bindings.L2ToL1MessagePasserMetaData.GetAbi()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, log := range receipt.Logs {
-		event, err := abi.EventByID(log.Topics[0])
+		if len(log.Topics) == 0 || log.Topics[0] != MessagePassedTopic {
+			continue
+		}
+
+		ev, err := contract.ParseMessagePassed(*log)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse log: %w", err)
 		}
-		if event.Name == "WithdrawalInitiated" {
-			ev, err := contract.ParseWithdrawalInitiated(*log)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse log: %w", err)
-			}
-			return ev, nil
-		}
+		return ev, nil
 	}
-	return nil, errors.New("Unable to find WithdrawalInitiated event")
+	return nil, errors.New("Unable to find MessagePassed event")
 }
 
-// ParseWithdrawalInitiatedExtension1 parses
-func ParseWithdrawalInitiatedExtension1(receipt *types.Receipt) (*bindings.L2ToL1MessagePasserWithdrawalInitiatedExtension1, error) {
+// ParseMessagePassedExtension1 parses MessagePassedExtension1 events
+// from a transaction receipt. It does not support multiple withdrawals per
+// receipt.
+func ParseMessagePassedExtension1(receipt *types.Receipt) (*bindings.L2ToL1MessagePasserMessagePassedExtension1, error) {
 	contract, err := bindings.NewL2ToL1MessagePasser(common.Address{}, nil)
-	if err != nil {
-		return nil, err
-	}
-	abi, err := bindings.L2ToL1MessagePasserMetaData.GetAbi()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, log := range receipt.Logs {
-		event, err := abi.EventByID(log.Topics[0])
+		if len(log.Topics) == 0 || log.Topics[0] != MessagePassedExtension1Topic {
+			continue
+		}
+
+		ev, err := contract.ParseMessagePassedExtension1(*log)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse log: %w", err)
 		}
-		if event.Name == "WithdrawalInitiatedExtension1" {
-			ev, err := contract.ParseWithdrawalInitiatedExtension1(*log)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse log: %w", err)
-			}
-			return ev, nil
-		}
+		return ev, nil
 	}
-	return nil, errors.New("Unable to find WithdrawalInitiatedExtension1 event")
+	return nil, errors.New("Unable to find MessagePassedExtension1 event")
 }
 
 // StorageSlotOfWithdrawalHash determines the storage slot of the Withdrawer contract to look at

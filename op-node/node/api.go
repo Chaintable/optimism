@@ -21,7 +21,6 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
 	"github.com/ethereum-optimism/optimism/op-node/eth"
-	"github.com/ethereum-optimism/optimism/op-node/metrics"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/version"
 >>>>>>> v0.5.23
@@ -62,12 +61,17 @@ type driverClient interface {
 	ResetDerivationPipeline(context.Context) error
 }
 
-type adminAPI struct {
-	dr driverClient
-	m  *metrics.Metrics
+type rpcMetrics interface {
+	// RecordRPCServerRequest returns a function that records the duration of serving the given RPC method
+	RecordRPCServerRequest(method string) func()
 }
 
-func newAdminAPI(dr driverClient, m *metrics.Metrics) *adminAPI {
+type adminAPI struct {
+	dr driverClient
+	m  rpcMetrics
+}
+
+func NewAdminAPI(dr driverClient, m rpcMetrics) *adminAPI {
 	return &adminAPI{
 		dr: dr,
 		m:  m,
@@ -85,10 +89,10 @@ type nodeAPI struct {
 	client l2EthClient
 	dr     driverClient
 	log    log.Logger
-	m      *metrics.Metrics
+	m      rpcMetrics
 }
 
-func newNodeAPI(config *rollup.Config, l2Client l2EthClient, dr driverClient, log log.Logger, m *metrics.Metrics) *nodeAPI {
+func NewNodeAPI(config *rollup.Config, l2Client l2EthClient, dr driverClient, log log.Logger, m rpcMetrics) *nodeAPI {
 	return &nodeAPI{
 		config: config,
 		client: l2Client,

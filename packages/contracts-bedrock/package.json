@@ -2,6 +2,7 @@
   "name": "@eth-optimism/contracts-bedrock",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "0.2.0",
 =======
   "version": "0.5.0",
@@ -9,6 +10,9 @@
 =======
   "version": "0.6.0",
 >>>>>>> v0.5.24
+=======
+  "version": "0.8.2",
+>>>>>>> @eth-optimism/l2geth@0.5.27
   "description": "Contracts for Optimism Specs",
   "main": "dist/index",
   "types": "dist/index",
@@ -53,10 +57,12 @@
     "deploy": "hardhat deploy",
     "test": "yarn build:differential && forge test",
     "coverage": "yarn build:differential && forge coverage",
+    "coverage:lcov": "yarn build:differential && forge coverage --report lcov",
     "gas-snapshot": "yarn build:differential && forge snapshot",
     "storage-snapshot": "./scripts/storage-snapshot.sh",
+    "validate-spacers": "hardhat validate-spacers",
     "slither": "./scripts/slither.sh",
-    "clean": "rm -rf ./dist ./artifacts ./forge-artifacts ./cache ./tsconfig.tsbuildinfo",
+    "clean": "rm -rf ./dist ./artifacts ./forge-artifacts ./cache ./tsconfig.tsbuildinfo ./src/contract-artifacts.ts",
     "lint:ts:check": "eslint . --max-warnings=0",
 >>>>>>> v0.5.23
     "lint:contracts:check": "yarn solhint -f table 'contracts/**/*.sol'",
@@ -81,9 +87,10 @@
     "typechain": "typechain --target ethers-v5 --out-dir dist/types --glob 'artifacts/!(build-info)/**/+([a-zA-Z0-9_]).json'"
   },
   "dependencies": {
-    "@eth-optimism/core-utils": "^0.10.0",
+    "@eth-optimism/core-utils": "^0.10.1",
     "@openzeppelin/contracts": "4.7.3",
     "@openzeppelin/contracts-upgradeable": "4.7.3",
+<<<<<<< HEAD
     "ethers": "^5.6.8",
 <<<<<<< HEAD
     "excessively-safe-call": "https://github.com/nomad-xyz/ExcessivelySafeCall.git#4fcdfd3593d21381f696c790fa6180b8ef559c1e",
@@ -109,10 +116,13 @@
 =======
     "@eth-optimism/hardhat-deploy-config": "^0.2.1",
 =======
+=======
+    "ethers": "^5.7.0",
+>>>>>>> @eth-optimism/l2geth@0.5.27
     "hardhat": "^2.9.6"
   },
   "devDependencies": {
-    "@eth-optimism/hardhat-deploy-config": "^0.2.2",
+    "@eth-optimism/hardhat-deploy-config": "^0.2.4",
     "@ethereumjs/trie": "^5.0.0-beta.1",
     "@ethereumjs/util": "^8.0.0-beta.1",
     "ethereumjs-wallet": "^1.0.2",
@@ -133,7 +143,6 @@
     "dotenv": "^16.0.0",
     "ds-test": "https://github.com/dapphub/ds-test.git#9310e879db8ba3ea6d5c6489a579118fd264a3f5",
     "ethereum-waffle": "^3.0.0",
-    "ethers": "^5.6.8",
     "forge-std": "https://github.com/foundry-rs/forge-std.git#f18682b2874fc57d7c80a511fed0b35ec4201ffa",
     "glob": "^7.1.6",
     "hardhat-deploy": "^0.11.4",

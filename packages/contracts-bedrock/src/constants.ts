@@ -13,7 +13,7 @@ export const bedrockPredeploys = {
  * in the future. See https://github.com/ethereum-optimism/optimism/pull/549 for more info.
  */
 export const predeploys = {
-  L2ToL1MessagePasser: '0x4200000000000000000000000000000000000000',
+  L2ToL1MessagePasser: '0x4200000000000000000000000000000000000016',
   DeployerWhitelist: '0x4200000000000000000000000000000000000002',
   L2CrossDomainMessenger: '0x4200000000000000000000000000000000000007',
   GasPriceOracle: '0x420000000000000000000000000000000000000F',
@@ -25,6 +25,7 @@ export const predeploys = {
   LegacyERC20ETH: '0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000',
   WETH9: '0x4200000000000000000000000000000000000006',
   GovernanceToken: '0x4200000000000000000000000000000000000042',
+  LegacyMessagePasser: '0x4200000000000000000000000000000000000000',
 }
 
 export const futurePredeploys = {
