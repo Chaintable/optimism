@@ -2,10 +2,11 @@ package statedumper
 
 import (
 	"fmt"
-	"github.com/ethereum-optimism/optimism/l2geth/common"
 	"io"
 	"os"
 	"sync"
+
+	"github.com/ethereum-optimism/optimism/l2geth/common"
 )
 
 type StateDumper interface {
