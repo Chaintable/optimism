@@ -18,10 +18,11 @@ package vm
 
 import (
 	"fmt"
-	"github.com/ethereum-optimism/optimism/l2geth/statedumper"
 	"math/big"
 	"sync/atomic"
 	"time"
+
+	"github.com/ethereum-optimism/optimism/l2geth/statedumper"
 
 	"github.com/ethereum-optimism/optimism/l2geth/common"
 	"github.com/ethereum-optimism/optimism/l2geth/crypto"
