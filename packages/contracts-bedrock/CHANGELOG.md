@@ -3,9 +3,19 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
 =======
+=======
+## 0.8.3
+
+### Patch Changes
+
+- db84317b: Various RLP updates
+- 9b90c732: Added codecov badge to readme
+
+>>>>>>> @eth-optimism/l2geth@0.5.28
 ## 0.8.2
 
 ### Patch Changes

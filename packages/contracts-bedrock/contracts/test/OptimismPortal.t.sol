@@ -413,7 +413,7 @@ contract OptimismPortal_FinalizeWithdrawal_Test is Portal_Initializer {
     bytes32 _storageRoot;
     bytes32 _outputRoot;
     bytes32 _withdrawalHash;
-    bytes _withdrawalProof;
+    bytes[] _withdrawalProof;
     Types.OutputRootProof internal _outputRootProof;
 
     event WithdrawalFinalized(bytes32 indexed, bool success);
@@ -566,7 +566,7 @@ contract OptimismPortal_FinalizeWithdrawal_Test is Portal_Initializer {
             gasLimit: gasLimit,
             data: hex""
         });
-        (bytes32 stateRoot, bytes32 storageRoot, , , bytes memory withdrawalProof) = ffi
+        (bytes32 stateRoot, bytes32 storageRoot, , , bytes[] memory withdrawalProof) = ffi
             .getFinalizeWithdrawalTransactionInputs(insufficientGasTx);
         Types.OutputRootProof memory outputRootProof = Types.OutputRootProof({
             version: bytes32(0),
@@ -607,7 +607,8 @@ contract OptimismPortal_FinalizeWithdrawal_Test is Portal_Initializer {
     function callPortalAndExpectRevert() external payable {
         vm.expectRevert("OptimismPortal: can only trigger one withdrawal per transaction");
         // Arguments here don't matter, as the require check is the first thing that happens.
-        op.finalizeWithdrawalTransaction(_defaultTx, 0, _outputRootProof, hex"");
+        bytes[] memory proof = new bytes[](1);
+        op.finalizeWithdrawalTransaction(_defaultTx, 0, _outputRootProof, proof);
         // Assert that the withdrawal was not finalized.
         assertFalse(op.finalizedWithdrawals(Hashing.hashWithdrawal(_defaultTx)));
     }
@@ -628,7 +629,7 @@ contract OptimismPortal_FinalizeWithdrawal_Test is Portal_Initializer {
             bytes32 storageRoot,
             bytes32 outputRoot,
             bytes32 withdrawalHash,
-            bytes memory withdrawalProof
+            bytes[] memory withdrawalProof
         ) = ffi.getFinalizeWithdrawalTransactionInputs(_testTx);
         Types.OutputRootProof memory outputRootProof = Types.OutputRootProof({
             version: bytes32(0),
@@ -688,7 +689,7 @@ contract OptimismPortal_FinalizeWithdrawal_Test is Portal_Initializer {
             bytes32 storageRoot,
             bytes32 outputRoot,
             bytes32 withdrawalHash,
-            bytes memory withdrawalProof
+            bytes[] memory withdrawalProof
         ) = ffi.getFinalizeWithdrawalTransactionInputs(_tx);
 
         Types.OutputRootProof memory proof = Types.OutputRootProof({

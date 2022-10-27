@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "0.5.2",
 =======
   "version": "0.5.5",
@@ -14,6 +15,9 @@
 =======
   "version": "0.5.18",
 >>>>>>> @eth-optimism/l2geth@0.5.27
+=======
+  "version": "0.5.19",
+>>>>>>> @eth-optimism/l2geth@0.5.28
   "description": "[Optimism] Service for automatically relaying L2 to L1 transactions",
   "main": "dist/index",
   "types": "dist/index",
@@ -63,7 +67,7 @@
 =======
     "@eth-optimism/common-ts": "0.6.6",
     "@eth-optimism/core-utils": "0.10.1",
-    "@eth-optimism/sdk": "1.6.8",
+    "@eth-optimism/sdk": "1.6.9",
     "ethers": "^5.7.0"
 >>>>>>> @eth-optimism/l2geth@0.5.27
   },

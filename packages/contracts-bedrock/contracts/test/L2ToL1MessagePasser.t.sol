@@ -22,10 +22,9 @@ contract L2ToL1MessagePasserTest is CommonTest {
         address indexed target,
         uint256 value,
         uint256 gasLimit,
-        bytes data
+        bytes data,
+        bytes32 withdrawalHash
     );
-
-    event MessagePassedExtension1(bytes32 indexed hash);
 
     event WithdrawerBalanceBurnt(uint256 indexed amount);
 
@@ -42,9 +41,6 @@ contract L2ToL1MessagePasserTest is CommonTest {
     ) external {
         uint256 nonce = messagePasser.nonce();
 
-        vm.expectEmit(true, true, true, true);
-        emit MessagePassed(nonce, _sender, _target, _value, _gasLimit, _data);
-
         bytes32 withdrawalHash = Hashing.hashWithdrawal(
             Types.WithdrawalTransaction({
                 nonce: nonce,
@@ -57,7 +53,7 @@ contract L2ToL1MessagePasserTest is CommonTest {
         );
 
         vm.expectEmit(true, true, true, true);
-        emit MessagePassedExtension1(withdrawalHash);
+        emit MessagePassed(nonce, _sender, _target, _value, _gasLimit, _data, withdrawalHash);
 
         vm.deal(_sender, _value);
         vm.prank(_sender);
@@ -72,9 +68,6 @@ contract L2ToL1MessagePasserTest is CommonTest {
 
     // Test: initiateWithdrawal should emit the correct log when called by a contract
     function test_initiateWithdrawal_fromContract() external {
-        vm.expectEmit(true, true, true, true);
-        emit MessagePassed(messagePasser.nonce(), address(this), address(4), 100, 64000, hex"");
-
         bytes32 withdrawalHash = Hashing.hashWithdrawal(
             Types.WithdrawalTransaction(
                 messagePasser.nonce(),
@@ -87,7 +80,15 @@ contract L2ToL1MessagePasserTest is CommonTest {
         );
 
         vm.expectEmit(true, true, true, true);
-        emit MessagePassedExtension1(withdrawalHash);
+        emit MessagePassed(
+            messagePasser.nonce(),
+            address(this),
+            address(4),
+            100,
+            64000,
+            hex"",
+            withdrawalHash
+        );
 
         vm.deal(address(this), 2**64);
         messagePasser.initiateWithdrawal{ value: 100 }(address(4), 64000, hex"");
@@ -104,12 +105,15 @@ contract L2ToL1MessagePasserTest is CommonTest {
         // EOA emulation
         vm.prank(alice, alice);
         vm.deal(alice, 2**64);
+<<<<<<< HEAD
         vm.expectEmit(true, true, true, true);
         emit MessagePassed(nonce, alice, target, value, gasLimit, data);
 
 <<<<<<< HEAD
         bytes32 withdrawalHash = WithdrawalVerifier.withdrawalHash(
 =======
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.28
         bytes32 withdrawalHash = Hashing.hashWithdrawal(
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -134,6 +138,9 @@ contract L2ToL1MessagePasserTest is CommonTest {
             Types.WithdrawalTransaction(nonce, alice, target, value, gasLimit, data)
 >>>>>>> @eth-optimism/l2geth@0.5.27
         );
+
+        vm.expectEmit(true, true, true, true);
+        emit MessagePassed(nonce, alice, target, value, gasLimit, data, withdrawalHash);
 
         messagePasser.initiateWithdrawal{ value: value }(target, gasLimit, data);
 

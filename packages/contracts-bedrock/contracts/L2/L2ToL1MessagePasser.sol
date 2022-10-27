@@ -51,6 +51,7 @@ contract L2ToL1MessagePasser is Semver {
      * @param value    The ETH value submitted for withdrawal, to be forwarded to the target.
      * @param gasLimit The minimum amount of gas that must be provided when withdrawing on L1.
      * @param data     The data to be forwarded to the target on L1.
+     * @param withdrawalHash     The hash of the withdrawal.
      */
     event MessagePassed(
         uint256 indexed nonce,
@@ -58,10 +59,12 @@ contract L2ToL1MessagePasser is Semver {
         address indexed target,
         uint256 value,
         uint256 gasLimit,
-        bytes data
+        bytes data,
+        bytes32 withdrawalHash
     );
 
     /**
+<<<<<<< HEAD
      * @notice Emitted any time a withdrawal is initiated. An extension to
      *         MessagePassed to allow for a 4th indexed argument.
      *
@@ -73,6 +76,8 @@ contract L2ToL1MessagePasser is Semver {
     event MessagePassedExtension1(bytes32 indexed hash);
 
     /**
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.28
      * @notice Emitted when the balance of this contract is burned.
      *
 >>>>>>> @eth-optimism/l2geth@0.5.27
@@ -176,9 +181,7 @@ contract L2ToL1MessagePasser is Semver {
 
         sentMessages[withdrawalHash] = true;
 
-        emit MessagePassed(nonce, msg.sender, _target, msg.value, _gasLimit, _data);
-        emit MessagePassedExtension1(withdrawalHash);
-
+        emit MessagePassed(nonce, msg.sender, _target, msg.value, _gasLimit, _data, withdrawalHash);
         unchecked {
             ++nonce;
         }

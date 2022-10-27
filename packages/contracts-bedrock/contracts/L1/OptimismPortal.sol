@@ -275,7 +275,7 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
 >>>>>>> v0.5.24
         uint256 _l2BlockNumber,
         Types.OutputRootProof calldata _outputRootProof,
-        bytes calldata _withdrawalProof
+        bytes[] calldata _withdrawalProof
     ) external {
         // Prevent nested withdrawals within withdrawals.
 >>>>>>> v0.5.23
@@ -482,7 +482,7 @@ contract OptimismPortal is Initializable, ResourceMetering, Semver {
     function _verifyWithdrawalInclusion(
         bytes32 _withdrawalHash,
         bytes32 _storageRoot,
-        bytes memory _proof
+        bytes[] memory _proof
     ) internal pure returns (bool) {
         bytes32 storageKey = keccak256(
             abi.encode(
