@@ -1,10 +1,11 @@
 package statedumper
 
 import (
-	"github.com/ethereum-optimism/optimism/l2geth/common"
 	"io"
 	"os"
 	"testing"
+
+	"github.com/ethereum-optimism/optimism/l2geth/common"
 )
 
 func TestFileStateDumper(t *testing.T) {
