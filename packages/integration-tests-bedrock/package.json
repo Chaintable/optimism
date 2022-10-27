@@ -47,7 +47,7 @@
 =======
     "@eth-optimism/contracts": "0.5.37",
     "@eth-optimism/core-utils": "0.10.1",
-    "@eth-optimism/sdk": "1.6.8",
+    "@eth-optimism/sdk": "1.6.9",
     "@ethersproject/abstract-provider": "^5.7.0",
 >>>>>>> @eth-optimism/l2geth@0.5.27
     "chai-as-promised": "^7.1.1",

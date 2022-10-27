@@ -2,10 +2,19 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 <<<<<<< HEAD:indexer/CHANGELOG.md
 =======
 =======
 =======
+=======
+## 0.3.1
+
+### Patch Changes
+
+- 4006ef3a: Delete unused flags
+
+>>>>>>> @eth-optimism/l2geth@0.5.28
 ## 0.3.0
 
 ### Minor Changes

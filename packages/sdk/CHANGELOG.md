@@ -3,9 +3,20 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
 =======
+=======
+## 1.6.9
+
+### Patch Changes
+
+- Updated dependencies [db84317b]
+- Updated dependencies [9b90c732]
+  - @eth-optimism/contracts-bedrock@0.8.3
+
+>>>>>>> @eth-optimism/l2geth@0.5.28
 ## 1.6.8
 
 ### Patch Changes

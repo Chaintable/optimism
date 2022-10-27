@@ -10,6 +10,7 @@ import { L2CrossDomainMessenger } from "../L2/L2CrossDomainMessenger.sol";
 import { L1CrossDomainMessenger } from "../L1/L1CrossDomainMessenger.sol";
 import { Hashing } from "../libraries/Hashing.sol";
 import { Encoding } from "../libraries/Encoding.sol";
+import { Types } from "../libraries/Types.sol";
 
 contract L2CrossDomainMessenger_Test is Messenger_Initializer {
     // Receiver address for testing
@@ -48,6 +49,14 @@ contract L2CrossDomainMessenger_Test is Messenger_Initializer {
     }
 
     function test_L2MessengerSendMessage() external {
+        bytes memory xDomainCallData = Encoding.encodeCrossDomainMessage(
+            L2Messenger.messageNonce(),
+            alice,
+            recipient,
+            0,
+            100,
+            hex"ff"
+        );
         vm.expectCall(
             address(messagePasser),
             abi.encodeWithSelector(
@@ -60,6 +69,7 @@ contract L2CrossDomainMessenger_Test is Messenger_Initializer {
 =======
 =======
                 L2Messenger.baseGas(hex"ff", 100),
+<<<<<<< HEAD
 >>>>>>> v0.5.24
                 Encoding.encodeCrossDomainMessage(
 >>>>>>> v0.5.23
@@ -70,6 +80,9 @@ contract L2CrossDomainMessenger_Test is Messenger_Initializer {
                     100,
                     hex"ff"
                 )
+=======
+                xDomainCallData
+>>>>>>> @eth-optimism/l2geth@0.5.28
             )
         );
 
@@ -87,6 +100,7 @@ contract L2CrossDomainMessenger_Test is Messenger_Initializer {
 =======
 =======
             L2Messenger.baseGas(hex"ff", 100),
+<<<<<<< HEAD
 >>>>>>> v0.5.24
             Encoding.encodeCrossDomainMessage(
 >>>>>>> v0.5.23
@@ -96,6 +110,18 @@ contract L2CrossDomainMessenger_Test is Messenger_Initializer {
                 0,
                 100,
                 hex"ff"
+=======
+            xDomainCallData,
+            Hashing.hashWithdrawal(
+                Types.WithdrawalTransaction({
+                    nonce: messagePasser.nonce(),
+                    sender: address(L2Messenger),
+                    target: address(L1Messenger),
+                    value: 0,
+                    gasLimit: L2Messenger.baseGas(hex"ff", 100),
+                    data: xDomainCallData
+                })
+>>>>>>> @eth-optimism/l2geth@0.5.28
             )
         );
 

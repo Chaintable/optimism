@@ -3,9 +3,18 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
 =======
+=======
+## 0.5.19
+
+### Patch Changes
+
+- @eth-optimism/sdk@1.6.9
+
+>>>>>>> @eth-optimism/l2geth@0.5.28
 ## 0.5.18
 
 ### Patch Changes
