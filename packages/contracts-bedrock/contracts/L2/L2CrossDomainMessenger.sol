@@ -68,8 +68,12 @@ contract L2CrossDomainMessenger is CrossDomainMessenger, Semver {
     function l1CrossDomainMessenger() public returns (address) {
 =======
     function l1CrossDomainMessenger() public view returns (address) {
+<<<<<<< HEAD
 >>>>>>> v0.5.23
         return otherMessenger;
+=======
+        return OTHER_MESSENGER;
+>>>>>>> @eth-optimism/l2geth@0.5.29
     }
 
     /**
@@ -99,7 +103,7 @@ contract L2CrossDomainMessenger is CrossDomainMessenger, Semver {
      * @inheritdoc CrossDomainMessenger
      */
     function _isOtherMessenger() internal view override returns (bool) {
-        return AddressAliasHelper.undoL1ToL2Alias(msg.sender) == otherMessenger;
+        return AddressAliasHelper.undoL1ToL2Alias(msg.sender) == OTHER_MESSENGER;
     }
 
     /**

@@ -15,7 +15,11 @@ import { PredeployAddresses } from "../libraries/PredeployAddresses.sol";
 >>>>>>> v0.5.23
 =======
 import { Predeploys } from "../libraries/Predeploys.sol";
+<<<<<<< HEAD
 >>>>>>> v0.5.24
+=======
+import { FeeVault } from "../universal/FeeVault.sol";
+>>>>>>> @eth-optimism/l2geth@0.5.29
 
 /**
  * @custom:proxied
@@ -25,28 +29,29 @@ import { Predeploys } from "../libraries/Predeploys.sol";
  *         transaction processing and block production.
  */
 <<<<<<< HEAD
+<<<<<<< HEAD
 contract SequencerFeeVault {
 =======
 contract SequencerFeeVault is Semver {
 >>>>>>> v0.5.23
+=======
+contract SequencerFeeVault is FeeVault, Semver {
+>>>>>>> @eth-optimism/l2geth@0.5.29
     /**
-     * @notice Minimum balance before a withdrawal can be triggered.
+     * @custom:spacer l1FeeWallet
+     * @notice Spacer for backwards compatibility.
      */
-    uint256 public constant MIN_WITHDRAWAL_AMOUNT = 15 ether;
-
-    /**
-     * @notice Wallet that will receive the fees on L1.
-     */
-    address public l1FeeWallet;
+    address private spacer_0_0_20;
 
     /**
 <<<<<<< HEAD
 =======
      * @custom:semver 0.0.1
      */
-    constructor() Semver(0, 0, 1) {}
+    constructor(address _recipient) FeeVault(_recipient, 10 ether) Semver(0, 0, 1) {}
 
     /**
+<<<<<<< HEAD
 >>>>>>> v0.5.23
      * @notice Allow the contract to receive ETH.
      */
@@ -78,5 +83,12 @@ contract SequencerFeeVault is Semver {
             value: address(this).balance
         }(Predeploys.LEGACY_ERC20_ETH, l1FeeWallet, address(this).balance, 0, bytes(""));
 >>>>>>> v0.5.24
+=======
+     * @custom:legacy
+     * @notice: Legacy getter for the recipient
+     */
+    function l1FeeWallet() public view returns (address) {
+        return RECIPIENT;
+>>>>>>> @eth-optimism/l2geth@0.5.29
     }
 }

@@ -8,8 +8,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
-	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,7 +15,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethclient/gethclient"
-	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
+	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
 )
 
 <<<<<<< HEAD
@@ -174,29 +174,11 @@ loop:
 }
 
 type ProofClient interface {
-	TransactionReceipt(context.Context, common.Hash) (*types.Receipt, error)
 	GetProof(context.Context, common.Address, []string, *big.Int) (*gethclient.AccountResult, error)
 }
 
-type ec = *ethclient.Client
-type gc = *gethclient.Client
-
-type Client struct {
-	ec
-	gc
-}
-
-// Ensure that ProofClient and Client interfaces are valid
-var _ ProofClient = &Client{}
-
-// NewClient wraps a RPC client with both ethclient and gethclient methods.
-// Implements ProofClient
-func NewClient(client *rpc.Client) *Client {
-	return &Client{
-		ethclient.NewClient(client),
-		gethclient.New(client),
-	}
-
+type ReceiptClient interface {
+	TransactionReceipt(context.Context, common.Hash) (*types.Receipt, error)
 }
 
 <<<<<<< HEAD
@@ -237,9 +219,9 @@ type FinalizedWithdrawalParameters struct {
 // The header provided is very important. It should be a block (timestamp) for which there is a submitted output in the L2 Output Oracle
 >>>>>>> v0.5.23
 // contract. If not, the withdrawal will fail as it the storage proof cannot be verified if there is no submitted state root.
-func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txHash common.Hash, header *types.Header) (FinalizedWithdrawalParameters, error) {
+func FinalizeWithdrawalParameters(ctx context.Context, proofCl ProofClient, l2ReceiptCl ReceiptClient, txHash common.Hash, header *types.Header) (FinalizedWithdrawalParameters, error) {
 	// Transaction receipt
-	receipt, err := l2client.TransactionReceipt(ctx, txHash)
+	receipt, err := l2ReceiptCl.TransactionReceipt(ctx, txHash)
 	if err != nil {
 		return FinalizedWithdrawalParameters{}, err
 	}
@@ -258,10 +240,14 @@ func FinalizeWithdrawalParameters(ctx context.Context, l2client ProofClient, txH
 	}
 	slot := StorageSlotOfWithdrawalHash(withdrawalHash)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	p, err := l2client.GetProof(ctx, common.HexToAddress(predeploys.L2ToL1MessagePasser), []string{slot.String()}, header.Number)
 =======
 	p, err := l2client.GetProof(ctx, predeploys.L2ToL1MessagePasserAddr, []string{slot.String()}, header.Number)
 >>>>>>> v0.5.23
+=======
+	p, err := proofCl.GetProof(ctx, predeploys.L2ToL1MessagePasserAddr, []string{slot.String()}, header.Number)
+>>>>>>> @eth-optimism/l2geth@0.5.29
 	if err != nil {
 		return FinalizedWithdrawalParameters{}, err
 	}

@@ -19,15 +19,23 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/version"
+<<<<<<< HEAD
 >>>>>>> v0.5.23
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.29
 )
 
 <<<<<<< HEAD
@@ -38,7 +46,7 @@ const MaxL2BlocksPerBatchResponse = 100
 =======
 >>>>>>> v0.5.23
 type l2EthClient interface {
-	InfoByRpcNumber(ctx context.Context, num rpc.BlockNumber) (eth.BlockInfo, error)
+	InfoByHash(ctx context.Context, hash common.Hash) (eth.BlockInfo, error)
 	// GetProof returns a proof of the account, it may return a nil result without error if the address was not found.
 	GetProof(ctx context.Context, address common.Address, blockTag string) (*eth.AccountResult, error)
 }
@@ -58,6 +66,7 @@ func newNodeAPI(config *rollup.Config, l2Client l2EthClient, log log.Logger) *no
 =======
 type driverClient interface {
 	SyncStatus(ctx context.Context) (*eth.SyncStatus, error)
+	BlockRefWithStatus(ctx context.Context, num uint64) (eth.L2BlockRef, *eth.SyncStatus, error)
 	ResetDerivationPipeline(context.Context) error
 }
 
@@ -103,6 +112,7 @@ func NewNodeAPI(config *rollup.Config, l2Client l2EthClient, dr driverClient, lo
 	}
 }
 
+<<<<<<< HEAD
 func (n *nodeAPI) OutputAtBlock(ctx context.Context, number rpc.BlockNumber) ([]eth.Bytes32, error) {
 <<<<<<< HEAD
 =======
@@ -110,38 +120,57 @@ func (n *nodeAPI) OutputAtBlock(ctx context.Context, number rpc.BlockNumber) ([]
 	defer recordDur()
 >>>>>>> v0.5.23
 	// TODO: rpc.BlockNumber doesn't support the "safe" tag. Need a new type
+=======
+func (n *nodeAPI) OutputAtBlock(ctx context.Context, number hexutil.Uint64) (*eth.OutputResponse, error) {
+	recordDur := n.m.RecordRPCServerRequest("optimism_outputAtBlock")
+	defer recordDur()
+>>>>>>> @eth-optimism/l2geth@0.5.29
 
-	head, err := n.client.InfoByRpcNumber(ctx, number)
+	ref, status, err := n.dr.BlockRefWithStatus(ctx, uint64(number))
 	if err != nil {
-		n.log.Error("failed to get block", "err", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to get L2 block ref with sync status: %w", err)
+	}
+
+	head, err := n.client.InfoByHash(ctx, ref.Hash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get L2 block by hash %s: %w", ref, err)
 	}
 	if head == nil {
 		return nil, ethereum.NotFound
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	proof, err := n.client.GetProof(ctx, common.HexToAddress(predeploys.L2ToL1MessagePasser), toBlockNumArg(number))
 =======
 	proof, err := n.client.GetProof(ctx, predeploys.L2ToL1MessagePasserAddr, toBlockNumArg(number))
 >>>>>>> v0.5.23
+=======
+	proof, err := n.client.GetProof(ctx, predeploys.L2ToL1MessagePasserAddr, ref.Hash.String())
+>>>>>>> @eth-optimism/l2geth@0.5.29
 	if err != nil {
-		n.log.Error("failed to get contract proof", "err", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to get contract proof at block %s: %w", ref, err)
 	}
 	if proof == nil {
-		return nil, ethereum.NotFound
+		return nil, fmt.Errorf("proof %w", ethereum.NotFound)
 	}
 	// make sure that the proof (including storage hash) that we retrieved is correct by verifying it against the state-root
 	if err := proof.Verify(head.Root()); err != nil {
 		n.log.Error("invalid withdrawal root detected in block", "stateRoot", head.Root(), "blocknum", number, "msg", err)
-		return nil, fmt.Errorf("invalid withdrawal root hash")
+		return nil, fmt.Errorf("invalid withdrawal root hash, state root was %s: %w", head.Root(), err)
 	}
 
 	var l2OutputRootVersion eth.Bytes32 // it's zero for now
 	l2OutputRoot := rollup.ComputeL2OutputRoot(l2OutputRootVersion, head.Hash(), head.Root(), proof.StorageHash)
 
-	return []eth.Bytes32{l2OutputRootVersion, l2OutputRoot}, nil
+	return &eth.OutputResponse{
+		Version:               l2OutputRootVersion,
+		OutputRoot:            l2OutputRoot,
+		BlockRef:              ref,
+		WithdrawalStorageRoot: proof.StorageHash,
+		StateRoot:             head.Root(),
+		Status:                status,
+	}, nil
 }
 
 <<<<<<< HEAD
@@ -169,6 +198,7 @@ func (n *nodeAPI) Version(ctx context.Context) (string, error) {
 >>>>>>> v0.5.23
 	return version.Version + "-" + version.Meta, nil
 }
+<<<<<<< HEAD
 
 func toBlockNumArg(number rpc.BlockNumber) string {
 	// never returns an error
@@ -350,3 +380,5 @@ func (n *nodeAPI) GetBatchBundle(ctx context.Context, req *BatchBundleRequest) (
 }
 =======
 >>>>>>> v0.5.23
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.29

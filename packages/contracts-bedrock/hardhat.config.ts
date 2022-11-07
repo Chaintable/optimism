@@ -1,4 +1,5 @@
 import { ethers } from 'ethers'
+<<<<<<< HEAD
 import { HardhatUserConfig, task, subtask } from 'hardhat/config'
 import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/task-names'
 <<<<<<< HEAD
@@ -11,6 +12,9 @@ import '@eth-optimism/hardhat-deploy-config'
 
 import './tasks/deposits'
 =======
+=======
+import { HardhatUserConfig } from 'hardhat/config'
+>>>>>>> @eth-optimism/l2geth@0.5.29
 
 // Hardhat plugins
 import '@eth-optimism/hardhat-deploy-config'
@@ -29,22 +33,6 @@ import './tasks/rollup-config'
 =======
 import './tasks'
 >>>>>>> v0.5.24
-
-subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
-  async (_, __, runSuper) => {
-    const paths = await runSuper()
-
-    return paths.filter((p: string) => !p.endsWith('.t.sol'))
-  }
-)
-
-task('accounts', 'Prints the list of accounts', async (_, hre) => {
-  const accounts = await hre.ethers.getSigners()
-
-  for (const account of accounts) {
-    console.log(account.address)
-  }
-})
 
 const config: HardhatUserConfig = {
   networks: {
@@ -83,6 +71,12 @@ const config: HardhatUserConfig = {
       url: process.env.L1_RPC || '',
       accounts: [process.env.PRIVATE_KEY_DEPLOYER || ethers.constants.HashZero],
     },
+    'mainnet-forked': {
+      chainId: 1,
+      url: process.env.L1_RPC || '',
+      accounts: [process.env.PRIVATE_KEY_DEPLOYER || ethers.constants.HashZero],
+      live: false,
+    },
   },
   foundry: {
     buildInfo: true,
@@ -107,7 +101,13 @@ const config: HardhatUserConfig = {
   },
   deployConfigSpec: {
     // Address of the L1 proxy admin owner.
-    proxyAdminOwner: {
+    finalSystemOwner: {
+      type: 'address',
+      default: ethers.constants.AddressZero,
+    },
+
+    // Address of the system controller.
+    controller: {
       type: 'address',
       default: ethers.constants.AddressZero,
     },
@@ -171,11 +171,6 @@ const config: HardhatUserConfig = {
     // Address of the key the sequencer uses to sign blocks on the P2P layer
     // "p2p_sequencer_address" in rollup config.
     p2pSequencerAddress: {
-      type: 'address',
-    },
-    // L2 address used to send all priority fees to, also known as the coinbase address in the block.
-    // "fee_recipient_address" in rollup config.
-    optimismL2FeeRecipient: {
       type: 'address',
     },
     // L1 address that batches are sent to.
@@ -256,6 +251,10 @@ const config: HardhatUserConfig = {
     finalizationPeriodSeconds: {
       type: 'number',
       default: 2,
+    },
+
+    systemConfigOwner: {
+      type: 'address',
     },
 
     // Optional L1 genesis block values. These must ONLY be used by the L1 genesis config script.
@@ -407,6 +406,8 @@ const config: HardhatUserConfig = {
     ],
     deployments: {
       goerli: ['../contracts/deployments/goerli'],
+      mainnet: ['../contracts/deployments/mainnet'],
+      'mainnet-forked': ['../contracts/deployments/mainnet'],
     },
 >>>>>>> v0.5.23
   },

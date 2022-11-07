@@ -19,6 +19,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core"
+	geth_eth "github.com/ethereum/go-ethereum/eth"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/rpc"
+	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
+	"github.com/stretchr/testify/require"
+
 	bss "github.com/ethereum-optimism/optimism/op-batcher"
 	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
 <<<<<<< HEAD
@@ -45,6 +56,7 @@ import (
 =======
 	oplog "github.com/ethereum-optimism/optimism/op-service/log"
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> v0.5.24
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -60,6 +72,8 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/stretchr/testify/require"
+=======
+>>>>>>> @eth-optimism/l2geth@0.5.29
 )
 
 var (
@@ -94,6 +108,8 @@ func DefaultSystemConfig(t *testing.T) SystemConfig {
 			L2OutputOracleProposer:           addresses.Proposer,
 			L2OutputOracleOwner:              common.Address{}, // tbd
 
+			SystemConfigOwner: addresses.SysCfgOwner,
+
 			L1BlockTime:                 2,
 			L1GenesisBlockNonce:         4660,
 			CliqueSignerAddress:         addresses.CliqueSigner,
@@ -118,14 +134,12 @@ func DefaultSystemConfig(t *testing.T) SystemConfig {
 			L2GenesisBlockParentHash:    common.Hash{},
 			L2GenesisBlockBaseFeePerGas: uint642big(7),
 
-			OptimismBaseFeeRecipient:    common.Address{0: 0x52, 19: 0xf0}, // tbd
-			OptimismL1FeeRecipient:      common.Address{0: 0x52, 19: 0xf1},
-			OptimismL2FeeRecipient:      common.Address{0: 0x52, 19: 0xf2}, // tbd
+			OptimismBaseFeeRecipient:    predeploys.BaseFeeVaultAddr,
+			OptimismL1FeeRecipient:      predeploys.L1FeeVaultAddr,
 			L2CrossDomainMessengerOwner: common.Address{0: 0x52, 19: 0xf3}, // tbd
 			GasPriceOracleOwner:         addresses.Alice,                   // tbd
 			GasPriceOracleOverhead:      0,
 			GasPriceOracleScalar:        0,
-			GasPriceOracleDecimals:      0,
 			DeploymentWaitConfirmations: 1,
 
 			EIP1559Elasticity:  2,
@@ -166,7 +180,8 @@ func DefaultSystemConfig(t *testing.T) SystemConfig {
 			"batcher":   testlog.Logger(t, log.LvlInfo).New("role", "batcher"),
 			"proposer":  testlog.Logger(t, log.LvlCrit).New("role", "proposer"),
 		},
-		P2PTopology: nil, // no P2P connectivity by default
+		P2PTopology:           nil, // no P2P connectivity by default
+		NonFinalizedProposals: false,
 	}
 }
 
@@ -240,6 +255,7 @@ type SystemConfig struct {
 	P2PTopology map[string][]string
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 	BaseFeeRecipient common.Address
@@ -247,6 +263,11 @@ type SystemConfig struct {
 >>>>>>> v0.5.23
 =======
 >>>>>>> @eth-optimism/l2geth@0.5.27
+=======
+
+	// If the proposer can make proposals for L2 blocks derived from L1 blocks which are not finalized on L1 yet.
+	NonFinalizedProposals bool
+>>>>>>> @eth-optimism/l2geth@0.5.29
 }
 
 type System struct {
@@ -496,7 +517,8 @@ func (cfg SystemConfig) Start() (*System, error) {
 					Hash:   l2Genesis.ToBlock().Hash(),
 					Number: 0,
 				},
-				L2Time: uint64(cfg.DeployConfig.L1GenesisBlockTimestamp),
+				L2Time:       uint64(cfg.DeployConfig.L1GenesisBlockTimestamp),
+				SystemConfig: e2eutils.SystemConfigFromDeployConfig(cfg.DeployConfig),
 			},
 			BlockTime:              cfg.DeployConfig.L2BlockTime,
 			MaxSequencerDrift:      cfg.DeployConfig.MaxSequencerDrift,
@@ -505,10 +527,9 @@ func (cfg SystemConfig) Start() (*System, error) {
 			L1ChainID:              cfg.L1ChainIDBig(),
 			L2ChainID:              cfg.L2ChainIDBig(),
 			P2PSequencerAddress:    cfg.DeployConfig.P2PSequencerAddress,
-			FeeRecipientAddress:    l2Genesis.Coinbase,
 			BatchInboxAddress:      cfg.DeployConfig.BatchInboxAddress,
-			BatchSenderAddress:     cfg.DeployConfig.BatchSenderAddress,
 			DepositContractAddress: predeploys.DevOptimismPortalAddr,
+			L1SystemConfigAddress:  predeploys.DevSystemConfigAddr,
 		}
 >>>>>>> @eth-optimism/l2geth@0.5.27
 	}
@@ -821,13 +842,13 @@ func (cfg SystemConfig) Start() (*System, error) {
 	// L2Output Submitter
 	sys.L2OutputSubmitter, err = l2os.NewL2OutputSubmitter(l2os.Config{
 		L1EthRpc:                  sys.Nodes["l1"].WSEndpoint(),
-		L2EthRpc:                  sys.Nodes["sequencer"].WSEndpoint(),
 		RollupRpc:                 sys.RollupNodes["sequencer"].HTTPEndpoint(),
 		L2OOAddress:               predeploys.DevL2OutputOracleAddr.String(),
 		PollInterval:              50 * time.Millisecond,
 		NumConfirmations:          1,
 		ResubmissionTimeout:       3 * time.Second,
 		SafeAbortNonceTooLowCount: 3,
+<<<<<<< HEAD
 <<<<<<< HEAD
 		LogLevel:                  "info",
 		LogTerminal:               true,
@@ -837,6 +858,9 @@ func (cfg SystemConfig) Start() (*System, error) {
 	}, "", log.New())
 =======
 =======
+=======
+		AllowNonFinalized:         cfg.NonFinalizedProposals,
+>>>>>>> @eth-optimism/l2geth@0.5.29
 		LogConfig: oplog.CLIConfig{
 			Level:  "info",
 			Format: "text",

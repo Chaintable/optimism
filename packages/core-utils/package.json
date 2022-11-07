@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "0.8.7",
 =======
   "version": "0.9.1",
@@ -13,6 +14,9 @@
 =======
   "version": "0.10.1",
 >>>>>>> @eth-optimism/l2geth@0.5.27
+=======
+  "version": "0.11.0",
+>>>>>>> @eth-optimism/l2geth@0.5.29
   "description": "[Optimism] Core typescript utilities",
   "main": "dist/index",
   "types": "dist/index",
