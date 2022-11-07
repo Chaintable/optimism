@@ -47,7 +47,7 @@ contract L1CrossDomainMessenger is CrossDomainMessenger, Semver {
     /**
      * @notice Address of the OptimismPortal.
      */
-    OptimismPortal public immutable portal;
+    OptimismPortal public immutable PORTAL;
 
     /**
      * @custom:semver 0.0.1
@@ -58,13 +58,16 @@ contract L1CrossDomainMessenger is CrossDomainMessenger, Semver {
         Semver(0, 0, 1)
         CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER)
     {
-        portal = _portal;
-        initialize();
+        PORTAL = _portal;
+        initialize(address(0));
     }
 
     /**
      * @notice Initializer.
+     *
+     * @param _owner Address of the initial owner of this contract.
      */
+<<<<<<< HEAD
     function initialize() public initializer {
 <<<<<<< HEAD
         address[] memory blockedSystemAddresses = new address[](1);
@@ -90,6 +93,11 @@ contract L1CrossDomainMessenger is CrossDomainMessenger, Semver {
 =======
         __CrossDomainMessenger_init();
 >>>>>>> @eth-optimism/l2geth@0.5.27
+=======
+    function initialize(address _owner) public initializer {
+        __CrossDomainMessenger_init();
+        _transferOwnership(_owner);
+>>>>>>> @eth-optimism/l2geth@0.5.29
     }
 
     /**
@@ -101,20 +109,20 @@ contract L1CrossDomainMessenger is CrossDomainMessenger, Semver {
         uint256 _value,
         bytes memory _data
     ) internal override {
-        portal.depositTransaction{ value: _value }(_to, _value, _gasLimit, false, _data);
+        PORTAL.depositTransaction{ value: _value }(_to, _value, _gasLimit, false, _data);
     }
 
     /**
      * @inheritdoc CrossDomainMessenger
      */
     function _isOtherMessenger() internal view override returns (bool) {
-        return msg.sender == address(portal) && portal.l2Sender() == otherMessenger;
+        return msg.sender == address(PORTAL) && PORTAL.l2Sender() == OTHER_MESSENGER;
     }
 
     /**
      * @inheritdoc CrossDomainMessenger
      */
     function _isUnsafeTarget(address _target) internal view override returns (bool) {
-        return _target == address(this) || _target == address(portal);
+        return _target == address(this) || _target == address(PORTAL);
     }
 }

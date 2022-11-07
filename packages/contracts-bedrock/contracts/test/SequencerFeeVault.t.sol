@@ -4,6 +4,7 @@ pragma solidity 0.8.15;
 import { Bridge_Initializer } from "./CommonTest.t.sol";
 
 import { SequencerFeeVault } from "../L2/SequencerFeeVault.sol";
+<<<<<<< HEAD
 import { L2StandardBridge } from "../L2/L2StandardBridge.sol";
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -20,6 +21,9 @@ contract SequencerFeeVault_Test is Bridge_Initializer {
         SequencerFeeVault(payable(PredeployAddresses.SEQUENCER_FEE_WALLET));
 >>>>>>> v0.5.23
 =======
+=======
+import { StandardBridge } from "../universal/StandardBridge.sol";
+>>>>>>> @eth-optimism/l2geth@0.5.29
 import { Predeploys } from "../libraries/Predeploys.sol";
 
 contract SequencerFeeVault_Test is Bridge_Initializer {
@@ -32,8 +36,11 @@ contract SequencerFeeVault_Test is Bridge_Initializer {
 >>>>>>> @eth-optimism/l2geth@0.5.27
     address constant recipient = address(256);
 
+    event Withdrawal(uint256 value, address to, address from);
+
     function setUp() public override {
         super.setUp();
+<<<<<<< HEAD
 
 <<<<<<< HEAD
         vm.etch(
@@ -65,10 +72,13 @@ contract SequencerFeeVault_Test is Bridge_Initializer {
             bytes32(uint256(0)),
             bytes32(uint256(uint160(recipient)))
         );
+=======
+        vm.etch(Predeploys.SEQUENCER_FEE_WALLET, address(new SequencerFeeVault(recipient)).code);
+>>>>>>> @eth-optimism/l2geth@0.5.29
     }
 
     function test_minWithdrawalAmount() external {
-        assertEq(vault.MIN_WITHDRAWAL_AMOUNT(), 15 ether);
+        assertEq(vault.MIN_WITHDRAWAL_AMOUNT(), 10 ether);
     }
 
     function test_constructor() external {
@@ -89,13 +99,16 @@ contract SequencerFeeVault_Test is Bridge_Initializer {
         assert(address(vault).balance < vault.MIN_WITHDRAWAL_AMOUNT());
 
         vm.expectRevert(
-            "SequencerFeeVault: withdrawal amount must be greater than minimum withdrawal amount"
+            "FeeVault: withdrawal amount must be greater than minimum withdrawal amount"
         );
         vault.withdraw();
     }
 
     function test_withdraw() external {
         vm.deal(address(vault), vault.MIN_WITHDRAWAL_AMOUNT() + 1);
+
+        vm.expectEmit(true, true, true, true);
+        emit Withdrawal(address(vault).balance, vault.RECIPIENT(), address(this));
 
         vm.expectCall(
 <<<<<<< HEAD
@@ -112,13 +125,17 @@ contract SequencerFeeVault_Test is Bridge_Initializer {
 >>>>>>> v0.5.23
 =======
             Predeploys.L2_STANDARD_BRIDGE,
+            address(vault).balance,
             abi.encodeWithSelector(
+<<<<<<< HEAD
                 L2StandardBridge.withdrawTo.selector,
                 Predeploys.LEGACY_ERC20_ETH,
 >>>>>>> v0.5.24
+=======
+                StandardBridge.bridgeETHTo.selector,
+>>>>>>> @eth-optimism/l2geth@0.5.29
                 vault.l1FeeWallet(),
-                address(vault).balance,
-                0,
+                20000,
                 bytes("")
             )
         );

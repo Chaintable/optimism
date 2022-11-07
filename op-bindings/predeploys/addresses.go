@@ -38,7 +38,12 @@ const (
 	L2ERC721Bridge                = "0x4200000000000000000000000000000000000014"
 	OptimismMintableERC721Factory = "0x4200000000000000000000000000000000000017"
 	ProxyAdmin                    = "0x4200000000000000000000000000000000000018"
+<<<<<<< HEAD
 >>>>>>> @eth-optimism/l2geth@0.5.28
+=======
+	BaseFeeVault                  = "0x4200000000000000000000000000000000000019"
+	L1FeeVault                    = "0x420000000000000000000000000000000000001a"
+>>>>>>> @eth-optimism/l2geth@0.5.29
 )
 <<<<<<< HEAD
 =======
@@ -60,6 +65,8 @@ var (
 	L2ERC721BridgeAddr                = common.HexToAddress(L2ERC721Bridge)
 	OptimismMintableERC721FactoryAddr = common.HexToAddress(OptimismMintableERC721Factory)
 	ProxyAdminAddr                    = common.HexToAddress(ProxyAdmin)
+	BaseFeeVaultAddr                  = common.HexToAddress(BaseFeeVault)
+	L1FeeVaultAddr                    = common.HexToAddress(L1FeeVault)
 
 	Predeploys = make(map[string]*common.Address)
 )
@@ -84,5 +91,7 @@ func init() {
 	Predeploys["L2ERC721Bridge"] = &L2ERC721BridgeAddr
 	Predeploys["OptimismMintableERC721Factory"] = &OptimismMintableERC721FactoryAddr
 	Predeploys["ProxyAdmin"] = &ProxyAdminAddr
+	Predeploys["BaseFeeVault"] = &BaseFeeVaultAddr
+	Predeploys["L1FeeVault"] = &L1FeeVaultAddr
 }
 >>>>>>> v0.5.24

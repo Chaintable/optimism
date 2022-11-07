@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "1.1.9",
 =======
   "version": "1.2.1",
@@ -17,6 +18,9 @@
 =======
   "version": "1.6.9",
 >>>>>>> @eth-optimism/l2geth@0.5.28
+=======
+  "version": "1.6.10",
+>>>>>>> @eth-optimism/l2geth@0.5.29
   "description": "[Optimism] Tools for working with Optimism",
   "main": "dist/index",
   "types": "dist/index",
@@ -67,6 +71,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@eth-optimism/contracts": "0.5.28",
     "@eth-optimism/core-utils": "0.8.7",
 =======
@@ -87,6 +92,11 @@
 =======
     "@eth-optimism/contracts-bedrock": "0.8.3",
 >>>>>>> @eth-optimism/l2geth@0.5.28
+=======
+    "@eth-optimism/contracts": "0.5.38",
+    "@eth-optimism/core-utils": "0.11.0",
+    "@eth-optimism/contracts-bedrock": "0.9.0",
+>>>>>>> @eth-optimism/l2geth@0.5.29
     "lodash": "^4.17.21",
     "merkletreejs": "^0.2.27",
     "rlp": "^2.2.7"

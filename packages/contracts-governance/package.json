@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "0.1.2",
 =======
   "version": "0.1.4",
@@ -13,6 +14,9 @@
 =======
   "version": "0.1.6",
 >>>>>>> @eth-optimism/l2geth@0.5.27
+=======
+  "version": "0.1.7",
+>>>>>>> @eth-optimism/l2geth@0.5.29
   "author": "Optimism PBC",
   "license": "MIT",
   "main": "dist/index",
@@ -43,6 +47,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@eth-optimism/sdk": "^1.1.9",
 =======
     "@eth-optimism/core-utils": "^0.9.1",
@@ -56,6 +61,10 @@
 =======
     "@eth-optimism/core-utils": "^0.10.1",
     "@eth-optimism/sdk": "^1.6.4",
+=======
+    "@eth-optimism/core-utils": "^0.11.0",
+    "@eth-optimism/sdk": "^1.6.10",
+>>>>>>> @eth-optimism/l2geth@0.5.29
     "@eth-optimism/hardhat-deploy-config": "^0.2.3",
     "@ethersproject/hardware-wallets": "^5.7.0",
 >>>>>>> @eth-optimism/l2geth@0.5.27

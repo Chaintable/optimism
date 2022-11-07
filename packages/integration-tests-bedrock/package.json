@@ -30,6 +30,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@eth-optimism/contracts": "0.5.28",
     "@eth-optimism/core-utils": "0.8.7",
     "@eth-optimism/sdk": "1.1.9",
@@ -48,6 +49,11 @@
     "@eth-optimism/contracts": "0.5.37",
     "@eth-optimism/core-utils": "0.10.1",
     "@eth-optimism/sdk": "1.6.9",
+=======
+    "@eth-optimism/contracts": "0.5.38",
+    "@eth-optimism/core-utils": "0.11.0",
+    "@eth-optimism/sdk": "1.6.10",
+>>>>>>> @eth-optimism/l2geth@0.5.29
     "@ethersproject/abstract-provider": "^5.7.0",
 >>>>>>> @eth-optimism/l2geth@0.5.27
     "chai-as-promised": "^7.1.1",

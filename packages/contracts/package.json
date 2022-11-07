@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "0.5.28",
 =======
   "version": "0.5.30",
@@ -13,6 +14,9 @@
 =======
   "version": "0.5.37",
 >>>>>>> @eth-optimism/l2geth@0.5.27
+=======
+  "version": "0.5.38",
+>>>>>>> @eth-optimism/l2geth@0.5.29
   "description": "[Optimism] L1 and L2 smart contracts for Optimism",
   "main": "dist/index",
   "types": "dist/index",
@@ -72,6 +76,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@eth-optimism/core-utils": "0.8.7",
 =======
     "@eth-optimism/core-utils": "0.9.1",
@@ -83,6 +88,9 @@
     "@ethersproject/abstract-signer": "^5.6.2"
 =======
     "@eth-optimism/core-utils": "0.10.1",
+=======
+    "@eth-optimism/core-utils": "0.11.0",
+>>>>>>> @eth-optimism/l2geth@0.5.29
     "@ethersproject/abstract-provider": "^5.7.0",
     "@ethersproject/abstract-signer": "^5.7.0"
 >>>>>>> @eth-optimism/l2geth@0.5.27

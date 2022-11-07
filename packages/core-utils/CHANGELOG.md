@@ -3,9 +3,18 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
 =======
+=======
+## 0.11.0
+
+### Minor Changes
+
+- 1e76cdb86: Changes the type for Bedrock withdrawal proofs
+
+>>>>>>> @eth-optimism/l2geth@0.5.29
 ## 0.10.1
 
 ### Patch Changes

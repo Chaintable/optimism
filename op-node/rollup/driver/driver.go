@@ -92,6 +92,7 @@ type L2Chain interface {
 	L2BlockRefByLabel(ctx context.Context, label eth.BlockLabel) (eth.L2BlockRef, error)
 >>>>>>> v0.5.24
 	L2BlockRefByHash(ctx context.Context, l2Hash common.Hash) (eth.L2BlockRef, error)
+	L2BlockRefByNumber(ctx context.Context, num uint64) (eth.L2BlockRef, error)
 }
 
 <<<<<<< HEAD
@@ -111,7 +112,8 @@ type DerivationPipeline interface {
 	Step(ctx context.Context) error
 	SetUnsafeHead(head eth.L2BlockRef)
 	AddUnsafePayload(payload *eth.ExecutionPayload)
-	Finalize(ref eth.BlockID)
+	Finalize(ref eth.L1BlockRef)
+	FinalizedL1() eth.L1BlockRef
 	Finalized() eth.L2BlockRef
 	SafeL2Head() eth.L2BlockRef
 	UnsafeL2Head() eth.L2BlockRef
@@ -229,7 +231,7 @@ func NewDriver(driverCfg *Config, cfg *rollup.Config, l2 L2Chain, l1 L1Chain, ne
 		l1State:          l1State,
 		derivation:       derivationPipeline,
 		idleDerivation:   false,
-		syncStatusReq:    make(chan chan eth.SyncStatus, 10),
+		stateReq:         make(chan chan struct{}),
 		forceReset:       make(chan chan struct{}, 10),
 		config:           cfg,
 		driverConfig:     driverCfg,

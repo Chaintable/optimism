@@ -4,10 +4,22 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
 =======
 =======
+=======
+## 0.3.21
+
+### Patch Changes
+
+- Updated dependencies [1e76cdb86]
+  - @eth-optimism/core-utils@0.11.0
+  - @eth-optimism/common-ts@0.6.7
+  - @eth-optimism/sdk@1.6.10
+
+>>>>>>> @eth-optimism/l2geth@0.5.29
 ## 0.3.20
 
 ### Patch Changes

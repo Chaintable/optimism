@@ -2,8 +2,17 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 =======
+=======
+## 0.2.2
+
+### Patch Changes
+
+- 8333f0f2c: Upgrade dependencies, add fork chain ID support
+
+>>>>>>> @eth-optimism/l2geth@0.5.29
 ## 0.2.1
 
 ### Patch Changes
