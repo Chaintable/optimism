@@ -321,6 +321,12 @@ func (b *LesApiBackend) RPCEVMTimeout() time.Duration {
 	return b.eth.config.RPCEVMTimeout
 }
 
+func (b *LesApiBackend) SetCallCache(key string, value interface{}, weight int64) {
+}
+func (b *LesApiBackend) GetCallCache(key string) (interface{}, bool) {
+	return nil, false
+}
+
 func (b *LesApiBackend) BloomStatus() (uint64, uint64) {
 	if b.eth.bloomIndexer == nil {
 		return 0, 0

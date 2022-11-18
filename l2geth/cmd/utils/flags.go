@@ -518,6 +518,11 @@ var (
 		Name:  "rpc.gascap",
 		Usage: "Sets a cap on gas that can be used in eth_call/estimateGas",
 	}
+	RPCCacheFlag = &cli.Uint64Flag{
+		Name:  "rpc.cache",
+		Usage: "Sets rpc cache that can be used in eth_call/eth_multiCall (0=infinite)",
+		Value: eth.DefaultConfig.RPCCache,
+	}
 	RPCGlobalEVMTimeoutFlag = &cli.DurationFlag{
 		Name:  "rpc.evmtimeout",
 		Usage: "Sets a timeout used for eth_call (0=infinite)",
@@ -1664,6 +1669,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	}
 	if ctx.GlobalIsSet(RPCGlobalGasCap.Name) {
 		cfg.RPCGasCap = new(big.Int).SetUint64(ctx.GlobalUint64(RPCGlobalGasCap.Name))
+	}
+	if ctx.IsSet(RPCCacheFlag.Name) {
+		cfg.RPCCache = ctx.Uint64(RPCCacheFlag.Name)
 	}
 	if ctx.GlobalIsSet(RPCGlobalEVMTimeoutFlag.Name) {
 		cfg.RPCEVMTimeout = ctx.Duration(RPCGlobalEVMTimeoutFlag.Name)

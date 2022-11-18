@@ -179,6 +179,7 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.RPCApiFlag,
 			utils.RPCGlobalGasCap,
 			utils.RPCGlobalEVMTimeoutFlag,
+			utils.RPCCacheFlag,
 			utils.RPCCORSDomainFlag,
 			utils.RPCVirtualHostsFlag,
 			utils.WSEnabledFlag,

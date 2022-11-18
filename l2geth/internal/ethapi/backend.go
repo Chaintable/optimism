@@ -48,6 +48,8 @@ type Backend interface {
 	ExtRPCEnabled() bool
 	RPCGasCap() *big.Int          // global gas cap for eth_call over rpc: DoS protection
 	RPCEVMTimeout() time.Duration // global timeout (0=infinite) for eth_call over rpc: DoS protection
+	SetCallCache(key string, value interface{}, weight int64)
+	GetCallCache(key string) (interface{}, bool)
 
 	// Blockchain API
 	SetHead(number uint64)

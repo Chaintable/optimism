@@ -19,10 +19,13 @@ package ethapi
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -42,6 +45,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/crypto"
 	"github.com/ethereum-optimism/optimism/l2geth/ethclient"
 	"github.com/ethereum-optimism/optimism/l2geth/log"
+	"github.com/ethereum-optimism/optimism/l2geth/metrics"
 	"github.com/ethereum-optimism/optimism/l2geth/p2p"
 	"github.com/ethereum-optimism/optimism/l2geth/params"
 	"github.com/ethereum-optimism/optimism/l2geth/rlp"
@@ -56,11 +60,25 @@ var (
 	errBlockNotIndexed = errors.New("block in range not indexed, this should never happen")
 )
 
+var (
+	ethCallCacheHit        = metrics.GetOrRegisterMeter("rpc/ethcall/cache/hit", nil)
+	ethCallCacheCount      = metrics.GetOrRegisterMeter("rpc/ethcall/cache/count", nil)
+	ethMultiCallCacheHit   = metrics.GetOrRegisterMeter("rpc/ethmulticall/cache/hit", nil)
+	ethMultiCallCacheCount = metrics.GetOrRegisterMeter("rpc/ethmulticall/cache/count", nil)
+)
+
 const (
 	// defaultDialTimeout is default duration the service will wait on
 	// startup to make a connection to either the L1 or L2 backends.
 	defaultDialTimeout = 5 * time.Second
 )
+
+type multicallResult struct {
+	Err       string        `json:"err"`
+	FromCache bool          `json:"fromCache"`
+	Result    hexutil.Bytes `json:"result"`
+	GasUsed   uint64        `json:"gasUsed"`
+}
 
 // PublicEthereumAPI provides an API to access Ethereum related information.
 // It offers only methods that operate on public data that is freely available to anyone.
@@ -659,10 +677,10 @@ func (s *PublicBlockChainAPI) GetHeaderByHash(ctx context.Context, hash common.H
 }
 
 // GetBlockByNumber returns the requested canonical block.
-// * When blockNr is -1 the chain head is returned.
-// * When blockNr is -2 the pending chain head is returned.
-// * When fullTx is true all transactions in the block are returned, otherwise
-//   only the transaction hash is returned.
+//   - When blockNr is -1 the chain head is returned.
+//   - When blockNr is -2 the pending chain head is returned.
+//   - When fullTx is true all transactions in the block are returned, otherwise
+//     only the transaction hash is returned.
 func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, number rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
 	block, err := s.b.BlockByNumber(ctx, number)
 	if block != nil && err == nil {
@@ -963,7 +981,30 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 	if overrides != nil {
 		accounts = *overrides
 	}
-	result, _, failed, err := DoCall(ctx, s.b, args, blockNrOrHash, accounts, &vm.Config{}, s.b.RPCEVMTimeout(), s.b.RPCGasCap())
+
+	var result hexutil.Bytes
+	var err error
+	var failed bool
+
+	// try load result from cache
+	blockNr := s.ethCallCacheBlockNr(blockNrOrHash)
+	cacheKey := ethCallCacheKey(blockNr, args.To, []byte(*args.Data))
+	ethCallCacheCount.Mark(1)
+	if r, ok := s.b.GetCallCache(cacheKey); ok {
+		ethCallCacheHit.Mark(1)
+		if res, ok := r.(hexutil.Bytes); ok {
+			return res, nil
+		}
+	}
+
+	defer func() {
+		// cache result on success
+		if err == nil && !failed {
+			s.b.SetCallCache(cacheKey, result, int64(len(result)))
+		}
+	}()
+
+	result, _, failed, err = DoCall(ctx, s.b, args, blockNrOrHash, accounts, &vm.Config{}, s.b.RPCEVMTimeout(), s.b.RPCGasCap())
 	if err != nil {
 		return nil, err
 	}
@@ -976,6 +1017,91 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 		return (hexutil.Bytes)(result), err
 	}
 	return (hexutil.Bytes)(result), err
+}
+
+func ethCallCacheKey(blockNum int64, to *common.Address, input []byte) string {
+	h := sha256.New()
+	h.Write(input)
+	bs := h.Sum(nil)
+
+	key := strconv.FormatInt(blockNum, 10)
+	key += strings.ToLower(string(to.Bytes()))
+	key += string(bs)
+	return key
+}
+
+func (s *PublicBlockChainAPI) ethCallCacheBlockNr(blockNrOrHash rpc.BlockNumberOrHash) int64 {
+	var blockNr int64
+	if n, ok := blockNrOrHash.Number(); ok {
+		blockNr = n.Int64()
+		if n == rpc.LatestBlockNumber || n == rpc.PendingBlockNumber {
+			blockNr = s.b.CurrentBlock().Header().Number.Int64()
+		}
+	}
+	return blockNr
+}
+
+func (s *PublicBlockChainAPI) MultiCall(ctx context.Context, args []CallArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *map[common.Address]account) ([]*multicallResult, error) {
+	ret := make([]*multicallResult, len(args))
+
+	blockNr := s.ethCallCacheBlockNr(blockNrOrHash)
+	var wg sync.WaitGroup
+	for i, arg := range args {
+		wg.Add(1)
+		go func(i int, arg CallArgs) {
+			defer wg.Done()
+
+			var err error
+
+			// try load result from cache
+			cacheKey := ethCallCacheKey(blockNr, arg.To, []byte(*arg.Data))
+
+			ethMultiCallCacheCount.Mark(1)
+			if r, ok := s.b.GetCallCache(cacheKey); ok {
+				ethMultiCallCacheHit.Mark(1)
+				if res, ok := r.(*multicallResult); ok {
+					res.FromCache = true
+					ret[i] = res
+					return
+				}
+			}
+
+			res, gasUsed, failed, err := DoCall(ctx, s.b, arg, blockNrOrHash, *overrides, &vm.Config{}, s.b.RPCEVMTimeout(), s.b.RPCGasCap())
+			if err != nil {
+				ret[i] = &multicallResult{
+					Result:  []byte(""),
+					Err:     err.Error(),
+					GasUsed: 0,
+				}
+				return
+			}
+
+			var errstr string
+			if failed {
+				reason, errUnpack := abi.UnpackRevert(res)
+				err := errors.New("execution reverted")
+				if errUnpack == nil {
+					err = fmt.Errorf("execution reverted: %v", reason)
+				}
+				errstr = err.Error()
+			}
+
+			mcRet := &multicallResult{
+				Result:  res,
+				Err:     errstr,
+				GasUsed: gasUsed,
+			}
+
+			ret[i] = mcRet
+
+			// set cache
+			s.b.SetCallCache(cacheKey, mcRet, int64(len(res)))
+
+		}(i, arg)
+	}
+	wg.Wait()
+
+	return ret, nil
 }
 
 // Optimism note: The gasPrice in Optimism is modified to always return 1 gwei. We

@@ -189,6 +189,7 @@ var (
 		utils.InsecureUnlockAllowedFlag,
 		utils.RPCGlobalGasCap,
 		utils.RPCGlobalEVMTimeoutFlag,
+		utils.RPCCacheFlag,
 	}
 
 	whisperFlags = []cli.Flag{

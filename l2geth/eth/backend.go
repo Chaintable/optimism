@@ -26,6 +26,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum-optimism/optimism/l2geth/accounts"
 	"github.com/ethereum-optimism/optimism/l2geth/accounts/abi/bind"
 	"github.com/ethereum-optimism/optimism/l2geth/common"
@@ -224,7 +225,13 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
 	log.Info("Backend Config", "max-calldata-size", config.Rollup.MaxCallDataSize, "gas-limit", config.Rollup.GasLimit, "is-verifier", config.Rollup.IsVerifier, "using-ovm", rcfg.UsingOVM)
-	eth.APIBackend = &EthAPIBackend{ctx.ExtRPCEnabled(), eth, nil, nil, config.Rollup.IsVerifier, config.Rollup.GasLimit, rcfg.UsingOVM, config.Rollup.MaxCallDataSize}
+
+	callCache, _ := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e7,                    // number of keys to track frequency of (10M).
+		MaxCost:     int64(config.RPCCache), // maximum cost of cache (1GB).
+		BufferItems: 64,                     // number of keys per Get buffer.
+	})
+	eth.APIBackend = &EthAPIBackend{ctx.ExtRPCEnabled(), eth, nil, nil, callCache, config.Rollup.IsVerifier, config.Rollup.GasLimit, rcfg.UsingOVM, config.Rollup.MaxCallDataSize}
 	gpoParams := config.GPO
 	if gpoParams.Default == nil {
 		gpoParams.Default = config.Miner.GasPrice
