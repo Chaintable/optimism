@@ -1,5 +1,0 @@
-node_modules
-<<<<<<< HEAD
-=======
-contracts/foundry-tests/*.t.sol
->>>>>>> v0.5.23
