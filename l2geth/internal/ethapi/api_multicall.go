@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/rollup/rcfg"
 	"github.com/ethereum-optimism/optimism/l2geth/rpc"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	common2 "github.com/ethereum/go-ethereum/common"
 )
 
 type multiCallResp struct {
@@ -176,11 +177,11 @@ func handleNative(ctx context.Context, state *state.StateDB, msg types.Message) 
 		if err != nil || len(inputs) == 0 {
 			return nil, errNativeMethodInput, err
 		}
-		address, ok := inputs[0].(common.Address)
+		address, ok := inputs[0].(common2.Address)
 		if !ok {
 			return nil, errNativeMethodInputAddress, fmt.Errorf("input address error")
 		}
-		balance, err := method.Outputs.Pack(state.GetBalance(address))
+		balance, err := method.Outputs.Pack(state.GetBalance(common.Address(address)))
 		if err != nil {
 			return nil, errNativeMethodOutput, err
 		}
