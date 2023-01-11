@@ -23,6 +23,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/dgraph-io/ristretto"
+
 	"github.com/ethereum-optimism/optimism/l2geth/accounts"
 	"github.com/ethereum-optimism/optimism/l2geth/common"
 	"github.com/ethereum-optimism/optimism/l2geth/common/math"
@@ -48,6 +50,7 @@ type EthAPIBackend struct {
 	eth             *Ethereum
 	gpo             *gasprice.Oracle
 	rollupGpo       *gasprice.RollupOracle
+	callCache       *ristretto.Cache
 	verifier        bool
 	gasLimit        uint64
 	UsingOVM        bool
@@ -403,6 +406,13 @@ func (b *EthAPIBackend) RPCGasCap() *big.Int {
 
 func (b *EthAPIBackend) RPCEVMTimeout() time.Duration {
 	return b.eth.config.RPCEVMTimeout
+}
+
+func (b *EthAPIBackend) SetCallCache(key string, value interface{}, weight int64) {
+	b.callCache.Set(key, value, weight)
+}
+func (b *EthAPIBackend) GetCallCache(key string) (interface{}, bool) {
+	return b.callCache.Get(key)
 }
 
 func (b *EthAPIBackend) BloomStatus() (uint64, uint64) {

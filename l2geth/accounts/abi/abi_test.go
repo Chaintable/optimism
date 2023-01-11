@@ -27,6 +27,8 @@ import (
 
 	"github.com/ethereum-optimism/optimism/l2geth/common"
 	"github.com/ethereum-optimism/optimism/l2geth/crypto"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	common2 "github.com/ethereum/go-ethereum/common"
 )
 
 const jsondata = `
@@ -55,6 +57,38 @@ const jsondata2 = `
 	{ "type" : "function", "name" : "nestedArray2", "constant" : false, "inputs" : [ { "name" : "a", "type" : "uint8[][2]" } ] },
 	{ "type" : "function", "name" : "nestedSlice", "constant" : false, "inputs" : [ { "name" : "a", "type" : "uint8[][]" } ] }
 ]`
+
+var (
+	Uint256, _ = abi.NewType("uint256", "", nil)
+	Address, _ = abi.NewType("address", "", nil)
+)
+
+func TestAddressAssertion(t *testing.T) {
+
+	funcBalanceOf := abi.NewMethod("balanceOf", "balanceOf", abi.Function, "", false, false,
+		[]abi.Argument{
+			{Name: "", Type: Address, Indexed: false},
+		},
+		[]abi.Argument{
+			{Name: "", Type: Uint256, Indexed: false},
+		},
+	)
+	data, err := hex.DecodeString("70a082310000000000000000000000005853ed4f26a3fcea565b3fbc698bb19cdf6deb85")
+	if err != nil {
+		t.Errorf("decode string error: %v", err)
+	}
+
+	inputs, err := funcBalanceOf.Inputs.Unpack(data[4:])
+	if err != nil {
+		t.Errorf("inputs unpack error: %v", err)
+	}
+	fmt.Printf("%v\n", reflect.TypeOf(inputs[0]))
+	address, ok := inputs[0].(common2.Address)
+	if !ok {
+		t.Errorf("inputs unpack error: %v", ok)
+	}
+	fmt.Printf("user address: %v\n", address)
+}
 
 func TestReader(t *testing.T) {
 	Uint256, _ := NewType("uint256", "", nil)
@@ -659,16 +693,19 @@ func TestBareEvents(t *testing.T) {
 }
 
 // TestUnpackEvent is based on this contract:
-//    contract T {
-//      event received(address sender, uint amount, bytes memo);
-//      event receivedAddr(address sender);
-//      function receive(bytes memo) external payable {
-//        received(msg.sender, msg.value, memo);
-//        receivedAddr(msg.sender);
-//      }
-//    }
+//
+//	contract T {
+//	  event received(address sender, uint amount, bytes memo);
+//	  event receivedAddr(address sender);
+//	  function receive(bytes memo) external payable {
+//	    received(msg.sender, msg.value, memo);
+//	    receivedAddr(msg.sender);
+//	  }
+//	}
+//
 // When receive("X") is called with sender 0x00... and value 1, it produces this tx receipt:
-//   receipt{status=1 cgas=23949 bloom=00000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000040200000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 logs=[log: b6818c8064f645cd82d99b59a1a267d6d61117ef [75fd880d39c1daf53b6547ab6cb59451fc6452d27caa90e5b6649dd8293b9eed] 000000000000000000000000376c47978271565f56deb45495afa69e59c16ab200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000158 9ae378b6d4409eada347a5dc0c180f186cb62dc68fcc0f043425eb917335aa28 0 95d429d309bb9d753954195fe2d69bd140b4ae731b9b5b605c34323de162cf00 0]}
+//
+//	receipt{status=1 cgas=23949 bloom=00000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000040200000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 logs=[log: b6818c8064f645cd82d99b59a1a267d6d61117ef [75fd880d39c1daf53b6547ab6cb59451fc6452d27caa90e5b6649dd8293b9eed] 000000000000000000000000376c47978271565f56deb45495afa69e59c16ab200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000158 9ae378b6d4409eada347a5dc0c180f186cb62dc68fcc0f043425eb917335aa28 0 95d429d309bb9d753954195fe2d69bd140b4ae731b9b5b605c34323de162cf00 0]}
 func TestUnpackEvent(t *testing.T) {
 	const abiJSON = `[{"constant":false,"inputs":[{"name":"memo","type":"bytes"}],"name":"receive","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"sender","type":"address"},{"indexed":false,"name":"amount","type":"uint256"},{"indexed":false,"name":"memo","type":"bytes"}],"name":"received","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"sender","type":"address"}],"name":"receivedAddr","type":"event"}]`
 	abi, err := JSON(strings.NewReader(abiJSON))
