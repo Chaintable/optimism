@@ -191,10 +191,10 @@ func (api *PreExecAPI) TraceTransaction(ctx context.Context, args *PreExecTx) (i
 	tracer.SetBlockHash(header.Hash())
 	tracer.SetBlockNumber(header.Number)
 	tracer.SetTxIndex(0)
-	vmCfg := api.e.APIBackend.eth.blockchain.GetVMConfig()
+	vmCfg := *api.e.APIBackend.eth.blockchain.GetVMConfig()
 	vmCfg.Debug = true
 	vmCfg.Tracer = tracer
-	evm, vmError, err := api.e.APIBackend.GetEVM(ctx, msg, state, header, vmCfg)
+	evm, vmError, err := api.e.APIBackend.GetEVM(ctx, msg, state, header, &vmCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -359,10 +359,11 @@ func (api *PreExecAPI) TraceMany(ctx context.Context, origins []PreExecTx) ([]Pr
 		tracer.SetBlockHash(header.Hash())
 		tracer.SetBlockNumber(header.Number)
 		tracer.SetTxIndex(0)
-		vmCfg := api.e.APIBackend.eth.blockchain.GetVMConfig()
+		// fix panic: use value copy replace pointer reference
+		vmCfg := *api.e.APIBackend.eth.blockchain.GetVMConfig()
 		vmCfg.Debug = true
 		vmCfg.Tracer = tracer
-		evm, vmError, err := api.e.APIBackend.GetEVM(ctx, msg, state, header, vmCfg)
+		evm, vmError, err := api.e.APIBackend.GetEVM(ctx, msg, state, header, &vmCfg)
 		if err != nil {
 			preResList = append(preResList, PreResult{
 				Error: PreError{
