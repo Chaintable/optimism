@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.33
+
+### Patch Changes
+
+- 33acb7c6a: Has l2geth return a NonceToHigh response if the txn nonce is greater than the expected nonce.
+
+## 0.5.32
+
+### Patch Changes
+
+- ea817097b: Use default cas gap of 25 million
+
 ## 0.5.31
 
 ### Patch Changes
