@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/core/state"
 	"github.com/ethereum-optimism/optimism/l2geth/core/types"
 	"github.com/ethereum-optimism/optimism/l2geth/core/vm"
+	txtrace "github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
 	"github.com/ethereum-optimism/optimism/l2geth/crypto"
 	"github.com/ethereum-optimism/optimism/l2geth/params"
 	"github.com/ethereum-optimism/optimism/l2geth/rollup/fees"
@@ -97,6 +98,18 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	// Create a new environment which holds all relevant information
 	// about the transaction and calling mechanisms.
 	vmenv := vm.NewEVM(context, statedb, config, cfg)
+
+	switch v := cfg.Tracer.(type) {
+	case *txtrace.StructLogger:
+		tracer := v
+		tracer.SetTx(tx.Hash())
+		tracer.SetFrom(msg.From())
+		tracer.SetTo(msg.To())
+		tracer.SetValue(*msg.Value())
+		tracer.SetBlockHash(header.Hash())
+		tracer.SetBlockNumber(header.Number)
+		tracer.SetTxIndex(uint(statedb.TxIndex()))
+	}
 
 	// UsingOVM
 	// Compute the fee related information that is to be included

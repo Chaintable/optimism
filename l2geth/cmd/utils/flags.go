@@ -41,6 +41,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/consensus/ethash"
 	"github.com/ethereum-optimism/optimism/l2geth/core"
 	"github.com/ethereum-optimism/optimism/l2geth/core/vm"
+	"github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
 	"github.com/ethereum-optimism/optimism/l2geth/crypto"
 	"github.com/ethereum-optimism/optimism/l2geth/eth"
 	"github.com/ethereum-optimism/optimism/l2geth/eth/downloader"
@@ -883,6 +884,16 @@ var (
 		Usage:  "HTTP endpoint for the sequencer client",
 		EnvVar: "SEQUENCER_CLIENT_HTTP",
 	}
+	// TxTraceEnabledFlag  enable transaction tracing, the flag will enable stores tracing result to local db.
+	TxTraceEnabledFlag = cli.BoolFlag{
+		Name:  "txtrace",
+		Usage: "Enable tracing transaction while blockchain processing incoming transaction",
+	}
+	// TxTraceStoreFlag data directory for store transaction trace data (default is `tracedb` where inside datadir).
+	TxTraceStoreFlag = DirectoryFlag{
+		Name:  "txtrace.store",
+		Usage: "Data directory for store transaction trace data (default = `tracedb` where inside datadir)",
+	}
 )
 
 // MakeDataDir retrieves the currently requested data directory, terminating
@@ -1623,6 +1634,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	setLes(ctx, cfg)
 	setEth1(ctx, &cfg.Rollup)
 	setRollup(ctx, &cfg.Rollup)
+	setTxTrace(ctx, &cfg.TxTrace)
 
 	if ctx.GlobalIsSet(SyncModeFlag.Name) {
 		cfg.SyncMode = *GlobalTextMarshaler(ctx, SyncModeFlag.Name).(*downloader.SyncMode)
@@ -1949,5 +1961,14 @@ func MigrateFlags(action func(ctx *cli.Context) error) func(*cli.Context) error 
 			}
 		}
 		return action(ctx)
+	}
+}
+
+func setTxTrace(ctx *cli.Context, cfg *oetracer.Config) {
+	if ctx.GlobalIsSet(TxTraceEnabledFlag.Name) {
+		cfg.Enabled = ctx.GlobalBool(TxTraceEnabledFlag.Name)
+	}
+	if ctx.GlobalIsSet(TxTraceStoreFlag.Name) {
+		cfg.StoreDir = ctx.GlobalString(TxTraceStoreFlag.Name)
 	}
 }

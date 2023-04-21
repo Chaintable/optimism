@@ -20,7 +20,26 @@ import (
 	"context"
 
 	"github.com/ethereum-optimism/optimism/l2geth/common"
+	"github.com/ethereum-optimism/optimism/l2geth/ethdb/leveldb"
 )
+
+var txTraceStore Store = (*TxTraceDB)(nil)
+
+var txEnable bool = false
+
+type TxTraceDB struct {
+	kv *leveldb.Database
+}
+
+// ReadTxTrace retrieve tx trace data from underlying kv store.
+func (t *TxTraceDB) ReadTxTrace(ctx context.Context, txHash common.Hash) ([]byte, error) {
+	return t.kv.Get(txHash.Bytes())
+}
+
+// WriteTxTrace save tx trace data to underlying kv store.
+func (t *TxTraceDB) WriteTxTrace(ctx context.Context, txHash common.Hash, trace []byte) error {
+	return t.kv.Put(txHash.Bytes(), trace)
+}
 
 // Store contains all the methods for tx-trace to interact with the underlying database.
 type Store interface {
@@ -28,4 +47,31 @@ type Store interface {
 	ReadTxTrace(ctx context.Context, txHash common.Hash) ([]byte, error)
 	// WriteTxTrace write tracing result to underlying database.
 	WriteTxTrace(ctx context.Context, txHash common.Hash, trace []byte) error
+}
+
+// OpenTxTraceDB ...
+func OpenTxTraceDB(path string) error {
+	db, err := leveldb.New(path, 256, 0, "")
+	if err != nil {
+		return err
+	}
+	txTraceStore = &TxTraceDB{kv: db}
+	txEnable = true
+	return nil
+}
+
+// CloseTxTraceDB ...
+func CloseTxTraceDB() error {
+	if !txEnable {
+		return nil
+	}
+	return txTraceStore.(*TxTraceDB).kv.Close()
+}
+
+// GetTxTraceStore ...
+func GetTxTraceStore() Store {
+	if !txEnable {
+		return nil
+	}
+	return txTraceStore
 }

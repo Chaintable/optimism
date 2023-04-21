@@ -19,7 +19,9 @@
 package eth
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/ethereum-optimism/optimism/l2geth/common"
@@ -27,6 +29,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/core/state"
 	"github.com/ethereum-optimism/optimism/l2geth/core/types"
 	"github.com/ethereum-optimism/optimism/l2geth/core/vm"
+	"github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
 	txtrace "github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -45,6 +48,25 @@ func NewPublicTxTraceAPI(e *Ethereum) *PublicTxTraceAPI {
 
 // Transaction trace_transaction function returns transaction traces.
 func (api *PublicTxTraceAPI) Transaction(ctx context.Context, txHash common.Hash) (interface{}, error) {
+	if oetracer.GetTxTraceStore() != nil {
+		raw, err := oetracer.GetTxTraceStore().ReadTxTrace(ctx, txHash)
+		if err != nil {
+			goto replay
+		}
+		if bytes.Equal(raw, []byte{}) { // empty response
+			goto replay
+		}
+
+		var res interface{}
+		if err := json.Unmarshal(raw, &res); err != nil {
+			return []byte{}, err
+		}
+		return res, nil
+	}
+
+replay:
+	log.Warn("tx trace store is nil, fallback to default trace method", "txHash", txHash)
+
 	if api.e.blockchain == nil {
 		return []byte{}, fmt.Errorf("blockchain corruput")
 	}

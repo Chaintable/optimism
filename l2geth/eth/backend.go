@@ -39,6 +39,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/core/rawdb"
 	"github.com/ethereum-optimism/optimism/l2geth/core/types"
 	"github.com/ethereum-optimism/optimism/l2geth/core/vm"
+	"github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
 	"github.com/ethereum-optimism/optimism/l2geth/eth/downloader"
 	"github.com/ethereum-optimism/optimism/l2geth/eth/filters"
 	"github.com/ethereum-optimism/optimism/l2geth/eth/gasprice"
@@ -140,6 +141,18 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
+	if config.TxTrace.Enabled {
+		if config.TxTrace.StoreDir == "" {
+			config.TxTrace.StoreDir = "tracedb"
+		}
+		path := ctx.ResolvePath(config.TxTrace.StoreDir)
+		oetracer.OpenTxTraceDB(path)
+		if err != nil {
+			return nil, err
+		}
+		log.Info("Opened tracing database", "path", path)
+	}
+
 	chainConfig, genesisHash, genesisErr := core.SetupGenesisBlockWithOverride(chainDb, config.Genesis, config.OverrideIstanbul, config.OverrideMuirGlacier)
 	if _, ok := genesisErr.(*params.ConfigCompatError); genesisErr != nil && !ok {
 		return nil, genesisErr

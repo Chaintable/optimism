@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/core"
 	"github.com/ethereum-optimism/optimism/l2geth/core/state"
 	"github.com/ethereum-optimism/optimism/l2geth/core/types"
+	txtrace "github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
 	"github.com/ethereum-optimism/optimism/l2geth/event"
 	"github.com/ethereum-optimism/optimism/l2geth/log"
 	"github.com/ethereum-optimism/optimism/l2geth/metrics"
@@ -780,10 +781,27 @@ func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Addres
 	snap := w.current.state.Snapshot()
 
 	start := time.Now()
-	receipt, err := core.ApplyTransaction(w.chainConfig, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig())
+	cfg := *w.chain.GetVMConfig()
+	var tracer *txtrace.StructLogger
+	if txtrace.GetTxTraceStore() != nil {
+		log.Debug("use txtrace.GetTxTraceStore")
+		tracer = txtrace.NewTraceStructLogger(txtrace.GetTxTraceStore())
+		cfg.Tracer = tracer
+		cfg.Debug = true
+	}
+	receipt, err := core.ApplyTransaction(w.chainConfig, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, cfg)
 	if err != nil {
+		log.Error("core.ApplyTransaction error", "number", w.current.header.Number, "tx_hash", tx.Hash(), "err", err)
 		w.current.state.RevertToSnapshot(snap)
 		return nil, err
+	}
+	// Finalize trace logger result and save to underlying database if necessary.
+	if tracer != nil {
+		tracer.SetGasUsed(receipt.GasUsed)
+		tracer.SetNewAddress(receipt.ContractAddress)
+		tracer.Finalize()
+		tracer.PersistTrace()
+		log.Debug("PersistTrace", "tx_hash", tx.Hash())
 	}
 	w.current.txs = append(w.current.txs, tx)
 	w.current.receipts = append(w.current.receipts, receipt)

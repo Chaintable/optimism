@@ -36,6 +36,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/core/state"
 	"github.com/ethereum-optimism/optimism/l2geth/core/types"
 	"github.com/ethereum-optimism/optimism/l2geth/core/vm"
+	"github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
 	"github.com/ethereum-optimism/optimism/l2geth/ethdb"
 	"github.com/ethereum-optimism/optimism/l2geth/event"
 	"github.com/ethereum-optimism/optimism/l2geth/log"
@@ -869,6 +870,8 @@ func (bc *BlockChain) Stop() {
 			log.Error("Dangling trie nodes after full cleanup")
 		}
 	}
+
+	oetracer.CloseTxTraceDB()
 
 	log.Info("Blockchain manager stopped")
 }

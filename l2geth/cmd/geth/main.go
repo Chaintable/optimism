@@ -209,6 +209,11 @@ var (
 		utils.MetricsInfluxDBPasswordFlag,
 		utils.MetricsInfluxDBTagsFlag,
 	}
+
+	txTraceFlags = []cli.Flag{
+		utils.TxTraceEnabledFlag,
+		utils.TxTraceStoreFlag,
+	}
 )
 
 func init() {
@@ -255,6 +260,7 @@ func init() {
 	app.Flags = append(app.Flags, debug.Flags...)
 	app.Flags = append(app.Flags, whisperFlags...)
 	app.Flags = append(app.Flags, metricsFlags...)
+	app.Flags = append(app.Flags, txTraceFlags...)
 
 	app.Before = func(ctx *cli.Context) error {
 		return debug.Setup(ctx, "")

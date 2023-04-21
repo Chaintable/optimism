@@ -274,6 +274,10 @@ var AppHelpFlagGroups = []flagGroup{
 	{
 		Name: "MISC",
 	},
+	{
+		Name:  "TRANSACTION TRACING",
+		Flags: txTraceFlags,
+	},
 }
 
 // byCategory sorts an array of flagGroup by Name in the order

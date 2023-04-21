@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/common"
 	"github.com/ethereum-optimism/optimism/l2geth/consensus/ethash"
 	"github.com/ethereum-optimism/optimism/l2geth/core"
+	"github.com/ethereum-optimism/optimism/l2geth/core/vm/oetracer"
 	"github.com/ethereum-optimism/optimism/l2geth/eth/downloader"
 	"github.com/ethereum-optimism/optimism/l2geth/eth/gasprice"
 	"github.com/ethereum-optimism/optimism/l2geth/miner"
@@ -153,6 +154,8 @@ type Config struct {
 
 	// Transaction pool options
 	TxPool core.TxPoolConfig
+
+	TxTrace oetracer.Config
 
 	// Gas Price Oracle options
 	GPO gasprice.Config

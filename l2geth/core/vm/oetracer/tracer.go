@@ -22,6 +22,7 @@ package oetracer
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 	"strings"
 	"time"
@@ -31,7 +32,6 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/core/vm"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
 )
 
 var _ vm.Tracer = (*StructLogger)(nil)
@@ -406,18 +406,12 @@ func (tr *StructLogger) PersistTrace() {
 	}
 
 	if tr.store != nil {
-		// Convert trace objects to json byte array and save it
-		var actions ActionTraces = tr.rootTrace.Actions
-		tracesBytes, err := rlp.EncodeToBytes(&actions)
+		res, err := json.Marshal(tr.GetResult())
 		if err != nil {
-			log.Error("Failed to encode tx trace", "txHash", tr.tx.String(), "err", err.Error())
+			log.Error("Failed to marshal trace result", "err", err)
 			return
 		}
-		if err := tr.store.WriteTxTrace(context.Background(), tr.tx, tracesBytes); err != nil {
-			log.Error("Failed to persist tx trace to database", "txHash", tr.tx.String(), "err", err.Error())
-			return
-		}
-		log.Debug("Persist tx trace to database", "txHash", tr.tx.String(), "bytes", len(tracesBytes))
+		tr.store.WriteTxTrace(context.Background(), tr.tx, res)
 	}
 	tr.reset()
 }
