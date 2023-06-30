@@ -147,7 +147,7 @@ func ethCallCacheKey(b Backend, blockHash common.Hash, to *common.Address, input
 	return sb.String()
 }
 
-func handleNative(ctx context.Context, state *state.StateDB, msg types.Message) ([]byte, int, error) {
+func handleNative(ctx context.Context, b Backend, state *state.StateDB, msg types.Message) ([]byte, int, error) {
 	data := msg.Data()
 	method, err := erc20ABI.MethodById(data)
 	if err != nil {
@@ -155,7 +155,12 @@ func handleNative(ctx context.Context, state *state.StateDB, msg types.Message) 
 	}
 	switch method.Name {
 	case "name", "symbol":
-		res, err := method.Outputs.Pack("ETH")
+		tokenName := "ETH"
+		chainID := b.ChainConfig().ChainID.Int64()
+		if chainID == 6969 {
+			tokenName = "TOMB"
+		}
+		res, err := method.Outputs.Pack(tokenName)
 		if err != nil {
 			return nil, errNativeMethodOutput, err
 		}
@@ -294,7 +299,7 @@ func doOneCall(ctx context.Context, b Backend, state *state.StateDB, header *typ
 
 	// skip EVM if requests for native token
 	if strings.ToLower(msg.To().Hex()) == nativeAddr {
-		res, code, err := handleNative(ctx, state, msg)
+		res, code, err := handleNative(ctx, b, state, msg)
 		if err != nil {
 			result.Code = code
 			result.Err = err.Error()
