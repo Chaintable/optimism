@@ -52,7 +52,7 @@ jobs:
 
   merge-docker-manifest:
     runs-on: [self-hosted, ops]
-    needs: build
+    needs: release
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
