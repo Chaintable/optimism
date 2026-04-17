@@ -96,16 +96,18 @@ func (s *StructLog) ErrorString() string {
 	return ""
 }
 
-// Tracer is used to collect execution traces from an EVM transaction
+// EVMLogger is used to collect execution traces from an EVM transaction
 // execution. CaptureState is called for each step of the VM with the
 // current VM state.
 // Note that reference types are actual VM data structures; make copies
 // if you need to retain them beyond the current call.
-type Tracer interface {
-	CaptureStart(from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) error
-	CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error
-	CaptureFault(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error
-	CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error
+type EVMLogger interface {
+	CaptureStart(env *EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int)
+	CaptureState(pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error)
+	CaptureEnter(typ OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int)
+	CaptureExit(output []byte, gasUsed uint64, err error)
+	CaptureFault(pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error)
+	CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error)
 }
 
 // StructLogger is an EVM state logger and implements Tracer.
@@ -115,6 +117,7 @@ type Tracer interface {
 // contract their storage.
 type StructLogger struct {
 	cfg LogConfig
+	env *EVM
 
 	logs          []StructLog
 	changedValues map[common.Address]Storage
@@ -133,19 +136,23 @@ func NewStructLogger(cfg *LogConfig) *StructLogger {
 	return logger
 }
 
-// CaptureStart implements the Tracer interface to initialize the tracing operation.
-func (l *StructLogger) CaptureStart(from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) error {
-	return nil
+// CaptureStart implements the EVMLogger interface to initialize the tracing operation.
+func (l *StructLogger) CaptureStart(env *EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
+	l.env = env
 }
 
 // CaptureState logs a new structured log message and pushes it out to the environment
 //
 // CaptureState also tracks SSTORE ops to track dirty values.
-func (l *StructLogger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error {
+func (l *StructLogger) CaptureState(pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error) {
 	// check if already accumulated the specified number of logs
 	if l.cfg.Limit != 0 && l.cfg.Limit <= len(l.logs) {
-		return ErrTraceLimitReached
+		return
 	}
+
+	memory := scope.Memory
+	stack := scope.Stack
+	contract := scope.Contract
 
 	// initialise new changed values storage container for this contract
 	// if not present.
@@ -182,20 +189,26 @@ func (l *StructLogger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost ui
 		storage = l.changedValues[contract.Address()].Copy()
 	}
 	// create a new snapshot of the EVM.
-	log := StructLog{pc, op, gas, cost, mem, memory.Len(), stck, storage, depth, env.StateDB.GetRefund(), err}
+	log := StructLog{pc, op, gas, cost, mem, memory.Len(), stck, storage, depth, l.env.StateDB.GetRefund(), err}
 
 	l.logs = append(l.logs, log)
-	return nil
 }
 
-// CaptureFault implements the Tracer interface to trace an execution fault
+// CaptureEnter is called when EVM enters a new scope (via call, create or selfdestruct).
+func (l *StructLogger) CaptureEnter(typ OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int) {
+}
+
+// CaptureExit is called when EVM exits a scope, even if the scope didn't execute any code.
+func (l *StructLogger) CaptureExit(output []byte, gasUsed uint64, err error) {
+}
+
+// CaptureFault implements the EVMLogger interface to trace an execution fault
 // while running an opcode.
-func (l *StructLogger) CaptureFault(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error {
-	return nil
+func (l *StructLogger) CaptureFault(pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error) {
 }
 
 // CaptureEnd is called after the call finishes to finalize the tracing.
-func (l *StructLogger) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error {
+func (l *StructLogger) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {
 	l.output = output
 	l.err = err
 	if l.cfg.Debug {
@@ -204,7 +217,6 @@ func (l *StructLogger) CaptureEnd(output []byte, gasUsed uint64, t time.Duration
 			fmt.Printf(" error: %v\n", err)
 		}
 	}
-	return nil
 }
 
 // StructLogs returns the captured log entries.
@@ -262,19 +274,21 @@ func WriteLogs(writer io.Writer, logs []*types.Log) {
 type mdLogger struct {
 	out io.Writer
 	cfg *LogConfig
+	env *EVM
 }
 
 // NewMarkdownLogger creates a logger which outputs information in a format adapted
 // for human readability, and is also a valid markdown table
 func NewMarkdownLogger(cfg *LogConfig, writer io.Writer) *mdLogger {
-	l := &mdLogger{writer, cfg}
+	l := &mdLogger{writer, cfg, nil}
 	if l.cfg == nil {
 		l.cfg = &LogConfig{}
 	}
 	return l
 }
 
-func (t *mdLogger) CaptureStart(from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) error {
+func (t *mdLogger) CaptureStart(env *EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
+	t.env = env
 	if !create {
 		fmt.Fprintf(t.out, "From: `%v`\nTo: `%v`\nData: `0x%x`\nGas: `%d`\nValue `%v` wei\n",
 			from.String(), to.String(),
@@ -289,16 +303,15 @@ func (t *mdLogger) CaptureStart(from common.Address, to common.Address, create b
 |  Pc   |      Op     | Cost |   Stack   |   RStack  |  Refund |
 |-------|-------------|------|-----------|-----------|---------|
 `)
-	return nil
 }
 
-func (t *mdLogger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error {
+func (t *mdLogger) CaptureState(pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error) {
 	fmt.Fprintf(t.out, "| %4d  | %10v  |  %3d |", pc, op, cost)
 
 	if !t.cfg.DisableStack {
 		// format stack
 		var a []string
-		for _, elem := range stack.data {
+		for _, elem := range scope.Stack.data {
 			a = append(a, fmt.Sprintf("%v", elem.String()))
 		}
 		b := fmt.Sprintf("[%v]", strings.Join(a, ","))
@@ -309,23 +322,24 @@ func (t *mdLogger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64
 		b = fmt.Sprintf("[%v]", strings.Join(a, ","))
 		fmt.Fprintf(t.out, "%10v |", b)
 	}
-	fmt.Fprintf(t.out, "%10v |", env.StateDB.GetRefund())
+	fmt.Fprintf(t.out, "%10v |", t.env.StateDB.GetRefund())
 	fmt.Fprintln(t.out, "")
 	if err != nil {
 		fmt.Fprintf(t.out, "Error: %v\n", err)
 	}
-	return nil
 }
 
-func (t *mdLogger) CaptureFault(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error {
+func (t *mdLogger) CaptureEnter(typ OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int) {
+}
 
+func (t *mdLogger) CaptureExit(output []byte, gasUsed uint64, err error) {
+}
+
+func (t *mdLogger) CaptureFault(pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error) {
 	fmt.Fprintf(t.out, "\nError: at pc=%d, op=%v: %v\n", pc, op, err)
-
-	return nil
 }
 
-func (t *mdLogger) CaptureEnd(output []byte, gasUsed uint64, tm time.Duration, err error) error {
+func (t *mdLogger) CaptureEnd(output []byte, gasUsed uint64, tm time.Duration, err error) {
 	fmt.Fprintf(t.out, "\nOutput: `0x%x`\nConsumed gas: `%d`\nError: `%v`\n",
 		output, gasUsed, err)
-	return nil
 }

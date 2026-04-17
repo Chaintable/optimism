@@ -29,51 +29,57 @@ import (
 type JSONLogger struct {
 	encoder *json.Encoder
 	cfg     *LogConfig
+	env     *EVM
 }
 
 // NewJSONLogger creates a new EVM tracer that prints execution steps as JSON objects
 // into the provided stream.
 func NewJSONLogger(cfg *LogConfig, writer io.Writer) *JSONLogger {
-	l := &JSONLogger{json.NewEncoder(writer), cfg}
+	l := &JSONLogger{json.NewEncoder(writer), cfg, nil}
 	if l.cfg == nil {
 		l.cfg = &LogConfig{}
 	}
 	return l
 }
 
-func (l *JSONLogger) CaptureStart(from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) error {
-	return nil
+func (l *JSONLogger) CaptureStart(env *EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
+	l.env = env
 }
 
 // CaptureState outputs state information on the logger.
-func (l *JSONLogger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error {
+func (l *JSONLogger) CaptureState(pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, rData []byte, depth int, err error) {
 	log := StructLog{
 		Pc:            pc,
 		Op:            op,
 		Gas:           gas,
 		GasCost:       cost,
-		MemorySize:    memory.Len(),
+		MemorySize:    scope.Memory.Len(),
 		Storage:       nil,
 		Depth:         depth,
-		RefundCounter: env.StateDB.GetRefund(),
+		RefundCounter: l.env.StateDB.GetRefund(),
 		Err:           err,
 	}
 	if !l.cfg.DisableMemory {
-		log.Memory = memory.Data()
+		log.Memory = scope.Memory.Data()
 	}
 	if !l.cfg.DisableStack {
-		log.Stack = stack.Data()
+		log.Stack = scope.Stack.Data()
 	}
-	return l.encoder.Encode(log)
+	l.encoder.Encode(log)
+}
+
+func (l *JSONLogger) CaptureEnter(typ OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int) {
+}
+
+func (l *JSONLogger) CaptureExit(output []byte, gasUsed uint64, err error) {
 }
 
 // CaptureFault outputs state information on the logger.
-func (l *JSONLogger) CaptureFault(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error {
-	return nil
+func (l *JSONLogger) CaptureFault(pc uint64, op OpCode, gas, cost uint64, scope *ScopeContext, depth int, err error) {
 }
 
 // CaptureEnd is triggered at end of execution.
-func (l *JSONLogger) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error {
+func (l *JSONLogger) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {
 	type endLog struct {
 		Output  string              `json:"output"`
 		GasUsed math.HexOrDecimal64 `json:"gasUsed"`
@@ -81,7 +87,8 @@ func (l *JSONLogger) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, 
 		Err     string              `json:"error,omitempty"`
 	}
 	if err != nil {
-		return l.encoder.Encode(endLog{common.Bytes2Hex(output), math.HexOrDecimal64(gasUsed), t, err.Error()})
+		l.encoder.Encode(endLog{common.Bytes2Hex(output), math.HexOrDecimal64(gasUsed), t, err.Error()})
+	} else {
+		l.encoder.Encode(endLog{common.Bytes2Hex(output), math.HexOrDecimal64(gasUsed), t, ""})
 	}
-	return l.encoder.Encode(endLog{common.Bytes2Hex(output), math.HexOrDecimal64(gasUsed), t, ""})
 }

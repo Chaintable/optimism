@@ -63,7 +63,7 @@ func stateTestCmd(ctx *cli.Context) error {
 		DisableStack:  ctx.GlobalBool(DisableStackFlag.Name),
 	}
 	var (
-		tracer   vm.Tracer
+		tracer   vm.EVMLogger
 		debugger *vm.StructLogger
 	)
 	switch {

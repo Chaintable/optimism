@@ -291,11 +291,26 @@ func (s *stateObject) updateTrie(db Database) Trie {
 
 		if (value == common.Hash{}) {
 			s.setError(tr.TryDelete(key[:]))
+			// Write empty value to storageDiff
+			if s.db.storageDiff != nil {
+				if s.db.storageDiff.Storage[s.addrHash] == nil {
+					s.db.storageDiff.Storage[s.addrHash] = make(map[common.Hash][]byte)
+				}
+				s.db.storageDiff.Storage[s.addrHash][key] = nil
+			}
 			continue
 		}
 		// Encoding []byte cannot fail, ok to ignore the error.
 		v, _ := rlp.EncodeToBytes(common.TrimLeftZeroes(value[:]))
 		s.setError(tr.TryUpdate(key[:], v))
+
+		// Write encoded value to storageDiff
+		if s.db.storageDiff != nil {
+			if s.db.storageDiff.Storage[s.addrHash] == nil {
+				s.db.storageDiff.Storage[s.addrHash] = make(map[common.Hash][]byte)
+			}
+			s.db.storageDiff.Storage[s.addrHash][key] = v
+		}
 	}
 	if len(s.pendingStorage) > 0 {
 		s.pendingStorage = make(Storage)

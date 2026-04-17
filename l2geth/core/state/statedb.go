@@ -71,6 +71,15 @@ func GetOVMBalanceKey(addr common.Address) common.Hash {
 	return common.BytesToHash(digest)
 }
 
+// LogHook is a callback function invoked when a log is added.
+type LogHook = func(log *types.Log)
+
+// StorageDiff collects state diff without relying on snapshot.
+type StorageDiff struct {
+	Accounts map[common.Hash][]byte
+	Storage  map[common.Hash]map[common.Hash][]byte
+}
+
 // StateDBs within the ethereum protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
@@ -101,6 +110,10 @@ type StateDB struct {
 	logSize      uint
 
 	preimages map[common.Hash][]byte
+
+	// Debank: log hook and storage diff for pipeline
+	OnLog       LogHook
+	storageDiff *StorageDiff
 
 	// Per-transaction access list
 	accessList *accessList
@@ -138,6 +151,10 @@ func New(root common.Hash, db Database) (*StateDB, error) {
 		preimages:           make(map[common.Hash][]byte),
 		journal:             newJournal(),
 		accessList:          newAccessList(),
+		storageDiff: &StorageDiff{
+			Accounts: make(map[common.Hash][]byte),
+			Storage:  make(map[common.Hash]map[common.Hash][]byte),
+		},
 	}, nil
 }
 
@@ -183,6 +200,10 @@ func (s *StateDB) AddLog(log *types.Log) {
 	log.Index = s.logSize
 	s.logs[s.thash] = append(s.logs[s.thash], log)
 	s.logSize++
+
+	if s.OnLog != nil {
+		s.OnLog(log)
+	}
 }
 
 func (s *StateDB) GetLogs(hash common.Hash) []*types.Log {
@@ -498,6 +519,27 @@ func (s *StateDB) updateStateObject(obj *stateObject) {
 		panic(fmt.Errorf("can't encode object at %x: %v", addr[:], err))
 	}
 	s.setError(s.trie.TryUpdate(addr[:], data))
+
+	// Write slim account RLP to storageDiff
+	if s.storageDiff != nil {
+		slimData, err := rlp.EncodeToBytes(slimAccount{
+			Nonce:    obj.data.Nonce,
+			Balance:  obj.data.Balance,
+			Root:     obj.data.Root,
+			CodeHash: obj.data.CodeHash,
+		})
+		if err == nil {
+			s.storageDiff.Accounts[obj.addrHash] = slimData
+		}
+	}
+}
+
+// slimAccount is a slim version of Account for storageDiff encoding.
+type slimAccount struct {
+	Nonce    uint64
+	Balance  *big.Int
+	Root     common.Hash
+	CodeHash []byte
 }
 
 // deleteStateObject removes the given object from the state trie.
@@ -740,6 +782,11 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 		}
 		if obj.suicided || (deleteEmptyObjects && obj.empty()) {
 			obj.deleted = true
+			// 清理 storageDiff，避免 self-destruct 账户残留数据
+			if s.storageDiff != nil {
+				delete(s.storageDiff.Accounts, obj.addrHash)
+				delete(s.storageDiff.Storage, obj.addrHash)
+			}
 		} else {
 			obj.finalise()
 		}
@@ -893,4 +940,26 @@ func (s *StateDB) AddressInAccessList(addr common.Address) bool {
 // SlotInAccessList returns true if the given (address, slot)-tuple is in the access list.
 func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addressPresent bool, slotPresent bool) {
 	return s.accessList.Contains(addr, slot)
+}
+
+// Output returns the collected state diff data for pipeline consumption.
+// Returns: destructs, accounts, storage, codes
+func (s *StateDB) Output() (map[common.Hash]struct{}, map[common.Hash][]byte, map[common.Hash]map[common.Hash][]byte, map[common.Hash][]byte) {
+	codes := make(map[common.Hash][]byte)
+	destructs := make(map[common.Hash]struct{})
+
+	for addr := range s.stateObjectsDirty {
+		if obj := s.stateObjects[addr]; obj != nil {
+			if obj.deleted {
+				destructs[obj.addrHash] = struct{}{}
+			} else if obj.code != nil && obj.dirtyCode {
+				codes[common.BytesToHash(obj.CodeHash())] = obj.code
+			}
+		}
+	}
+
+	if s.storageDiff == nil {
+		return destructs, nil, nil, codes
+	}
+	return destructs, s.storageDiff.Accounts, s.storageDiff.Storage, codes
 }

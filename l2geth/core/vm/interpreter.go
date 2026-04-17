@@ -27,12 +27,20 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/rollup/rcfg"
 )
 
+// ScopeContext contains the things that are per-call, such as stack and memory,
+// but not transients like pc and gas.
+type ScopeContext struct {
+	Memory   *Memory
+	Stack    *Stack
+	Contract *Contract
+}
+
 // Config are the configuration options for the Interpreter
 type Config struct {
-	Debug                   bool   // Enables debugging
-	Tracer                  Tracer // Opcode logger
-	NoRecursion             bool   // Disables call, callcode, delegate call and create
-	EnablePreimageRecording bool   // Enables recording of SHA3/keccak preimages
+	Debug                   bool      // Enables debugging
+	Tracer                  EVMLogger // Opcode logger
+	NoRecursion             bool      // Disables call, callcode, delegate call and create
+	EnablePreimageRecording bool      // Enables recording of SHA3/keccak preimages
 
 	JumpTable [256]operation // EVM instruction table, automatically populated if unset
 
@@ -189,9 +197,9 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		defer func() {
 			if err != nil {
 				if !logged {
-					in.cfg.Tracer.CaptureState(in.evm, pcCopy, op, gasCopy, cost, mem, stack, contract, in.evm.depth, err)
+					in.cfg.Tracer.CaptureState(pcCopy, op, gasCopy, cost, &ScopeContext{mem, stack, contract}, nil, in.evm.depth, err)
 				} else {
-					in.cfg.Tracer.CaptureFault(in.evm, pcCopy, op, gasCopy, cost, mem, stack, contract, in.evm.depth, err)
+					in.cfg.Tracer.CaptureFault(pcCopy, op, gasCopy, cost, &ScopeContext{mem, stack, contract}, in.evm.depth, err)
 				}
 			}
 		}()
@@ -268,7 +276,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		}
 
 		if in.cfg.Debug {
-			in.cfg.Tracer.CaptureState(in.evm, pc, op, gasCopy, cost, mem, stack, contract, in.evm.depth, err)
+			in.cfg.Tracer.CaptureState(pc, op, gasCopy, cost, &ScopeContext{mem, stack, contract}, nil, in.evm.depth, err)
 			logged = true
 		}
 

@@ -34,7 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 )
 
-var _ vm.Tracer = (*StructLogger)(nil)
+var _ vm.EVMLogger = (*StructLogger)(nil)
 
 type Diff struct {
 	BeforeValue *common.Hash `json:"before"`
@@ -48,6 +48,7 @@ type StateDiff map[common.Address]AccountDiff
 // StructLogger is a transaction trace creator
 type StructLogger struct {
 	store       Store
+	env         *vm.EVM
 	from        *common.Address
 	to          *common.Address
 	newAddress  *common.Address
@@ -80,7 +81,8 @@ func NewTraceStructLogger(db Store) *StructLogger {
 }
 
 // CaptureStart implements the tracer interface to initialize the tracing operation.
-func (tr *StructLogger) CaptureStart(from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) error {
+func (tr *StructLogger) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
+	tr.env = env
 	// Create main trace holder
 	txTrace := CallTrace{
 		Actions: make([]ActionTrace, 0),
@@ -125,8 +127,6 @@ func (tr *StructLogger) CaptureStart(from common.Address, to common.Address, cre
 	tr.state = []depthState{{0, create}}
 	tr.traceAddress = make([]uint32, 0)
 	tr.rootTrace.Stack = append(tr.rootTrace.Stack, &tr.rootTrace.Actions[len(tr.rootTrace.Actions)-1])
-
-	return nil
 }
 
 // stackPeek returns object from stack at given position from end of stack
@@ -154,7 +154,10 @@ func memorySlice(memory []byte, offset, size int64) []byte {
 }
 
 // CaptureState implements creating of traces based on getting opCodes from evm during contract processing
-func (tr *StructLogger) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, contract *vm.Contract, depth int, err error) error {
+func (tr *StructLogger) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
+	memory := scope.Memory
+	stack := scope.Stack
+	contract := scope.Contract
 	// When going back from inner call
 	if lastState(tr.state).level == depth {
 		result := tr.rootTrace.Stack[len(tr.rootTrace.Stack)-1].Result
@@ -172,7 +175,7 @@ func (tr *StructLogger) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, 
 
 	// We only care about system opcodes, faster if we pre-check once.
 	if !(op&0xf0 == 0xf0) && op != 0x0 && op != vm.SSTORE {
-		return nil
+		return
 	}
 
 	// Match processed instruction and create trace based on it
@@ -298,7 +301,7 @@ func (tr *StructLogger) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, 
 			afterValue := common.BigToHash(stack.Data()[stackLen-2])
 			indexAddress := common.BigToHash(stack.Data()[stackLen-1])
 			if diff, ok := tr.stateDiff[accountAddress][indexAddress]; !ok {
-				beforeValue := env.StateDB.GetState(contract.Address(), indexAddress)
+				beforeValue := tr.env.StateDB.GetState(contract.Address(), indexAddress)
 				tr.stateDiff[accountAddress][indexAddress] = Diff{
 					BeforeValue: &beforeValue,
 					AfterValue:  &afterValue,
@@ -308,11 +311,18 @@ func (tr *StructLogger) CaptureState(env *vm.EVM, pc uint64, op vm.OpCode, gas, 
 			}
 		}
 	}
-	return nil
+}
+
+// CaptureEnter is called when EVM enters a new scope (via call, create or selfdestruct).
+func (tr *StructLogger) CaptureEnter(typ vm.OpCode, from common.Address, to common.Address, input []byte, gas uint64, value *big.Int) {
+}
+
+// CaptureExit is called when EVM exits a scope, even if the scope didn't execute any code.
+func (tr *StructLogger) CaptureExit(output []byte, gasUsed uint64, err error) {
 }
 
 // CaptureEnd is called after the call finishes to finalize the tracing.
-func (tr *StructLogger) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error {
+func (tr *StructLogger) CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) {
 	log.Debug("StructLogger CaptureEND", "txHash", tr.tx.String(), "duration", common.PrettyDuration(t), "gasUsed", gasUsed)
 	if gasUsed > 0 {
 		if tr.rootTrace.Actions[0].Result != nil {
@@ -323,13 +333,11 @@ func (tr *StructLogger) CaptureEnd(output []byte, gasUsed uint64, t time.Duratio
 		tr.gasUsed = gasUsed
 	}
 	tr.output = output
-	return nil
 }
 
-// CaptureFault implements the Tracer interface to trace an execution fault
+// CaptureFault implements the EVMLogger interface to trace an execution fault
 // while running an opcode.
-func (tr *StructLogger) CaptureFault(env *vm.EVM, pc uint64, op vm.OpCode, gas, cost uint64, memory *vm.Memory, stack *vm.Stack, contract *vm.Contract, depth int, err error) error {
-	return nil
+func (tr *StructLogger) CaptureFault(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, depth int, err error) {
 }
 
 // Reset function to be able to reuse logger

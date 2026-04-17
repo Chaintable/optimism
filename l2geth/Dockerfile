@@ -1,7 +1,13 @@
 # Build Geth in a stock Go builder container
-FROM golang:1.18.0-alpine3.15 as builder
+FROM golang:1.23-alpine as builder
 
 RUN apk add --no-cache make gcc musl-dev linux-headers git
+
+ARG ACCESS_TOKEN
+
+RUN git config --global url."https://x-access-token:${ACCESS_TOKEN}@github.com".insteadOf "https://github.com"
+
+ENV GOPRIVATE=github.com/Chaintable/*
 
 COPY ./l2geth /app/l2geth
 
