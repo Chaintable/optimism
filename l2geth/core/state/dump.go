@@ -93,6 +93,7 @@ func (s *StateDB) dump(c collector, excludeCode, excludeStorage, excludeMissingP
 	missingPreimages := 0
 	c.onRoot(s.trie.Hash())
 	it := trie.NewIterator(s.trie.NodeIterator(nil))
+	count := 0
 	for it.Next() {
 		var data Account
 		if err := rlp.DecodeBytes(it.Value, &data); err != nil {
@@ -130,7 +131,13 @@ func (s *StateDB) dump(c collector, excludeCode, excludeStorage, excludeMissingP
 			}
 		}
 		c.onAccount(addr, account)
+
+		count++
+		if count%10000 == 0 {
+			log.Info("State dump in progress", "accounts", count)
+		}
 	}
+	log.Info("State dump completed", "accounts", count)
 	if missingPreimages > 0 {
 		log.Warn("Dump incomplete due to missing preimages", "missing", missingPreimages)
 	}

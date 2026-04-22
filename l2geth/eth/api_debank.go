@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"sort"
 	"strings"
+	"sync"
 
 	ptracer "github.com/Chaintable/pipeline/tracer"
 	ptypes "github.com/Chaintable/pipeline/types"
@@ -22,6 +23,10 @@ import (
 // DebankAPI provides the trace_debankBlock RPC method.
 type DebankAPI struct {
 	eth *Ethereum
+
+	genesisOnce   sync.Once
+	genesisOutput *ptypes.DebankOutPut
+	genesisErr    error
 }
 
 // NewDebankAPI creates a new DebankAPI instance.
@@ -95,17 +100,49 @@ func (api *DebankAPI) DebankBlock(ctx context.Context, blockNr rpc.BlockNumber) 
 }
 
 // debankGenesisBlock handles genesis block (block 0).
+// The first call triggers an async background export; subsequent calls return
+// the cached result or a "still initializing" error.
 func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.DebankOutPut, error) {
+	api.genesisOnce.Do(func() {
+		go func() {
+			log.Info("Genesis block export started")
+			output, err := api.buildGenesisOutput(blockchain)
+			if err != nil {
+				log.Error("Genesis block export failed", "err", err)
+			} else {
+				log.Info("Genesis block export completed")
+			}
+			api.genesisOutput = output
+			api.genesisErr = err
+		}()
+	})
+
+	if api.genesisOutput != nil {
+		return api.genesisOutput, nil
+	}
+	if api.genesisErr != nil {
+		return nil, api.genesisErr
+	}
+	return nil, fmt.Errorf("genesis block is still exporting, please wait")
+}
+
+func (api *DebankAPI) buildGenesisOutput(blockchain *core.BlockChain) (*ptypes.DebankOutPut, error) {
 	block := blockchain.GetBlockByNumber(0)
 	if block == nil {
 		return nil, fmt.Errorf("genesis block not found")
 	}
 
-	// 使用默认 genesis alloc（OP l2geth 没有 rawdb.ReadGenesisState）
-	alloc := core.DefaultGenesisBlock().Alloc
+	statedb, err := blockchain.StateAt(block.Root())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get genesis state at %s: %v", block.Root().Hex(), err)
+	}
+
+	log.Info("Starting genesis block dump")
+	dump := statedb.RawDump(false, false, false)
+	log.Info("Genesis block dump completed", "accounts", len(dump.Accounts))
 
 	header := util.BuildPilelineBlockHeader(block)
-	blockDiff := ptracer.GenesisAllocToStateDiff(alloc)
+	blockDiff := ptracer.GenesisDumpToStateDiff(dump)
 	blockDiff.Hash = header.StateRoot
 
 	blockFile := &ptypes.BlockFile{
@@ -121,9 +158,8 @@ func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.D
 	zeroAddr := "0x0000000000000000000000000000000000000000"
 	txIdx := int64(0)
 
-	// 对地址排序，确保确定性
-	sortedAddrs := make([]common.Address, 0, len(alloc))
-	for addr := range alloc {
+	sortedAddrs := make([]common.Address, 0, len(dump.Accounts))
+	for addr := range dump.Accounts {
 		sortedAddrs = append(sortedAddrs, addr)
 	}
 	sort.Slice(sortedAddrs, func(i, j int) bool {
@@ -131,15 +167,19 @@ func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.D
 	})
 
 	for _, addr := range sortedAddrs {
-		account := alloc[addr]
+		acc := dump.Accounts[addr]
 		addrLower := strings.ToLower(addr.Hex())
 
-		if len(account.Storage) > 0 {
+		if len(acc.Storage) > 0 {
 			blockFile.StorageContracts = append(blockFile.StorageContracts, addrLower)
 		}
 
-		// 有 balance → genesis01 转账 tx + call trace
-		if account.Balance != nil && account.Balance.Sign() > 0 {
+		balance, ok := new(big.Int).SetString(acc.Balance, 10)
+		if !ok {
+			balance = big.NewInt(0)
+		}
+
+		if balance.Sign() > 0 {
 			txID := fmt.Sprintf("0xgenesis01%013d%s", 0, addrLower)
 			blockFile.Txs = append(blockFile.Txs, ptypes.Transaction{
 				ID:               txID,
@@ -154,7 +194,7 @@ func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.D
 				Input:            []byte{},
 				Nonce:            big.NewInt(0),
 				TransactionIndex: txIdx,
-				Value:            (*hexutil.Big)(account.Balance),
+				Value:            (*hexutil.Big)(balance),
 			})
 			blockFile.Traces = append(blockFile.Traces, ptypes.Trace{
 				ID:                util.ToHash([]string{txID, "", "0"}),
@@ -164,7 +204,7 @@ func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.D
 				GasUsed:           big.NewInt(0),
 				Input:             []byte{},
 				Output:            []byte{},
-				Value:             (*hexutil.Big)(account.Balance),
+				Value:             (*hexutil.Big)(balance),
 				CallCreateType:    "call",
 				CallType:          "call",
 				TxID:              txID,
@@ -178,8 +218,8 @@ func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.D
 			txIdx++
 		}
 
-		// 有 code → genesis02 部署 tx + create trace
-		if len(account.Code) > 0 {
+		code := common.Hex2Bytes(acc.Code)
+		if len(code) > 0 {
 			txID := fmt.Sprintf("0xgenesis02%013d%s", 0, addrLower)
 			blockFile.Txs = append(blockFile.Txs, ptypes.Transaction{
 				ID:               txID,
@@ -191,7 +231,7 @@ func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.D
 				Status:           true,
 				GasFeeCap:        big.NewInt(0),
 				GasTipCap:        big.NewInt(0),
-				Input:            account.Code,
+				Input:            code,
 				Nonce:            big.NewInt(0),
 				TransactionIndex: txIdx,
 				Value:            (*hexutil.Big)(big.NewInt(0)),
@@ -202,8 +242,8 @@ func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.D
 				To:                addrLower,
 				Gas:               big.NewInt(0),
 				GasUsed:           big.NewInt(0),
-				Input:             account.Code,
-				Output:            account.Code,
+				Input:             code,
+				Output:            code,
 				Value:             (*hexutil.Big)(big.NewInt(0)),
 				CallCreateType:    "create",
 				CallType:          "",
@@ -219,7 +259,6 @@ func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.D
 		}
 	}
 
-	// 原生代币合约 genesis03
 	nativeTokenAddr := "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
 	nativeTokenTxID := fmt.Sprintf("0xgenesis03%013d%s", 0, nativeTokenAddr)
 	blockFile.Txs = append(blockFile.Txs, ptypes.Transaction{
@@ -257,7 +296,6 @@ func (api *DebankAPI) debankGenesisBlock(blockchain *core.BlockChain) (*ptypes.D
 		TraceAddress:      []int64{},
 	})
 
-	// 编码 state diff
 	stateDiffBytes, err := util.EncodeToRlp(blockDiff)
 	if err != nil {
 		log.Error("Failed to encode genesis state diff", "err", err)
