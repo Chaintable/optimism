@@ -289,14 +289,15 @@ func (s *stateObject) updateTrie(db Database) Trie {
 		}
 		s.originStorage[key] = value
 
+		hashKey := crypto.Keccak256Hash(key[:])
+
 		if (value == common.Hash{}) {
 			s.setError(tr.TryDelete(key[:]))
-			// Write empty value to storageDiff
 			if s.db.storageDiff != nil {
 				if s.db.storageDiff.Storage[s.addrHash] == nil {
 					s.db.storageDiff.Storage[s.addrHash] = make(map[common.Hash][]byte)
 				}
-				s.db.storageDiff.Storage[s.addrHash][key] = nil
+				s.db.storageDiff.Storage[s.addrHash][hashKey] = nil
 			}
 			continue
 		}
@@ -304,12 +305,11 @@ func (s *stateObject) updateTrie(db Database) Trie {
 		v, _ := rlp.EncodeToBytes(common.TrimLeftZeroes(value[:]))
 		s.setError(tr.TryUpdate(key[:], v))
 
-		// Write encoded value to storageDiff
 		if s.db.storageDiff != nil {
 			if s.db.storageDiff.Storage[s.addrHash] == nil {
 				s.db.storageDiff.Storage[s.addrHash] = make(map[common.Hash][]byte)
 			}
-			s.db.storageDiff.Storage[s.addrHash][key] = v
+			s.db.storageDiff.Storage[s.addrHash][hashKey] = v
 		}
 	}
 	if len(s.pendingStorage) > 0 {
