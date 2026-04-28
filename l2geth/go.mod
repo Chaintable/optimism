@@ -73,7 +73,7 @@ require (
 	gotest.tools/v3 v3.0.3 // indirect
 )
 
-require github.com/Chaintable/pipeline v0.0.64-0.20260422103025-b8371fb5d623
+require github.com/Chaintable/pipeline v0.0.64-0.20260428082642-1513439e7f02
 
 require (
 	github.com/Azure/azure-pipeline-go v0.2.2 // indirect
