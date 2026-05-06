@@ -9,6 +9,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod debug;
+#[allow(missing_docs)]
+pub mod debank;
 pub mod engine;
 pub mod error;
 pub mod eth;
@@ -17,6 +19,8 @@ pub mod metrics;
 pub mod miner;
 pub mod sequencer;
 pub mod state;
+#[allow(missing_docs)]
+pub mod trace;
 pub mod witness;
 
 #[cfg(feature = "client")]

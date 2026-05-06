@@ -11,6 +11,7 @@ use reth_optimism_exex::OpProofsExEx;
 use reth_optimism_rpc::{
     debug::{DebugApiExt, DebugApiOverrideServer},
     eth::proofs::{EthApiExt, EthApiOverrideServer},
+    trace::{OpDebankTraceApiImpl, OpDebankTraceApiServer},
 };
 use reth_optimism_trie::{OpProofsStorage, db::MdbxProofsStorage};
 use reth_tasks::TaskExecutor;
@@ -85,6 +86,12 @@ pub async fn launch_node_with_proof_history(
                 Ok(())
             });
     }
+
+    node_builder = node_builder.extend_rpc_modules(|ctx| {
+        let debank_api = OpDebankTraceApiImpl::new(ctx.registry.eth_api().clone());
+        ctx.modules.merge_configured(debank_api.into_rpc())?;
+        Ok(())
+    });
 
     // In all cases (with or without proofs), launch the node.
     let handle = node_builder.launch_with_debug_capabilities().await?;
