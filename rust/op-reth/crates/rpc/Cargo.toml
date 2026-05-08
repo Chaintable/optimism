@@ -32,6 +32,7 @@ reth-chain-state.workspace = true
 reth-rpc-engine-api.workspace = true
 reth-payload-util.workspace = true
 reth-provider.workspace = true
+reth-trie.workspace = true
 
 # op-reth
 reth-optimism-evm.workspace = true
@@ -45,6 +46,9 @@ reth-optimism-trie.workspace = true
 
 # ethereum
 alloy-eips.workspace = true
+alloy-evm.workspace = true
+alloy-genesis.workspace = true
+alloy-network.workspace = true
 alloy-json-rpc.workspace = true
 alloy-primitives.workspace = true
 alloy-rlp.workspace = true
@@ -63,6 +67,8 @@ op-alloy-rpc-jsonrpsee.workspace = true
 op-alloy-consensus.workspace = true
 alloy-op-evm.workspace = true
 revm.workspace = true
+revm-bytecode.workspace = true
+revm-inspectors.workspace = true
 op-revm.workspace = true
 
 # async
@@ -84,6 +90,8 @@ serde_json.workspace = true
 eyre.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+sha1.workspace = true
+md-5.workspace = true
 derive_more = { workspace = true, features = ["constructor"] }
 
 # metrics
