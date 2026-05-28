@@ -201,8 +201,6 @@ where
             excess_blob_gas: block.header().excess_blob_gas(),
             parent_beacon_block_root: block.header().parent_beacon_block_root(),
             requests_hash: block.header().requests_hash(),
-            block_access_list_hash: block.header().block_access_list_hash(),
-            slot_number: None,
         },
         hash: block.hash(),
         total_difficulty: None,
@@ -253,7 +251,7 @@ where
             .with_bundle_update()
             .build();
 
-        this.apply_pre_execution_changes(&block, &mut db)?;
+        this.apply_pre_execution_changes(&block, &mut db, &evm_env)?;
 
         let log_index_cell = std::cell::RefCell::new(0usize);
         let mut idx = 0u64;
@@ -276,7 +274,6 @@ where
                     block_hash: Some(block_hash),
                     block_number: Some(block_number),
                     base_fee: Some(base_fee),
-                    block_timestamp: Some(block.timestamp()),
                 };
                 idx += 1;
                 let traces = build_debank_traces(
