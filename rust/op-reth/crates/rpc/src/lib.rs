@@ -17,6 +17,7 @@ pub mod eth;
 pub mod historical;
 pub mod metrics;
 pub mod miner;
+pub mod sdm_admin;
 pub mod sequencer;
 pub mod state;
 #[allow(missing_docs)]

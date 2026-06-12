@@ -88,7 +88,6 @@ The Optimism Immunefi program offers up to $2,000,042 for in-scope critical vuln
 ├── <a href="./op-supervisor">op-supervisor</a>: Service to monitor chains and determine cross-chain message safety
 ├── <a href="./op-sync-tester">op-sync-tester</a>: Sync testing utilities
 ├── <a href="./op-test-sequencer">op-test-sequencer</a>: Test sequencer for development
-├── <a href="./op-up">op-up</a>: Deployment and management utilities
 ├── <a href="./op-validator">op-validator</a>: Tool for validating Optimism chain configurations and deployments
 ├── <a href="./op-wheel">op-wheel</a>: Database utilities
 ├── <a href="./ops">ops</a>: Various operational packages
@@ -121,7 +120,7 @@ For example if geth is at `v1.12.0`, the corresponding op-geth version would be 
 Note that we pad out to three characters for the geth minor version and two characters for the geth patch version.
 Since we cannot left-pad with zeroes, the geth major version is not padded.
 
-See the [Node Software Releases](https://docs.optimism.io/builders/node-operators/releases) page of the documentation for more information about releases for the latest node components.
+See the [GitHub releases](https://github.com/ethereum-optimism/optimism/releases) page for more information about releases for the latest node components.
 
 The full set of components that have releases are:
 

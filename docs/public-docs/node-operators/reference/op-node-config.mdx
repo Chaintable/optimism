@@ -266,16 +266,6 @@ Path to .json file with the chain configuration for the L1, either in the direct
   <Tab title="Environment variable">`OP_NODE_ROLLUP_L1_CHAIN_CONFIG=/path/to/l1-config.json`</Tab>
 </Tabs>
 
-### rollup.load-protocol-versions
-
-Load protocol versions from the superchain L1 ProtocolVersions contract (if available), and report in logs and metrics. Default is `false`.
-
-<Tabs>
-  <Tab title="Syntax">`--rollup.load-protocol-versions=[true|false]`</Tab>
-  <Tab title="Example">`--rollup.load-protocol-versions=false`</Tab>
-  <Tab title="Environment variable">`OP_NODE_ROLLUP_LOAD_PROTOCOL_VERSIONS=false`</Tab>
-</Tabs>
-
 ### syncmode
 
 Blockchain sync mode. Options are "consensus-layer" or "execution-layer". The default value is `consensus-layer`.
@@ -360,14 +350,14 @@ Manually specify the isthmus fork timestamp, overriding the bundled setting. The
   <Tab title="Environment variable">`OP_NODE_OVERRIDE_ISTHMUS=0`</Tab>
 </Tabs>
 
-### override.interop
+### override.lagoon
 
-Manually specify the Interop fork timestamp, overriding the bundled setting. The default value is `0`.
+Manually specify the Lagoon fork timestamp, overriding the bundled setting. The default value is `0`.
 
 <Tabs>
-  <Tab title="Syntax">`--override.interop=<value>`</Tab>
-  <Tab title="Example">`--override.interop=0`</Tab>
-  <Tab title="Environment variable">`OP_NODE_OVERRIDE_INTEROP=0`</Tab>
+  <Tab title="Syntax">`--override.lagoon=<value>`</Tab>
+  <Tab title="Example">`--override.lagoon=0`</Tab>
+  <Tab title="Environment variable">`OP_NODE_OVERRIDE_LAGOON=0`</Tab>
 </Tabs>
 
 ### override.jovian

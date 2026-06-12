@@ -53,17 +53,17 @@ func (c contractVersion) String() string {
 }
 
 func (c contractVersion) IsSuperGame() bool {
-	return c.gameType == gameTypes.SuperCannonGameType || c.gameType == gameTypes.SuperPermissionedGameType
+	return c.gameType == gameTypes.SuperCannonKonaGameType || c.gameType == gameTypes.SuperPermissionedGameType
 }
 
 const (
-	vers080        = "0.8.0"
-	vers0180       = "0.18.0"
-	vers111        = "1.1.1"
-	vers120        = "1.2.0"
-	vers131        = "1.3.1"
-	versLatest     = "1.4.0"
-	verSuperCannon = "0.1.0"
+	vers080            = "0.8.0"
+	vers0180           = "0.18.0"
+	vers111            = "1.1.1"
+	vers120            = "1.2.0"
+	vers131            = "1.3.1"
+	versLatest         = "1.4.0"
+	verSuperCannonKona = "0.1.0"
 )
 
 var versions = []contractVersion{
@@ -108,8 +108,8 @@ var versions = []contractVersion{
 		loadAbi:  snapshots.LoadFaultDisputeGameABI,
 	},
 	{
-		version:  verSuperCannon,
-		gameType: gameTypes.SuperCannonGameType,
+		version:  verSuperCannonKona,
+		gameType: gameTypes.SuperCannonKonaGameType,
 		loadAbi:  snapshots.LoadSuperFaultDisputeGameABI,
 	},
 }
@@ -249,6 +249,25 @@ func TestBondDistributionMode(t *testing.T) {
 			} else {
 				require.Equal(t, faultTypes.LegacyDistributionMode, status)
 			}
+		})
+	}
+}
+
+func TestGetAnchorStateRegistry(t *testing.T) {
+	expected := common.HexToAddress("0x0123456789abcDEF0123456789abCDef01234567")
+	for _, version := range versions {
+		version := version
+		t.Run(version.String(), func(t *testing.T) {
+			stubRpc, game := setupFaultDisputeGameTest(t, version)
+			if version.version == vers080 {
+				_, err := game.GetAnchorStateRegistry(context.Background(), rpcblock.Latest)
+				require.ErrorIs(t, err, ErrAnchorStateRegistryNotSupported)
+				return
+			}
+			stubRpc.SetResponse(fdgAddr, methodAnchorStateRegistry, rpcblock.Latest, nil, []interface{}{expected})
+			actual, err := game.GetAnchorStateRegistry(context.Background(), rpcblock.Latest)
+			require.NoError(t, err)
+			require.Equal(t, expected, actual)
 		})
 	}
 }

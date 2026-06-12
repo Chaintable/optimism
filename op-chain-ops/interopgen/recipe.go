@@ -54,10 +54,6 @@ func (recipe *InteropDevRecipe) Build(addrs devkeys.Addresses) (*WorldConfig, er
 	if err != nil {
 		return nil, err
 	}
-	superchainProtocolVersionsOwner, err := addrs.Address(superchainOps(devkeys.SuperchainProtocolVersionsOwner))
-	if err != nil {
-		return nil, err
-	}
 	superchainConfigGuardian, err := addrs.Address(superchainOps(devkeys.SuperchainConfigGuardianKey))
 	if err != nil {
 		return nil, err
@@ -72,10 +68,9 @@ func (recipe *InteropDevRecipe) Build(addrs devkeys.Addresses) (*WorldConfig, er
 	l1Cfg.Prefund[challenger] = Ether(10_000_000)
 
 	superchainCfg := &SuperchainConfig{
-		ProxyAdminOwner:       superchainProxyAdmin,
-		ProtocolVersionsOwner: superchainProtocolVersionsOwner,
-		Challenger:            challenger,
-		Deployer:              superchainDeployer,
+		ProxyAdminOwner: superchainProxyAdmin,
+		Challenger:      challenger,
+		Deployer:        superchainDeployer,
 		Implementations: OPCMImplementationsConfig{
 			FaultProof: SuperFaultProofConfig{
 				WithdrawalDelaySeconds:          big.NewInt(302400),
@@ -87,9 +82,7 @@ func (recipe *InteropDevRecipe) Build(addrs devkeys.Addresses) (*WorldConfig, er
 			},
 		},
 		SuperchainL1DeployConfig: genesis.SuperchainL1DeployConfig{
-			RequiredProtocolVersion:    params.OPStackSupport,
-			RecommendedProtocolVersion: params.OPStackSupport,
-			SuperchainConfigGuardian:   superchainConfigGuardian,
+			SuperchainConfigGuardian: superchainConfigGuardian,
 		},
 	}
 	world := &WorldConfig{
@@ -128,9 +121,12 @@ func (r *InteropDevRecipe) hydrated() InteropDevRecipe {
 const defaultBlockTime = 2
 
 type InteropDevL2Recipe struct {
-	ChainID       uint64
-	BlockTime     uint64
-	InteropOffset uint64
+	ChainID   uint64
+	BlockTime uint64
+	// Lagoon is the fork that activates interop behavior for these dev chains.
+	LagoonOffset uint64
+	// TODO(#20084): remove alongside L2Config.UseL2CM.
+	UseL2CM bool
 }
 
 func prefundL2Accounts(l1Cfg *L1Config, l2Cfg *L2Config, addrs devkeys.Addresses) error {
@@ -275,9 +271,11 @@ func (r *InteropDevL2Recipe) build(l1ChainID uint64, addrs devkeys.Addresses) (*
 				L2GenesisIsthmusTimeOffset:  new(hexutil.Uint64),
 				L2GenesisJovianTimeOffset:   new(hexutil.Uint64),
 				L2GenesisKarstTimeOffset:    new(hexutil.Uint64),
-				L2GenesisInteropTimeOffset:  (*hexutil.Uint64)(&r.InteropOffset),
-				L1CancunTimeOffset:          new(hexutil.Uint64),
-				L1PragueTimeOffset:          new(hexutil.Uint64),
+				// Lagoon activates interop behavior; interopgen keeps its
+				// package name because it builds interoperability test networks.
+				L2GenesisLagoonTimeOffset: (*hexutil.Uint64)(&r.LagoonOffset),
+				L1CancunTimeOffset:        new(hexutil.Uint64),
+				L1PragueTimeOffset:        new(hexutil.Uint64),
 			},
 			L2CoreDeployConfig: genesis.L2CoreDeployConfig{
 				L1ChainID:                 l1ChainID,
@@ -304,6 +302,7 @@ func (r *InteropDevL2Recipe) build(l1ChainID uint64, addrs devkeys.Addresses) (*
 		DisputeSplitDepth:           30,
 		DisputeClockExtension:       10800,  // 3 hours (input in seconds)
 		DisputeMaxClockDuration:     302400, // 3.5 days (input in seconds)
+		UseL2CM:                     r.UseL2CM,
 	}
 
 	l2Users := devkeys.ChainUserKeys(new(big.Int).SetUint64(r.ChainID))

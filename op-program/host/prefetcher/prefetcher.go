@@ -9,13 +9,12 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/ethereum-optimism/optimism/op-challenger/kvstore"
 	preimage "github.com/ethereum-optimism/optimism/op-preimage"
-	clientTypes "github.com/ethereum-optimism/optimism/op-program/client/interop/types"
 	"github.com/ethereum-optimism/optimism/op-program/client/l1"
 	"github.com/ethereum-optimism/optimism/op-program/client/l2"
 	"github.com/ethereum-optimism/optimism/op-program/client/mpt"
 	hostcommon "github.com/ethereum-optimism/optimism/op-program/host/common"
-	"github.com/ethereum-optimism/optimism/op-program/host/kvstore"
 	hosttypes "github.com/ethereum-optimism/optimism/op-program/host/types"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 var (
@@ -48,7 +48,7 @@ var acceleratedPrecompiles = []common.Address{
 }
 
 type L1Source interface {
-	InfoByHash(ctx context.Context, blockHash common.Hash) (eth.BlockInfo, error)
+	HeaderByHash(ctx context.Context, blockHash common.Hash) (*types.Header, error)
 	InfoAndTxsByHash(ctx context.Context, blockHash common.Hash) (eth.BlockInfo, types.Transactions, error)
 	FetchReceipts(ctx context.Context, blockHash common.Hash) (eth.BlockInfo, types.Receipts, error)
 }
@@ -286,11 +286,11 @@ func (p *Prefetcher) prefetch(ctx context.Context, hint string) error {
 			return fmt.Errorf("invalid L1 block hint: %x", hint)
 		}
 		hash := common.Hash(hintBytes)
-		header, err := p.l1Fetcher.InfoByHash(ctx, hash)
+		header, err := p.l1Fetcher.HeaderByHash(ctx, hash)
 		if err != nil {
 			return fmt.Errorf("failed to fetch L1 block %s header: %w", hash, err)
 		}
-		data, err := header.HeaderRLP()
+		data, err := rlp.EncodeToBytes(header)
 		if err != nil {
 			return fmt.Errorf("marshall header: %w", err)
 		}
@@ -417,11 +417,11 @@ func (p *Prefetcher) prefetch(ctx context.Context, hint string) error {
 		if err != nil {
 			return err
 		}
-		header, txs, err := source.InfoAndTxsByHash(ctx, hash)
+		header, txs, err := source.HeaderAndTxsByHash(ctx, hash)
 		if err != nil {
 			return fmt.Errorf("failed to fetch L2 block %s: %w", hash, err)
 		}
-		data, err := header.HeaderRLP()
+		data, err := rlp.EncodeToBytes(header)
 		if err != nil {
 			return fmt.Errorf("failed to encode header to RLP: %w", err)
 		}
@@ -464,7 +464,7 @@ func (p *Prefetcher) prefetch(ctx context.Context, hint string) error {
 			}
 			return p.kvStore.Put(preimage.Keccak256Key(hash).PreimageKey(), output.Marshal())
 		} else {
-			prestate, err := clientTypes.UnmarshalTransitionState(p.agreedPrestate)
+			prestate, err := eth.UnmarshalTransitionState(p.agreedPrestate)
 			if err != nil {
 				return fmt.Errorf("cannot fetch output root, invalid agreed prestate: %w", err)
 			}

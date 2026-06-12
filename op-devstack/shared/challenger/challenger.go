@@ -13,10 +13,10 @@ import (
 	"github.com/ethereum-optimism/optimism/op-challenger/config"
 	"github.com/ethereum-optimism/optimism/op-challenger/game/fault/trace/vm"
 	gameTypes "github.com/ethereum-optimism/optimism/op-challenger/game/types"
+	"github.com/ethereum-optimism/optimism/op-core/interop/depset"
 	"github.com/ethereum-optimism/optimism/op-devstack/shared/rustbin"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-service/crypto"
-	"github.com/ethereum-optimism/optimism/op-supervisor/supervisor/backend/depset"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/log"
@@ -74,6 +74,19 @@ func applyCannonConfig(c *config.Config, rollupCfgs []*rollup.Config, l1Genesis 
 	return nil
 }
 
+// LocateKonaHost ensures the kona-host native binary is built and returns its path.
+func LocateKonaHost(ctx context.Context) (string, error) {
+	bin, err := rustbin.Spec{
+		SrcDir:  "rust/kona",
+		Package: "kona-host",
+		Binary:  "kona-host",
+	}.EnsureExists(ctx, log.NewLogger(log.DiscardHandler()))
+	if err != nil {
+		return "", fmt.Errorf("kona-host binary: %w", err)
+	}
+	return bin, nil
+}
+
 func applyCannonKonaConfig(ctx context.Context, c *config.Config, rollupCfgs []*rollup.Config, l1Genesis *core.Genesis, l2Geneses []*core.Genesis, interop bool) error {
 	root, err := findMonorepoRoot()
 	if err != nil {
@@ -82,13 +95,9 @@ func applyCannonKonaConfig(ctx context.Context, c *config.Config, rollupCfgs []*
 	if err := applyVmConfig(root, &c.CannonKona, c.Datadir, rollupCfgs, l1Genesis, l2Geneses); err != nil {
 		return err
 	}
-	konaHostBin, err := rustbin.Spec{
-		SrcDir:  "rust/kona",
-		Package: "kona-host",
-		Binary:  "kona-host",
-	}.EnsureExists(ctx, log.NewLogger(log.DiscardHandler()))
+	konaHostBin, err := LocateKonaHost(ctx)
 	if err != nil {
-		return fmt.Errorf("kona-host binary: %w", err)
+		return err
 	}
 	c.CannonKona.Server = konaHostBin
 	if interop {
@@ -188,13 +197,6 @@ func WithPermissionedGameType() Option {
 	}
 }
 
-func WithSuperCannonGameType() Option {
-	return func(_ context.Context, c *config.Config) error {
-		c.GameTypes = append(c.GameTypes, gameTypes.SuperCannonGameType)
-		return nil
-	}
-}
-
 func WithSuperCannonKonaGameType() Option {
 	return func(_ context.Context, c *config.Config) error {
 		c.GameTypes = append(c.GameTypes, gameTypes.SuperCannonKonaGameType)
@@ -202,27 +204,9 @@ func WithSuperCannonKonaGameType() Option {
 	}
 }
 
-func WithSuperPermissionedGameType() Option {
-	return func(_ context.Context, c *config.Config) error {
-		c.GameTypes = append(c.GameTypes, gameTypes.SuperPermissionedGameType)
-		return nil
-	}
-}
-
 func WithFastGames() Option {
 	return func(_ context.Context, c *config.Config) error {
 		c.GameTypes = append(c.GameTypes, gameTypes.FastGameType)
-		return nil
-	}
-}
-
-// WithExperimentalWitnessEndpoint enables kona's experimental witness endpoint feature.
-// This uses debug_executePayload to collect execution witnesses, reducing proof generation
-// time by avoiding full block re-derivation and re-execution.
-// Requires op-reth or execution client with debug_executePayload support.
-func WithExperimentalWitnessEndpoint() Option {
-	return func(_ context.Context, c *config.Config) error {
-		c.CannonKona.EnableExperimentalWitnessEndpoint = true
 		return nil
 	}
 }
