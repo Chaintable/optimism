@@ -1,16 +1,14 @@
 use crate::debank::{
     BlockFile, BlockStorageDiff, DebankBlock, DebankOutPut, DebankTransaction, build_debank_traces,
     build_genesis_txs_and_traces, get_storage_contracts_from_bundle,
-    get_storage_contracts_from_genesis, get_storage_diffs_from_bundle,
+    get_storage_contracts_from_genesis, get_storage_diffs_from_changesets,
 };
-use alloy_consensus::BlockHeader;
-use alloy_consensus::transaction::TxHashRef;
+use alloy_consensus::{BlockHeader, transaction::TxHashRef};
 use alloy_eips::BlockId;
 use alloy_evm::evm::EvmFactoryExt;
 use alloy_rpc_types_eth::Header;
 use async_trait::async_trait;
-use jsonrpsee::core::RpcResult;
-use jsonrpsee::proc_macros::rpc;
+use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use op_alloy_consensus::OpReceipt;
 use op_alloy_rpc_types::OpTransactionReceipt;
 use reth_chainspec::{ChainSpecProvider, EthChainSpec};
@@ -18,13 +16,12 @@ use reth_evm::ConfigureEvm;
 use reth_primitives_traits::{BlockBody, RecoveredBlock};
 use reth_revm::{database::StateProviderDatabase, db::State};
 use reth_rpc_eth_api::{
-    EthApiTypes, RpcTypes,
+    EthApiTypes, FromEthApiError, RpcNodeCore, RpcTypes,
     helpers::{EthBlocks, LoadReceipt, TraceExt},
 };
-use reth_rpc_eth_types::EthApiError;
-use reth_rpc_eth_types::cache::db::StateCacheDb;
-use revm::context_interface::Block;
-use revm::database::states::bundle_state::BundleRetention;
+use reth_rpc_eth_types::{EthApiError, cache::db::StateCacheDb};
+use reth_storage_api::{ChangeSetReader, StorageChangeSetReader};
+use revm::{context_interface::Block, database::states::bundle_state::BundleRetention};
 use revm_bytecode::opcode::OpCode;
 use revm_inspectors::tracing::{OpcodeFilter, TracingInspector, TracingInspectorConfig};
 
@@ -61,9 +58,10 @@ fn get_l1_fee(receipt: &OpTransactionReceipt) -> Option<u128> {
 impl<Eth> OpDebankTraceApiServer for OpDebankTraceApiImpl<Eth>
 where
     Eth: TraceExt + EthBlocks + LoadReceipt + 'static,
-    Eth: reth_rpc_eth_api::RpcNodeCore,
+    Eth: RpcNodeCore,
     <Eth as EthApiTypes>::NetworkTypes: RpcTypes<Receipt = OpTransactionReceipt>,
-    <Eth as reth_rpc_eth_api::RpcNodeCore>::Provider: ChainSpecProvider<ChainSpec: EthChainSpec>,
+    <Eth as RpcNodeCore>::Provider:
+        ChainSpecProvider<ChainSpec: EthChainSpec> + ChangeSetReader + StorageChangeSetReader,
 {
     async fn debank_block(&self, block_id: BlockId) -> RpcResult<DebankOutPut> {
         Ok(self.trace_debank_block_inner(block_id).await.map_err(Into::into)?)
@@ -73,9 +71,10 @@ where
 impl<Eth> OpDebankTraceApiImpl<Eth>
 where
     Eth: TraceExt + EthBlocks + LoadReceipt + 'static,
-    Eth: reth_rpc_eth_api::RpcNodeCore,
+    Eth: RpcNodeCore,
     <Eth as EthApiTypes>::NetworkTypes: RpcTypes<Receipt = OpTransactionReceipt>,
-    <Eth as reth_rpc_eth_api::RpcNodeCore>::Provider: ChainSpecProvider<ChainSpec: EthChainSpec>,
+    <Eth as RpcNodeCore>::Provider:
+        ChainSpecProvider<ChainSpec: EthChainSpec> + ChangeSetReader + StorageChangeSetReader,
 {
     async fn trace_debank_block_inner(
         &self,
@@ -222,7 +221,9 @@ async fn trace_all_block<Eth>(
     block_id: BlockId,
 ) -> Result<(Vec<TraceEntry>, BlockStorageDiff, Vec<alloy_primitives::Address>), Eth::Error>
 where
-    Eth: TraceExt + 'static,
+    Eth: TraceExt + RpcNodeCore + 'static,
+    Eth::Error: FromEthApiError,
+    <Eth as RpcNodeCore>::Provider: ChangeSetReader + StorageChangeSetReader,
     reth_evm::BlockEnvFor<Eth::Evm>: Block,
 {
     use reth_rpc_eth_types::cache::db::StateProviderTraitObjWrapper;
@@ -241,12 +242,8 @@ where
         let block_number: u64 = evm_env.block_env.number().saturating_to();
         let base_fee = evm_env.block_env.basefee();
 
-        let pre_state = this.state_at_block_id(parent_hash.into()).await?;
+        let post_state = this.state_at_block_id(block_hash.into()).await?;
         let exec_state = this.state_at_block_id(parent_hash.into()).await?;
-
-        let pre_db: StateCacheDb = State::builder()
-            .with_database(StateProviderDatabase::new(StateProviderTraitObjWrapper(pre_state)))
-            .build();
 
         let mut db: StateCacheDb = State::builder()
             .with_database(StateProviderDatabase::new(StateProviderTraitObjWrapper(exec_state)))
@@ -292,7 +289,22 @@ where
         db.merge_transitions(BundleRetention::PlainState);
         let bundle = db.take_bundle();
         let change_addresses = get_storage_contracts_from_bundle(&bundle);
-        let storage_diff = get_storage_diffs_from_bundle(bundle, pre_db);
+        let account_changesets = this
+            .provider()
+            .account_block_changeset(block_number)
+            .map_err(Eth::Error::from_eth_err)?;
+        let storage_changesets =
+            this.provider().storage_changeset(block_number).map_err(Eth::Error::from_eth_err)?;
+        let storage_diff = get_storage_diffs_from_changesets(
+            account_changesets,
+            storage_changesets,
+            StateProviderDatabase::new(StateProviderTraitObjWrapper(post_state)),
+        )
+        .map_err(|err| {
+            Eth::Error::from_eth_err(EthApiError::EvmCustom(format!(
+                "failed to build state diff from changesets: {err}"
+            )))
+        })?;
         Ok((results, storage_diff, change_addresses))
     })
     .await
