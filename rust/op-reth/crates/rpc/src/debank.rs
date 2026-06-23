@@ -6,11 +6,12 @@ use alloy_consensus::{BlockHeader, constants::KECCAK_EMPTY};
 use alloy_genesis::Genesis;
 use alloy_network::ReceiptResponse;
 use alloy_primitives::{
-    Address, BlockHash, BlockNumber, Bytes, B256 as H256, U256, hex, keccak256,
+    Address, B256 as H256, BlockHash, BlockNumber, Bytes, U256, hex, keccak256,
 };
 use alloy_rlp::{RlpDecodable, RlpEncodable};
 use alloy_rpc_types_eth::Header;
-use reth_primitives_traits::{Block, RecoveredBlock, Transaction};
+use reth_db_api::models::{AccountBeforeTx, BlockNumberAddress};
+use reth_primitives_traits::{Block, RecoveredBlock, StorageEntry, Transaction};
 use reth_trie::EMPTY_ROOT_HASH;
 use revm::{DatabaseRef, database::BundleState, interpreter::InstructionResult};
 use revm_bytecode::opcode::OpCode;
@@ -20,7 +21,10 @@ use revm_inspectors::tracing::{
 };
 use serde::{Deserialize, Serialize};
 use sha1::Digest;
-use std::str::FromStr;
+use std::{
+    collections::{BTreeMap, BTreeSet, HashSet},
+    str::FromStr,
+};
 
 // ─── Storage diff types ───────────────────────────────────────────────────────
 
@@ -136,6 +140,87 @@ pub fn get_storage_diffs_from_bundle<DB: DatabaseRef>(
         storage_diffs,
         new_codes,
     }
+}
+
+pub fn get_storage_diffs_from_changesets<DB: DatabaseRef>(
+    account_changesets: Vec<AccountBeforeTx>,
+    storage_changesets: Vec<(BlockNumberAddress, StorageEntry)>,
+    post_db: DB,
+) -> Result<BlockStorageDiff, DB::Error> {
+    let mut new_accounts = Vec::new();
+    let mut deleted_accounts = Vec::new();
+    let mut storage_diffs = Vec::new();
+    let mut new_codes = Vec::new();
+    let mut changed_code_hashes = HashSet::new();
+    let mut account_pre_state = BTreeMap::new();
+    let mut changed_addresses = BTreeSet::new();
+
+    for account in account_changesets {
+        changed_addresses.insert(account.address);
+        account_pre_state.insert(account.address, account.info.map(Into::into));
+    }
+
+    let mut storage_by_address: BTreeMap<Address, Vec<IndexValuePair>> = BTreeMap::new();
+    for (block_address, entry) in storage_changesets {
+        let address = block_address.address();
+        let final_value = post_db.storage_ref(address, U256::from_be_bytes(entry.key.0))?;
+        if final_value != entry.value {
+            changed_addresses.insert(address);
+            storage_by_address.entry(address).or_default().push(IndexValuePair {
+                index: keccak256::<[u8; 32]>(entry.key.0),
+                value: final_value,
+            });
+        }
+    }
+
+    for address in changed_addresses {
+        let post_account = post_db.basic_ref(address)?;
+        let pre_account =
+            account_pre_state.get(&address).cloned().unwrap_or_else(|| post_account.clone());
+        let diffs = storage_by_address.remove(&address).unwrap_or_default();
+        let has_storage_changes = !diffs.is_empty();
+
+        if has_storage_changes {
+            storage_diffs.push(AccountStorageDiff { address: keccak256(address.0), diffs });
+        }
+
+        let Some(info) = post_account else {
+            if pre_account.is_some() {
+                deleted_accounts.push(keccak256(address.0));
+            }
+            continue;
+        };
+
+        let account_changed = pre_account.as_ref() != Some(&info);
+        if account_changed || has_storage_changes {
+            if pre_account.as_ref().map(|account| account.code_hash) != Some(info.code_hash) {
+                changed_code_hashes.insert(info.code_hash);
+            }
+
+            new_accounts.push(NewAccount {
+                address: keccak256(address.0),
+                balance: info.balance,
+                nonce: info.nonce,
+                code_hash: info.code_hash,
+            });
+        }
+    }
+
+    for code_hash in changed_code_hashes {
+        if code_hash != KECCAK_EMPTY {
+            let code = post_db.code_by_hash_ref(code_hash)?;
+            new_codes.push(NewCode { code_hash, code: code.original_bytes() });
+        }
+    }
+
+    Ok(BlockStorageDiff {
+        hash: H256::ZERO,
+        parent_hash: EMPTY_ROOT_HASH,
+        new_accounts,
+        deleted_accounts,
+        storage_diffs,
+        new_codes,
+    })
 }
 
 impl From<&Genesis> for BlockStorageDiff {
