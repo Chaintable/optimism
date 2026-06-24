@@ -25,10 +25,10 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
-            runner: general
+            runner: ubuntu-latest-m
             arch: amd64
           - platform: linux/arm64
-            runner: arm
+            runner: ubuntu-latest-arm64
             arch: arm64
     runs-on: ${{ matrix.runner }}
 
@@ -36,16 +36,20 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
       - name: Checkout code
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - uses: tibdex/github-app-token@v1
-        id: generate-token
-        with:
-          app_id: ${{ secrets.RELEASE_MANAGER_APP_ID }}
-          private_key: ${{ secrets.RELEASE_MANAGER_APP_SECRET }}
 
       - name: Set env (determine image tag)
         run: |
@@ -66,13 +70,15 @@ jobs:
         with:
           registry-type: public
 
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           file: ${{ env.DOCKERFILE }}
           context: rust
           push: true
-          build-args: GITHUB_TOKEN=${{ steps.generate-token.outputs.token }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ matrix.arch }}-${{ env.REVISION }}
           provenance: false
 
@@ -80,7 +86,7 @@ jobs:
   manifest:
     name: merge-manifest
     needs: build-artifacts
-    runs-on: general
+    runs-on: ubuntu-latest
 
     permissions:
       contents: read
@@ -110,6 +116,9 @@ jobs:
         with:
           registry-type: public
 
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Merge manifest and alias per-chain writers
         run: |
           docker pull --platform=linux/amd64 ${REGISTRY}/${IMAGE}:amd64-${REVISION}
@@ -129,7 +138,3 @@ jobs:
           done
           docker rmi ${REGISTRY}/${IMAGE}:amd64-${REVISION}
           docker rmi ${REGISTRY}/${IMAGE}:arm64-${REVISION}
-      - name: Lark Notification
-        continue-on-error: true
-        run: |
-          notiv3 "Blockchain megaevm pushed 🎉" ${REGISTRY}/${IMAGE}:${REVISION}
