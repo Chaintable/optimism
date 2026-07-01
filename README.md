@@ -1,3 +1,24 @@
+# Chaintable write node
+
+> Fork of [ethereum-optimism/optimism](https://github.com/ethereum-optimism/optimism), with Chaintable pipeline patches.
+
+## Architecture
+
+This repo runs the chain's execution layer with the [Chaintable pipeline](https://github.com/Chaintable/pipeline) tracer embedded. The tracer extracts block data — block headers, transactions, call traces, receipts, events, and state diffs — and ships it to **S3 + Kafka** (see pipeline's [architecture](https://github.com/Chaintable/pipeline/blob/main/docs/architecture.md)). Two consumption paths:
+
+- **Block headers + state diffs** → Kafka + S3 → [leafage-evm](https://github.com/Chaintable/leafage-evm): a lightweight EVM executor serving state queries (`eth_call`, `eth_estimateGas`, …), no P2P sync, no tx storage (see its [architecture](https://github.com/Chaintable/leafage-evm#architecture)).
+- **Block files** (transactions · call traces · receipts · events) → S3 → Chaintable's transaction/trace indexing pipeline.
+
+```
+Chaintable write node (this repo · producer, embeds pipeline tracer)
+        │
+        ├─ block headers + state diffs ──────────────────→ Kafka + S3 ─→ leafage-evm (EVM state queries)
+        │
+        └─ block files (tx · trace · receipts · events) ──→ S3 ─→ Chaintable indexing pipeline (tx/trace data)
+```
+
+---
+
 <div align="center">
   <br />
   <br />
@@ -155,14 +176,14 @@ Note that if you need any of its submodules, you'd need to manually download tho
 
 If you want a shallow git clone of latest `develop`, you can just do
 ```
-git clone --depth 1 --shallow-submodules https://github.com/ethereum-optimism/optimism.git
+git clone --depth 1 --shallow-submodules https://github.com/Chaintable/optimism
 ```
 which takes only a few seconds on a good internet connection.
 
 If you want to shallow-checkout a specific branch or tag `$REF`, do
 
 ```
-git clone --no-checkout --depth 1 --shallow-submodules https://github.com/ethereum-optimism/optimism.git
+git clone --no-checkout --depth 1 --shallow-submodules https://github.com/Chaintable/optimism
 cd optimism
 git fetch --depth 1 origin "$REF"
 git checkout "$REF"
