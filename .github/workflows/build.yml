@@ -44,7 +44,9 @@ jobs:
           dotnet: true
           haskell: true
           large-packages: true
-          swap-storage: true
+          # keep the runner's ~4GB swap file — op-reth maxperf fat-LTO link peaks
+          # near the 16GB arm64 runner limit and OOMs without this cushion
+          swap-storage: false
 
       - name: Checkout code
         uses: actions/checkout@v2
