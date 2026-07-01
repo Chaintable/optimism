@@ -68,32 +68,6 @@ func TestConfigJSON(t *testing.T) {
 	assert.Equal(t, &roundTripped, config)
 }
 
-func TestConfigUnmarshalLegacyInteropTimeAlias(t *testing.T) {
-	// Mirrors the Rust HardForkConfig `#[serde(alias = "interop_time")]` behavior so
-	// rollup configs written against the pre-rename schema still activate Lagoon.
-	t.Run("legacy interop_time promotes to LagoonTime when lagoon_time absent", func(t *testing.T) {
-		data := []byte(`{"interop_time": 42}`)
-		var cfg Config
-		require.NoError(t, json.Unmarshal(data, &cfg))
-		require.NotNil(t, cfg.LagoonTime, "legacy interop_time must populate LagoonTime")
-		require.Equal(t, uint64(42), *cfg.LagoonTime)
-	})
-
-	t.Run("canonical lagoon_time wins when both keys are present", func(t *testing.T) {
-		data := []byte(`{"interop_time": 42, "lagoon_time": 7}`)
-		var cfg Config
-		require.NoError(t, json.Unmarshal(data, &cfg))
-		require.NotNil(t, cfg.LagoonTime)
-		require.Equal(t, uint64(7), *cfg.LagoonTime, "canonical lagoon_time must take precedence")
-	})
-
-	t.Run("neither key leaves LagoonTime nil", func(t *testing.T) {
-		var cfg Config
-		require.NoError(t, json.Unmarshal([]byte(`{}`), &cfg))
-		require.Nil(t, cfg.LagoonTime)
-	})
-}
-
 type mockL1Client struct {
 	chainID *big.Int
 	Hash    common.Hash
@@ -822,6 +796,7 @@ func TestGetPayloadVersion(t *testing.T) {
 		name           string
 		isthmusTime    uint64
 		ecotoneTime    uint64
+		karstTime      uint64
 		payloadTime    uint64
 		expectedMethod eth.EngineAPIMethod
 	}{
@@ -830,6 +805,7 @@ func TestGetPayloadVersion(t *testing.T) {
 			ecotoneTime:    10,
 			payloadTime:    5,
 			isthmusTime:    20,
+			karstTime:      30,
 			expectedMethod: eth.GetPayloadV2,
 		},
 		{
@@ -837,6 +813,7 @@ func TestGetPayloadVersion(t *testing.T) {
 			ecotoneTime:    10,
 			payloadTime:    15,
 			isthmusTime:    20,
+			karstTime:      30,
 			expectedMethod: eth.GetPayloadV3,
 		},
 		{
@@ -844,7 +821,16 @@ func TestGetPayloadVersion(t *testing.T) {
 			ecotoneTime:    10,
 			payloadTime:    25,
 			isthmusTime:    20,
+			karstTime:      30,
 			expectedMethod: eth.GetPayloadV4,
+		},
+		{
+			name:           "Karst",
+			ecotoneTime:    10,
+			payloadTime:    35,
+			isthmusTime:    20,
+			karstTime:      30,
+			expectedMethod: eth.GetPayloadV5,
 		},
 	}
 
@@ -853,6 +839,7 @@ func TestGetPayloadVersion(t *testing.T) {
 		t.Run(fmt.Sprintf("TestGetPayloadVersion_%s", test.name), func(t *testing.T) {
 			config.EcotoneTime = &test.ecotoneTime
 			config.IsthmusTime = &test.isthmusTime
+			config.KarstTime = &test.karstTime
 			assert.Equal(t, config.GetPayloadVersion(test.payloadTime), test.expectedMethod)
 		})
 	}

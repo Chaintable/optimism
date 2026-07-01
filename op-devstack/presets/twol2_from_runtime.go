@@ -115,7 +115,7 @@ func twoL2SupernodeInteropFromRuntime(t devtest.T, runtime *sysgo.MultiChainRunt
 	t.Require().NotNil(chainA.SupernodeCL, "missing l2a supernode CL")
 	t.Require().NotNil(chainB.SupernodeCL, "missing l2b supernode CL")
 
-	supernode := newSupernodeFrontend(t, "supernode-two-l2-system", runtime.Supernode.UserRPC())
+	supernode := newSupernodeFrontend(t, "supernode-two-l2-system", runtime.Supernode.UserRPC(), runtime.Supernode)
 	// The supernode VN drives its own EL, distinct from the sequencer's
 	// (joined only by L1 + P2P) in light-sequencer presets. In virtual-sequencer
 	// presets the supernode VN is itself the sequencer, so SupernodeEL == EL and
@@ -159,6 +159,8 @@ func twoL2SupernodeInteropFromRuntime(t devtest.T, runtime *sysgo.MultiChainRunt
 		L2ELB:                 dsl.NewL2ELNode(components.l2BEL),
 		L2ASupernodeCL:        dsl.NewL2CLNode(l2ASupernodeCL),
 		L2BSupernodeCL:        dsl.NewL2CLNode(l2BSupernodeCL),
+		L2ASupernodeEL:        dsl.NewL2ELNode(l2ASupernodeEL),
+		L2BSupernodeEL:        dsl.NewL2ELNode(l2BSupernodeEL),
 		L2BatcherA:            dsl.NewL2Batcher(components.l2ABatcher),
 		L2BatcherB:            dsl.NewL2Batcher(components.l2BBatcher),
 		FaucetA:               components.faucetA,
