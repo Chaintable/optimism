@@ -158,7 +158,7 @@ func NewTwoL2SupernodeProofsRuntimeWithConfig(t devtest.T, lagoonAtGenesis bool,
 }
 
 // NewSingleChainSupernodeProofsRuntimeWithConfig deploys a single chain with
-// SuperPermissionedCannon at genesis, then uses opcm.upgrade to add the
+// SuperPermissioned at genesis, then uses opcm.upgrade to add the
 // permissionless super games and set the real starting anchor root.
 // lagoonAtGenesis controls whether Lagoon activates interop at genesis.
 func NewSingleChainSupernodeProofsRuntimeWithConfig(t devtest.T, lagoonAtGenesis bool, cfg PresetConfig) *MultiChainRuntime {
@@ -267,13 +267,12 @@ func startInteropChallenger(
 		sharedchallenger.WithFactoryAddress(l2Nets[0].deployment.DisputeGameFactoryProxyAddr()),
 		sharedchallenger.WithPrivKey(challengerSecret),
 		sharedchallenger.WithDepset(staticDepSet),
-		sharedchallenger.WithCannonConfig(rollupCfgs, l1Net.genesis, l2Geneses, sharedchallenger.InteropVariant),
 		sharedchallenger.WithCannonKonaInteropConfig(rollupCfgs, l1Net.genesis, l2Geneses),
 		sharedchallenger.WithSuperCannonKonaGameType(),
 	}
 	cfg, err := sharedchallenger.NewInteropChallengerConfig(
 		t.Ctx(),
-		t.TempDir(),
+		t.TempDirWithPrefix("super-challenger"),
 		l1EL.UserRPC(),
 		l1CL.beaconHTTPAddr,
 		superRPC,

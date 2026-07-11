@@ -95,7 +95,6 @@ func startDefaultSingleChainPrimary(
 			IsSequencer:   true,
 			NoDiscovery:   true,
 			EnableReqResp: true,
-			UseReqResp:    true,
 			DependencySet: world.Interop.DependencySet,
 			L2CLOptions:   cfg.GlobalL2CLOptions,
 		})
@@ -371,8 +370,7 @@ func startMinimalChallenger(
 	options := []sharedchallenger.Option{
 		sharedchallenger.WithFactoryAddress(l2Net.deployment.DisputeGameFactoryProxyAddr()),
 		sharedchallenger.WithPrivKey(challengerSecret),
-		sharedchallenger.WithCannonConfig(rollupCfgs, l1Net.genesis, l2Geneses, sharedchallenger.MTCannonVariant),
-		sharedchallenger.WithCannonGameType(),
+		sharedchallenger.WithPermissionedCannonConfig(rollupCfgs, l1Net.genesis, l2Geneses),
 		sharedchallenger.WithPermissionedGameType(),
 		sharedchallenger.WithFastGames(),
 		sharedchallenger.WithCannonKonaConfig(rollupCfgs, l1Net.genesis, l2Geneses),
@@ -380,7 +378,7 @@ func startMinimalChallenger(
 	}
 	cfg, err := sharedchallenger.NewPreInteropChallengerConfig(
 		t.Ctx(),
-		t.TempDir(),
+		t.TempDirWithPrefix("l2-challenger-"+l2Net.ChainID().String()),
 		l1EL.UserRPC(),
 		l1CL.beaconHTTPAddr,
 		l2CL.UserRPC(),

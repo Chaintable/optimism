@@ -53,10 +53,6 @@ variable "OP_DISPUTE_MON_VERSION" {
   default = "${GIT_VERSION}"
 }
 
-variable "OP_PROGRAM_VERSION" {
-  default = "${GIT_VERSION}"
-}
-
 variable "OP_SUPERNODE_VERSION" {
   default = "${GIT_VERSION}"
 }
@@ -182,19 +178,6 @@ target "da-server" {
   target = "da-server-target"
   platforms = split(",", PLATFORMS)
   tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/da-server:${tag}"]
-}
-
-target "op-program" {
-  dockerfile = "ops/docker/op-stack-go/Dockerfile"
-  context = "."
-  args = {
-    GIT_COMMIT = "${GIT_COMMIT}"
-    GIT_DATE = "${GIT_DATE}"
-    OP_PROGRAM_VERSION = "${OP_PROGRAM_VERSION}"
-  }
-  target = "op-program-target"
-  platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-program:${tag}"]
 }
 
 target "op-supernode" {
@@ -362,6 +345,12 @@ target "kona-client" {
 target "op-reth" {
   dockerfile = "op-reth/DockerfileOp"
   context = "rust"
+  # The chainspec build.rs reads the superchain-registry submodule (at the repo
+  # root, outside the "rust" context); expose it as a named context so the
+  # Dockerfile can COPY the subset it needs.
+  contexts = {
+    superchain-registry = "superchain-registry"
+  }
   args = {
     BUILD_PROFILE = "maxperf"
     FEATURES = ""
@@ -380,6 +369,9 @@ target "op-rbuilder" {
   context = "rust/op-rbuilder"
   contexts = {
     monorepo-rust = "rust"
+    # op-reth's chainspec build.rs (pulled in via monorepo-rust) regenerates its
+    # gitignored superchain archive from this submodule; see the Dockerfile COPY.
+    superchain-registry = "superchain-registry"
   }
   args = {
     RBUILDER_BIN = "op-rbuilder"
@@ -395,6 +387,9 @@ target "rollup-boost" {
   context = "rust/rollup-boost"
   contexts = {
     monorepo-rust = "rust"
+    # op-reth's chainspec build.rs (pulled in via monorepo-rust) regenerates its
+    # gitignored superchain archive from this submodule; see the Dockerfile COPY.
+    superchain-registry = "superchain-registry"
   }
   args = {
     SERVICE_NAME = "rollup-boost"
