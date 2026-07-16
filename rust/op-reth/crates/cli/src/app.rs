@@ -105,6 +105,7 @@ where
             Commands::Db(command) => {
                 runner.run_blocking_command_until_exit(|ctx| command.execute::<OpNode>(ctx))
             }
+            Commands::SetFinalized(command) => command.execute(),
             Commands::Stage(command) => {
                 runner.run_command_until_exit(|ctx| command.execute::<OpNode, _>(ctx, components))
             }

@@ -15,6 +15,7 @@ pub mod import;
 pub mod import_receipts;
 pub mod init_state;
 pub mod op_proofs;
+pub mod set_finalized;
 mod slot_preimages_seed;
 
 #[cfg(feature = "dev")]
@@ -44,6 +45,9 @@ pub enum Commands<Spec: ChainSpecParser = OpChainSpecParser, Ext: clap::Args + f
     /// Database debugging utilities
     #[command(name = "db")]
     Db(db::Command<Spec>),
+    /// Set the persisted safe and finalized blocks in an offline database.
+    #[command(name = "set-finalized")]
+    SetFinalized(set_finalized::Command),
     /// Manipulate individual stages.
     #[command(name = "stage")]
     Stage(Box<stage::Command<Spec>>),
@@ -81,6 +85,7 @@ impl<
             Self::InitState(cmd) => cmd.chain_spec(),
             Self::DumpGenesis(cmd) => cmd.chain_spec(),
             Self::Db(cmd) => cmd.chain_spec(),
+            Self::SetFinalized(_) => None,
             Self::Stage(cmd) => cmd.chain_spec(),
             Self::P2P(cmd) => cmd.chain_spec(),
             Self::Config(_) => None,
