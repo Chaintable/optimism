@@ -659,8 +659,8 @@ fn build_trace_node(
                 child_event.contract_id = contract_id;
                 child_event.parent_trace_id = id.clone();
                 child_event.id = child_event.debank_id();
-                child_event.idx = *log_index;
                 if debank_node.success {
+                    child_event.idx = *log_index;
                     *log_index += 1;
                 }
                 debank_node.children.push(DebankTraceOrLog::Log(child_event));
