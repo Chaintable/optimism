@@ -5,7 +5,7 @@ use reth_optimism_rpc::debank::{DebankTrace, build_debank_traces};
 use revm::interpreter::InstructionResult;
 use revm_inspectors::tracing::{
     CallTraceArena,
-    types::{CallKind, CallTrace, CallTraceNode, TraceMemberOrder},
+    types::{CallKind, CallLog, CallTrace, CallTraceNode, TraceMemberOrder},
 };
 use std::cell::RefCell;
 
@@ -48,6 +48,12 @@ fn call_trace_arena(nodes: Vec<CallTraceNode>) -> CallTraceArena {
 
 fn trace_for_address(traces: &[DebankTrace], address: Address) -> &DebankTrace {
     traces.iter().find(|trace| trace.to_addr == address).unwrap()
+}
+
+fn with_log(mut node: CallTraceNode) -> CallTraceNode {
+    node.logs.push(CallLog::default());
+    node.ordering.push(TraceMemberOrder::Log(0));
+    node
 }
 
 #[test]
@@ -110,4 +116,41 @@ fn root_selfdestruct_uses_first_child_trace_address() {
     assert_eq!(traces.len(), 2);
     let selfdestruct = trace_for_address(&traces, addr(3));
     assert_eq!(selfdestruct.trace_address, vec![0]);
+}
+
+#[test]
+fn selfdestruct_follows_existing_child_trace_addresses() {
+    let mut selfdestruct =
+        call_trace_node(1, Some(0), addr(2), true, InstructionResult::SelfDestruct, vec![2]);
+    selfdestruct.trace.selfdestruct_address = Some(addr(3));
+    selfdestruct.trace.selfdestruct_refund_target = Some(addr(4));
+    let arena = call_trace_arena(vec![
+        call_trace_node(0, None, addr(1), true, InstructionResult::Stop, vec![1]),
+        selfdestruct,
+        call_trace_node(2, Some(1), addr(5), true, InstructionResult::Stop, vec![]),
+    ]);
+
+    let (traces, error_traces, _, _) =
+        build_debank_traces(H256::repeat_byte(0xaa), arena, &RefCell::new(0));
+
+    assert!(error_traces.is_empty());
+    assert_eq!(trace_for_address(&traces, addr(5)).trace_address, vec![0, 0]);
+    assert_eq!(trace_for_address(&traces, addr(4)).trace_address, vec![0, 1]);
+}
+
+#[test]
+fn error_event_index_stays_zero_after_successful_event() {
+    let arena = call_trace_arena(vec![
+        call_trace_node(0, None, addr(1), true, InstructionResult::Stop, vec![1, 2]),
+        with_log(call_trace_node(1, Some(0), addr(2), true, InstructionResult::Stop, vec![])),
+        with_log(call_trace_node(2, Some(0), addr(3), false, InstructionResult::Revert, vec![])),
+    ]);
+
+    let (_, _, events, error_events) =
+        build_debank_traces(H256::repeat_byte(0xaa), arena, &RefCell::new(0));
+
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].idx, 0);
+    assert_eq!(error_events.len(), 1);
+    assert_eq!(error_events[0].idx, 0);
 }
