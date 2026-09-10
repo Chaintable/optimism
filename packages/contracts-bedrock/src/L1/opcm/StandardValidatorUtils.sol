@@ -185,12 +185,13 @@ contract StandardValidatorUtils {
         returns (string memory)
     {
         IDisputeGameFactory dgf = IDisputeGameFactory(_sysCfg.disputeGameFactory());
+        _errors = internalRequire(address(dgf.gameImpls(GameTypes.CANNON)) == address(0), "PLDG-NOSHAPE", _errors);
         _errors = internalRequire(address(dgf.gameImpls(GameTypes.SUPER_CANNON)) == address(0), "SCDG-NOSHAPE", _errors);
         _errors =
             internalRequire(address(dgf.gameImpls(GameTypes.SUPER_PERMISSIONED)) == address(0), "SPDG-NOSHAPE", _errors);
         _errors =
             internalRequire(address(dgf.gameImpls(GameTypes.SUPER_CANNON_KONA)) == address(0), "SCKDG-NOSHAPE", _errors);
-        // TODO: add ZKDG-NOSHAPE check here once the super-root ZKDisputeGame is ready to be used
+        // TODO(#21529): add ZKDG-NOSHAPE check here once the super-root ZKDisputeGame is ready to be used
         // after interop migration. After that, ZK_DISPUTE_GAME must never be registered on non-super-root chains.
         _errors = internalRequire(
             address(dgf.gameImpls(GameTypes.PERMISSIONED_CANNON)) != address(0), "PDDG-NOSHAPE", _errors
@@ -292,8 +293,6 @@ contract StandardValidatorUtils {
         );
         _errors = internalRequire(_admin.getProxyImplementation(address(_portal)) == _impl, "PORTAL-20", _errors);
 
-        IDisputeGameFactory _dgf = IDisputeGameFactory(_sysCfg.disputeGameFactory());
-        _errors = internalRequire(address(_portal.disputeGameFactory()) == address(_dgf), "PORTAL-30", _errors);
         _errors = internalRequire(address(_portal.systemConfig()) == address(_sysCfg), "PORTAL-40", _errors);
         _errors = internalRequire(_portal.l2Sender() == Constants.DEFAULT_L2_SENDER, "PORTAL-80", _errors);
         _errors = internalRequire(IProxyAdminOwnedBase(address(_portal)).proxyAdmin() == _admin, "PORTAL-90", _errors);
@@ -358,6 +357,7 @@ contract StandardValidatorUtils {
         _errors = internalRequire(
             IProxyAdminOwnedBase(address(_weth)).proxyAdmin() == _admin, string.concat(_errorPrefix, "-60"), _errors
         );
+        _errors = internalRequire(address(_weth) == _sysCfg.delayedWETH(), string.concat(_errorPrefix, "-70"), _errors);
         return _errors;
     }
 
@@ -394,6 +394,14 @@ contract StandardValidatorUtils {
             IProxyAdminOwnedBase(address(_asr)).proxyAdmin() == _admin, string.concat(_errorPrefix, "-50"), _errors
         );
         _errors = internalRequire(_asr.retirementTimestamp() > 0, string.concat(_errorPrefix, "-60"), _errors);
+        // The registry a game anchors against must be the one the portal consults when finalizing
+        // withdrawals. Without this, a game could snapshot the respected game type of a second,
+        // locally valid registry that the portal never reads.
+        _errors = internalRequire(
+            IOptimismPortal2(payable(_sysCfg.optimismPortal())).anchorStateRegistry() == _asr,
+            string.concat(_errorPrefix, "-70"),
+            _errors
+        );
         return _errors;
     }
 
@@ -420,6 +428,8 @@ contract StandardValidatorUtils {
             string.concat(errorPrefix, "-20"),
             errors_
         );
+        errors_ =
+            internalRequire(game.gameAddress == _impls.expectedGameImpl, string.concat(errorPrefix, "-150"), errors_);
 
         errors_ = internalRequire(
             GameType.unwrap(game.gameType) == GameType.unwrap(_args.gameType),
@@ -493,6 +503,8 @@ contract StandardValidatorUtils {
             string.concat(errorPrefix, "-20"),
             errors_
         );
+        errors_ =
+            internalRequire(game.gameAddress == _impls.expectedGameImpl, string.concat(errorPrefix, "-150"), errors_);
         errors_ = internalRequire(Hash.unwrap(anchorRoot) != bytes32(0), string.concat(errorPrefix, "-120"), errors_);
         errors_ = assertValidAnchorStateRegistry(
             errors_, _args.sysCfg, dgf, game.asr, _args.admin, _impls.anchorStateRegistryImpl, errorPrefix

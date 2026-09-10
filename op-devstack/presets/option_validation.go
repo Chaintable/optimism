@@ -14,7 +14,6 @@ const (
 	optionKindDeployer optionKinds = 1 << iota
 	optionKindBatcher
 	optionKindProposer
-	optionKindOPRBuilder
 	optionKindOpReth
 	optionKindGlobalL2CL
 	optionKindGlobalSyncTesterEL
@@ -31,16 +30,18 @@ const (
 	optionKindInteropFilter
 	optionKindPreGenesisSuperGame
 	optionKindSkipHonestProposer
+	optionKindSkipHonestChallenger
 	optionKindSupernodeVerifierSyncMode
 	optionKindInteropActivationDelay
 	optionKindInteropAtGenesis
 	optionKindSupernodeVNSequencerForBootstrap
+	optionKindZKDisputeGame
+	optionKindZKProposer
 )
 
 const allOptionKinds = optionKindDeployer |
 	optionKindBatcher |
 	optionKindProposer |
-	optionKindOPRBuilder |
 	optionKindOpReth |
 	optionKindGlobalL2CL |
 	optionKindGlobalSyncTesterEL |
@@ -57,10 +58,13 @@ const allOptionKinds = optionKindDeployer |
 	optionKindInteropFilter |
 	optionKindPreGenesisSuperGame |
 	optionKindSkipHonestProposer |
+	optionKindSkipHonestChallenger |
 	optionKindSupernodeVerifierSyncMode |
 	optionKindInteropActivationDelay |
 	optionKindInteropAtGenesis |
-	optionKindSupernodeVNSequencerForBootstrap
+	optionKindSupernodeVNSequencerForBootstrap |
+	optionKindZKDisputeGame |
+	optionKindZKProposer
 
 var optionKindLabels = []struct {
 	kind  optionKinds
@@ -69,7 +73,6 @@ var optionKindLabels = []struct {
 	{kind: optionKindDeployer, label: "deployer options"},
 	{kind: optionKindBatcher, label: "batcher options"},
 	{kind: optionKindProposer, label: "proposer options"},
-	{kind: optionKindOPRBuilder, label: "builder options"},
 	{kind: optionKindOpReth, label: "op-reth options"},
 	{kind: optionKindGlobalL2CL, label: "L2 CL options"},
 	{kind: optionKindGlobalSyncTesterEL, label: "sync tester EL options"},
@@ -86,10 +89,13 @@ var optionKindLabels = []struct {
 	{kind: optionKindInteropFilter, label: "interop filter"},
 	{kind: optionKindPreGenesisSuperGame, label: "pre-genesis super game"},
 	{kind: optionKindSkipHonestProposer, label: "skip honest proposer"},
+	{kind: optionKindSkipHonestChallenger, label: "skip honest challenger"},
 	{kind: optionKindSupernodeVerifierSyncMode, label: "supernode verifier sync mode"},
 	{kind: optionKindInteropActivationDelay, label: "interop activation delay"},
 	{kind: optionKindInteropAtGenesis, label: "interop at genesis"},
 	{kind: optionKindSupernodeVNSequencerForBootstrap, label: "supernode VN sequencer for bootstrap"},
+	{kind: optionKindZKDisputeGame, label: "ZK dispute game"},
+	{kind: optionKindZKProposer, label: "ZK proposer options"},
 }
 
 func (k optionKinds) String() string {
@@ -122,22 +128,37 @@ func collectSupportedPresetConfig(t devtest.T, presetName string, opts []Option,
 	if unsupported := unsupportedPresetOptionKinds(combined, supported); unsupported != 0 {
 		t.Require().FailNowf("%s does not support preset options: %s", presetName, unsupported)
 	}
+	t.Require().NoError(validatePresetConfig(cfg), "%s has invalid preset options", presetName)
 	return cfg, combined
+}
+
+func validatePresetConfig(cfg sysgo.PresetConfig) error {
+	if cfg.ZKDisputeGame != nil && cfg.ZKDisputeGame.MaxProveDuration == 0 {
+		return fmt.Errorf("WithZKChallengeDuration requires a preceding WithZK")
+	}
+	if len(cfg.ZKProposerOptions) > 0 && cfg.ZKDisputeGame == nil {
+		return fmt.Errorf("ZK proposer options require WithZK")
+	}
+	return nil
 }
 
 const minimalPresetSupportedOptionKinds = optionKindDeployer |
 	optionKindBatcher |
 	optionKindProposer |
+	optionKindOpReth |
 	optionKindGlobalL2CL |
 	optionKindL1EL |
 	optionKindAddedGameType |
 	optionKindRespectedGameType |
 	optionKindTimeTravel |
 	optionKindAfterBuild |
-	optionKindProofValidation
+	optionKindProofValidation |
+	optionKindSkipHonestProposer
 
 const minimalWithConductorsPresetSupportedOptionKinds = minimalPresetSupportedOptionKinds
 
+// Builds on the minimal set, op-reth options included: the added node is a sync-tester EL, not a
+// sequencing candidate, so the sequencer-builds / stock-verifies split holds.
 const simpleWithSyncTesterPresetSupportedOptionKinds = minimalPresetSupportedOptionKinds |
 	optionKindGlobalSyncTesterEL
 
@@ -164,8 +185,13 @@ const supernodeProofsPresetSupportedOptionKinds = optionKindDeployer |
 	optionKindMessageExpiryWindow |
 	optionKindSkipHonestProposer
 
+const singleChainInteropNoSupernodePresetSupportedOptionKinds = optionKindOpReth
+
 const twoL2SupernodeProofsPresetSupportedOptionKinds = supernodeProofsPresetSupportedOptionKinds |
-	optionKindPreGenesisSuperGame
+	optionKindPreGenesisSuperGame |
+	optionKindZKDisputeGame |
+	optionKindZKProposer |
+	optionKindSkipHonestChallenger
 
 const twoL2SupernodePresetSupportedOptionKinds = optionKindDeployer |
 	optionKindL1EL
@@ -179,7 +205,9 @@ const twoL2SupernodeInteropPresetSupportedOptionKinds = optionKindDeployer |
 	optionKindPreGenesisSuperGame |
 	optionKindSupernodeVNSequencerForBootstrap
 
-const singleChainWithFlashblocksPresetSupportedOptionKinds = optionKindDeployer |
-	optionKindOPRBuilder |
-	optionKindOpReth |
-	optionKindInteropAtGenesis
+// twoL2SupernodeLightSequencerPresetSupportedOptionKinds additionally accepts
+// L2 CL options: the light-sequencer runtime is the only two-L2 supernode
+// variant that wires GlobalL2CLOptions (to the light sequencer CLs), so the
+// option is accepted here and nowhere else to avoid a silent no-op.
+const twoL2SupernodeLightSequencerPresetSupportedOptionKinds = twoL2SupernodeInteropPresetSupportedOptionKinds |
+	optionKindGlobalL2CL

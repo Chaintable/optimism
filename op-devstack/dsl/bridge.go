@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-chain-ops/crossdomain"
 	gameTypes "github.com/ethereum-optimism/optimism/op-challenger/game/types"
 	"github.com/ethereum-optimism/optimism/op-core/predeploys"
+	optypes "github.com/ethereum-optimism/optimism/op-core/types"
 	"github.com/ethereum-optimism/optimism/op-devstack/devtest"
 	nodebindings "github.com/ethereum-optimism/optimism/op-node/bindings"
 	bindingspreview "github.com/ethereum-optimism/optimism/op-node/bindings/preview"
@@ -102,6 +103,9 @@ func NewStandardBridge(t devtest.T, l2Network *L2Network, l1EL *L1ELNode) *Stand
 
 func (b *StandardBridge) GameResolutionDelay() time.Duration {
 	gameType := b.RespectedGameType()
+	if gameTypes.GameType(gameType) == gameTypes.SuperPermissionedGameType {
+		return 0
+	}
 	gameImplAddr, err := contractio.Read(b.disputeGameFactory.GameImpls(gameType), b.ctx)
 	b.require.NoErrorf(err, "failed to get implementation for game type %v", gameType)
 	game := bindings.NewBindings[bindings.FaultDisputeGame](bindings.WithClient(b.l1Client.EthClient()), bindings.WithTo(gameImplAddr), bindings.WithTest(b.t))
@@ -145,7 +149,8 @@ func (b *StandardBridge) UsesSuperRoots() bool {
 	gameType := gameTypes.GameType(b.RespectedGameType())
 	return gameType == gameTypes.SuperPermissionedGameType ||
 		gameType == gameTypes.SuperAsteriscKonaGameType ||
-		gameType == gameTypes.SuperCannonKonaGameType
+		gameType == gameTypes.SuperCannonKonaGameType ||
+		gameType == gameTypes.ZKDisputeGameType
 }
 
 type Deposit struct {
@@ -170,9 +175,9 @@ func (b *StandardBridge) Deposit(amount eth.ETH, from *EOA) Deposit {
 	idx := len(l1DepositReceipt.Logs) - 1
 	l2DepositTx, err := derive.UnmarshalDepositLogEvent(l1DepositReceipt.Logs[idx])
 	b.require.NoError(err, "Could not reconstruct L2 Deposit")
-	l2DepositTxHash := types.NewTx(l2DepositTx).Hash()
+	l2DepositTxHash := l2DepositTx.Hash()
 	// Give time for L2CL to include the L2 deposit tx
-	var l2DepositReceipt *types.Receipt
+	var l2DepositReceipt *optypes.Receipt
 	b.require.Eventually(func() bool {
 		l2DepositReceipt, err = b.l2Client.TransactionReceipt(b.ctx, l2DepositTxHash)
 		return err == nil
@@ -206,7 +211,7 @@ func (b *StandardBridge) ERC20Deposit(l1TokenAddr common.Address, l2TokenAddr co
 
 	// Wait for the deposit to be processed on the L2
 	// Find the deposit log to get the L2 deposit transaction
-	var l2DepositTx *types.DepositTx
+	var l2DepositTx *optypes.DepositTx
 	for _, log := range depositReceipt.Logs {
 		if l2DepositTx, err = derive.UnmarshalDepositLogEvent(log); err == nil {
 			break
@@ -214,11 +219,11 @@ func (b *StandardBridge) ERC20Deposit(l1TokenAddr common.Address, l2TokenAddr co
 	}
 	b.require.NotNil(l2DepositTx, "Could not find L2 deposit transaction in logs")
 
-	l2DepositTxHash := types.NewTx(l2DepositTx).Hash()
+	l2DepositTxHash := l2DepositTx.Hash()
 
 	// Give time for L2CL to include the L2 deposit tx
 	sequencingWindowDuration := time.Duration(b.rollupCfg.SeqWindowSize) * b.l1Client.EstimateBlockTime()
-	var l2DepositReceipt *types.Receipt
+	var l2DepositReceipt *optypes.Receipt
 	b.require.Eventually(func() bool {
 		l2DepositReceipt, err = b.l2Client.TransactionReceipt(b.ctx, l2DepositTxHash)
 		return err == nil
@@ -382,6 +387,11 @@ func bridgeGameSequenceAndOutputRoot(game bindings.GameSearchResult, gameType ga
 		return new(big.Int).SetBytes(game.ExtraData[:32]), game.RootClaim, true, nil
 	case gameTypes.SuperCannonKonaGameType, gameTypes.SuperPermissionedGameType:
 		return bridgeSuperRootChainOutput(game.ExtraData, l2ChainID)
+	case gameTypes.ZKDisputeGameType:
+		if len(game.ExtraData) < 4 {
+			return nil, common.Hash{}, false, fmt.Errorf("ZK game extra data is %d bytes, need at least 4-byte parent index", len(game.ExtraData))
+		}
+		return bridgeSuperRootChainOutput(game.ExtraData[4:], l2ChainID)
 	default:
 		return nil, common.Hash{}, false, fmt.Errorf("unsupported game type: %v", gameType)
 	}
@@ -426,6 +436,12 @@ func (w *Withdrawal) InitiateGasCost() eth.ETH {
 func (w *Withdrawal) ProveGasCost() eth.ETH {
 	w.require.NotNil(w.proveReceipt, "Must have proven withdrawal before calculating gas cost")
 	return w.bridge.gasCost(w.proveReceipt, w.bridge.l1Client.EthClient())
+}
+
+func (w *Withdrawal) ProvenDisputeGameIndex() *big.Int {
+	w.require.NotNil(w.proveReceipt, "Must have proven withdrawal before reading dispute game index")
+	w.require.NotNil(w.proveParams.DisputeGameIndex, "Proven withdrawal is missing dispute game index")
+	return new(big.Int).Set(w.proveParams.DisputeGameIndex)
 }
 
 func (w *Withdrawal) FinalizeGasCost() eth.ETH {

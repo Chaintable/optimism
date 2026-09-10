@@ -11,13 +11,20 @@ import (
 
 	altda "github.com/ethereum-optimism/optimism/op-alt-da"
 	"github.com/ethereum-optimism/optimism/op-core/forks"
+	opparams "github.com/ethereum-optimism/optimism/op-core/params"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
 )
+
+// historyPrunedErrCode is the JSON-RPC error code an execution engine returns when the requested
+// block predates its earliest retained history (EIP-4444 history expiry). reth returns this for
+// any block below its earliest available history height.
+const historyPrunedErrCode = 4444
 
 var (
 	ErrBlockTimeZero                 = errors.New("block time cannot be 0")
@@ -58,12 +65,23 @@ type AltDAConfig struct {
 	DAChallengeAddress common.Address `json:"da_challenge_contract_address,omitempty"`
 	// CommitmentType specifies which commitment type can be used. Defaults to Keccak (type 0) if not present
 	CommitmentType string `json:"da_commitment_type"`
+	// MaxInputSize is the maximum byte size accepted for Keccak commitments.
+	// It defaults to the protocol limit when omitted.
+	MaxInputSize *uint64 `json:"da_max_input_size,omitempty"`
 	// DA challenge window value set on the DAC contract. Used in alt-da mode
 	// to compute when a commitment can no longer be challenged.
 	DAChallengeWindow uint64 `json:"da_challenge_window"`
 	// DA resolve window value set on the DAC contract. Used in alt-da mode
 	// to compute when a challenge expires and trigger a reorg if needed.
 	DAResolveWindow uint64 `json:"da_resolve_window"`
+}
+
+// MaxInputSizeOrDefault returns the configured maximum input size or the protocol default.
+func (c *AltDAConfig) MaxInputSizeOrDefault() uint64 {
+	if c == nil || c.MaxInputSize == nil {
+		return altda.MaxInputSize
+	}
+	return *c.MaxInputSize
 }
 
 type Config struct {
@@ -160,7 +178,7 @@ type Config struct {
 	// It is used during safe chain consolidation to translate zero SystemConfig EIP1559
 	// parameters to the protocol values, like the execution layer does.
 	// If missing, it is loaded by the op-node from the embedded superchain config at startup.
-	ChainOpConfig *params.OptimismConfig `json:"chain_op_config,omitempty"`
+	ChainOpConfig *opparams.OptimismConfig `json:"chain_op_config,omitempty"`
 
 	// Optional Features
 
@@ -192,7 +210,7 @@ func (cfg *Config) ValidateL1Config(ctx context.Context, logger log.Logger, clie
 }
 
 // ValidateL2Config checks L2 config variables for errors.
-func (cfg *Config) ValidateL2Config(ctx context.Context, client L2Client, skipL2GenesisBlockHash bool) error {
+func (cfg *Config) ValidateL2Config(ctx context.Context, logger log.Logger, client L2Client, skipL2GenesisBlockHash bool) error {
 	// Validate the L2 Client Chain ID
 	if err := cfg.CheckL2ChainID(ctx, client); err != nil {
 		return err
@@ -202,7 +220,7 @@ func (cfg *Config) ValidateL2Config(ctx context.Context, client L2Client, skipL2
 	if skipL2GenesisBlockHash {
 		return nil
 	}
-	if err := cfg.CheckL2GenesisBlockHash(ctx, client); err != nil {
+	if err := cfg.CheckL2GenesisBlockHash(ctx, logger, client); err != nil {
 		return err
 	}
 
@@ -282,15 +300,29 @@ func (cfg *Config) CheckL2ChainID(ctx context.Context, client L2Client) error {
 }
 
 // CheckL2GenesisBlockHash checks that the configured L2 genesis block hash is valid for the given client.
-func (cfg *Config) CheckL2GenesisBlockHash(ctx context.Context, client L2Client) error {
+func (cfg *Config) CheckL2GenesisBlockHash(ctx context.Context, logger log.Logger, client L2Client) error {
 	l2GenesisBlockRef, err := client.L2BlockRefByNumber(ctx, cfg.Genesis.L2.Number)
 	if err != nil {
+		// The execution engine may no longer retain the genesis block, either because it was never
+		// found or because history expiry has pruned it. The genesis block hash is fully determined
+		// by the rollup config, so accept the configured value rather than failing initialization.
+		if errors.Is(eth.MaybeAsNotFoundErr(err), ethereum.NotFound) || isHistoryPrunedErr(err) {
+			logger.Warn("L2 genesis block not retained by execution engine, skipping validity check", "err", err)
+			return nil
+		}
 		return fmt.Errorf("failed to get L2 genesis blockhash: %w", err)
 	}
 	if l2GenesisBlockRef.Hash != cfg.Genesis.L2.Hash {
 		return fmt.Errorf("incorrect L2 genesis block hash %s, expected %s", l2GenesisBlockRef.Hash, cfg.Genesis.L2.Hash)
 	}
 	return nil
+}
+
+// isHistoryPrunedErr reports whether err is the JSON-RPC error an execution engine returns when the
+// requested block has been pruned by history expiry (see historyPrunedErrCode).
+func isHistoryPrunedErr(err error) bool {
+	var rpcErr rpc.Error
+	return errors.As(err, &rpcErr) && rpcErr.ErrorCode() == historyPrunedErrCode
 }
 
 // Check verifies that the given configuration makes sense
@@ -412,6 +444,12 @@ func (cfg *Config) ProbablyMissingPectraBlobSchedule() bool {
 // If the legacy values are set, they are copied to the new location. If both are set, they are check for consistency.
 func validateAltDAConfig(cfg *Config) error {
 	if cfg.AltDAConfig != nil {
+		if cfg.AltDAConfig.CommitmentType == altda.GenericCommitmentString && cfg.AltDAConfig.MaxInputSize != nil {
+			return errors.New("altDA max input size must be omitted for generic commitments")
+		}
+		if cfg.AltDAConfig.MaxInputSize != nil && *cfg.AltDAConfig.MaxInputSize == 0 {
+			return errors.New("altDA max input size must be greater than zero")
+		}
 		if !(cfg.AltDAConfig.CommitmentType == altda.KeccakCommitmentString || cfg.AltDAConfig.CommitmentType == altda.GenericCommitmentString) {
 			return fmt.Errorf("invalid commitment type: %v", cfg.AltDAConfig.CommitmentType)
 		}
@@ -790,7 +828,8 @@ func (c *Config) SyncLookback() uint64 {
 }
 
 // Description outputs a banner describing the important parts of rollup configuration in a human-readable form.
-// Optionally provide a mapping of L2 chain IDs to network names to label the L2 chain with if not unknown.
+// Optionally provide a mapping of L2 chain IDs to network names to label the L2 chain with; unlike
+// LogDescription, the human-readable banner always prints a name, falling back to "unknown L2".
 // The config should be config.Check()-ed before creating a description.
 func (c *Config) Description(l2Chains map[string]string) string {
 	// Find and report the network the user is running
@@ -829,17 +868,10 @@ func (c *Config) Description(l2Chains map[string]string) string {
 }
 
 // LogDescription outputs a banner describing the important parts of rollup configuration in a log format.
-// Optionally provide a mapping of L2 chain IDs to network names to label the L2 chain with if not unknown.
+// Optionally provide a mapping of L2 chain IDs to network names to label the L2 chain; without a
+// name for the chain, the l2_network field is omitted (l2_chain_id identifies the chain either way).
 // The config should be config.Check()-ed before creating a description.
 func (c *Config) LogDescription(log log.Logger, l2Chains map[string]string) {
-	// Find and report the network the user is running
-	networkL2 := ""
-	if l2Chains != nil {
-		networkL2 = l2Chains[c.L2ChainID.String()]
-	}
-	if networkL2 == "" {
-		networkL2 = "unknown L2"
-	}
 	networkL1 := params.NetworkNames[c.L1ChainID.String()]
 	if networkL1 == "" {
 		networkL1 = "unknown L1"
@@ -847,7 +879,11 @@ func (c *Config) LogDescription(log log.Logger, l2Chains map[string]string) {
 
 	ctx := []any{
 		"l2_chain_id", c.L2ChainID,
-		"l2_network", networkL2,
+	}
+	if networkL2 := l2Chains[c.L2ChainID.String()]; networkL2 != "" {
+		ctx = append(ctx, "l2_network", networkL2)
+	}
+	ctx = append(ctx,
 		"l1_chain_id", c.L1ChainID,
 		"l1_network", networkL1,
 		"l2_start_time", c.Genesis.L2Time,
@@ -855,7 +891,7 @@ func (c *Config) LogDescription(log log.Logger, l2Chains map[string]string) {
 		"l2_block_number", c.Genesis.L2.Number,
 		"l1_block_hash", c.Genesis.L1.Hash.String(),
 		"l1_block_number", c.Genesis.L1.Number,
-	}
+	)
 	c.forEachFork(func(_ string, logName string, time *uint64) {
 		ctx = append(ctx, logName, fmtForkTimeOrUnset(time))
 	})

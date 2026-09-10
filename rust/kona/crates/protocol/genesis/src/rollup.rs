@@ -156,42 +156,6 @@ impl Default for RollupConfig {
     }
 }
 
-#[cfg(feature = "revm")]
-impl RollupConfig {
-    /// Returns the active [`op_revm::OpSpecId`] for the executor.
-    ///
-    /// ## Takes
-    /// - `timestamp`: The timestamp of the executing block.
-    ///
-    /// ## Returns
-    /// The active [`op_revm::OpSpecId`] for the executor.
-    pub fn spec_id(&self, timestamp: u64) -> op_revm::OpSpecId {
-        if self.is_lagoon_active(timestamp) {
-            op_revm::OpSpecId::INTEROP
-        } else if self.is_karst_active(timestamp) {
-            op_revm::OpSpecId::KARST
-        } else if self.is_jovian_active(timestamp) {
-            op_revm::OpSpecId::JOVIAN
-        } else if self.is_isthmus_active(timestamp) {
-            op_revm::OpSpecId::ISTHMUS
-        } else if self.is_holocene_active(timestamp) {
-            op_revm::OpSpecId::HOLOCENE
-        } else if self.is_granite_active(timestamp) {
-            op_revm::OpSpecId::GRANITE
-        } else if self.is_fjord_active(timestamp) {
-            op_revm::OpSpecId::FJORD
-        } else if self.is_ecotone_active(timestamp) {
-            op_revm::OpSpecId::ECOTONE
-        } else if self.is_canyon_active(timestamp) {
-            op_revm::OpSpecId::CANYON
-        } else if self.is_regolith_active(timestamp) {
-            op_revm::OpSpecId::REGOLITH
-        } else {
-            op_revm::OpSpecId::BEDROCK
-        }
-    }
-}
-
 impl RollupConfig {
     /// Returns true if Regolith is active at the given timestamp.
     pub fn is_regolith_active(&self, timestamp: u64) -> bool {
@@ -407,13 +371,14 @@ impl RollupConfig {
         self.hardforks
     }
 
-    /// Computes a block number from a timestamp, relative to the L2 genesis time and the block
-    /// time.
+    /// Computes the absolute L2 block number that a timestamp falls in.
     ///
-    /// This function assumes that the timestamp is aligned with the block time, and uses floor
-    /// division in its computation.
+    /// The computation uses floor division. A timestamp between two blocks therefore resolves
+    /// to the earlier block.
     pub const fn block_number_from_timestamp(&self, timestamp: u64) -> u64 {
-        timestamp.saturating_sub(self.genesis.l2_time).saturating_div(self.block_time)
+        self.genesis.l2.number.saturating_add(
+            timestamp.saturating_sub(self.genesis.l2_time).saturating_div(self.block_time),
+        )
     }
 
     /// Checks the scalar value in Ecotone.
@@ -517,7 +482,6 @@ impl OpHardforks for RollupConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(feature = "serde")]
     use alloy_eips::BlockNumHash;
     use alloy_primitives::address;
     #[cfg(feature = "serde")]
@@ -531,36 +495,6 @@ mod tests {
         let mut bytes = [0u8; 1024];
         rand::rng().fill(bytes.as_mut_slice());
         RollupConfig::arbitrary(&mut arbitrary::Unstructured::new(&bytes)).unwrap();
-    }
-
-    #[test]
-    #[cfg(feature = "revm")]
-    fn test_revm_spec_id() {
-        // By default, the spec ID should be BEDROCK.
-        let mut config = RollupConfig {
-            hardforks: HardForkConfig { regolith_time: Some(10), ..Default::default() },
-            ..Default::default()
-        };
-        assert_eq!(config.spec_id(0), op_revm::OpSpecId::BEDROCK);
-        assert_eq!(config.spec_id(10), op_revm::OpSpecId::REGOLITH);
-        config.hardforks.canyon_time = Some(20);
-        assert_eq!(config.spec_id(20), op_revm::OpSpecId::CANYON);
-        config.hardforks.ecotone_time = Some(30);
-        assert_eq!(config.spec_id(30), op_revm::OpSpecId::ECOTONE);
-        config.hardforks.fjord_time = Some(40);
-        assert_eq!(config.spec_id(40), op_revm::OpSpecId::FJORD);
-        config.hardforks.granite_time = Some(45);
-        assert_eq!(config.spec_id(45), op_revm::OpSpecId::GRANITE);
-        config.hardforks.holocene_time = Some(50);
-        assert_eq!(config.spec_id(50), op_revm::OpSpecId::HOLOCENE);
-        config.hardforks.isthmus_time = Some(60);
-        assert_eq!(config.spec_id(60), op_revm::OpSpecId::ISTHMUS);
-        config.hardforks.jovian_time = Some(70);
-        assert_eq!(config.spec_id(70), op_revm::OpSpecId::JOVIAN);
-        config.hardforks.karst_time = Some(80);
-        assert_eq!(config.spec_id(80), op_revm::OpSpecId::KARST);
-        config.hardforks.lagoon_time = Some(90);
-        assert_eq!(config.spec_id(90), op_revm::OpSpecId::INTEROP);
     }
 
     #[test]
@@ -1122,6 +1056,28 @@ mod tests {
 
         assert_eq!(cfg.block_number_from_timestamp(20), 5);
         assert_eq!(cfg.block_number_from_timestamp(30), 10);
+    }
+
+    #[test]
+    fn test_compute_block_number_from_time_non_zero_genesis() {
+        // OP Mainnet, whose L2 genesis is the last block of the legacy OVM chain.
+        let cfg = RollupConfig {
+            genesis: ChainGenesis {
+                l2: BlockNumHash { number: 105235063, ..Default::default() },
+                l2_time: 1686068903,
+                ..Default::default()
+            },
+            block_time: 2,
+            ..Default::default()
+        };
+
+        assert_eq!(cfg.block_number_from_timestamp(1686068903), 105235063);
+        assert_eq!(cfg.block_number_from_timestamp(1686068905), 105235064);
+        // 1788303126 falls between two blocks.
+        assert_eq!(cfg.block_number_from_timestamp(1788303126), 156352174);
+        assert_eq!(cfg.block_number_from_timestamp(1788303127), 156352175);
+        // A timestamp before genesis clamps to the genesis block.
+        assert_eq!(cfg.block_number_from_timestamp(0), 105235063);
     }
 
     #[cfg(feature = "rollup_config_override")]

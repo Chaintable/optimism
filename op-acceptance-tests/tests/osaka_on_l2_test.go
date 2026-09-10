@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-chain-ops/cmd/check-karst/karsttest"
 	"github.com/ethereum-optimism/optimism/op-core/predeploys"
 	"github.com/ethereum-optimism/optimism/op-devstack/devtest"
+	"github.com/ethereum-optimism/optimism/op-devstack/dsl"
 	"github.com/ethereum-optimism/optimism/op-devstack/presets"
 	"github.com/ethereum-optimism/optimism/op-devstack/sysgo"
 	"github.com/ethereum-optimism/optimism/op-service/bigs"
@@ -53,10 +54,7 @@ func TestEIP7823UpperBoundModExp(gt *testing.T) {
 
 		agreedBlockChild, claimBlock, err := karsttest.CheckEIP7823(t.Ctx(), t.Logger(), eoa.Plan())
 		t.Require().NoError(err)
-		// kona-host cannot prefetch state proofs from op-rbuilder (no proofs-history ExEx).
-		if !sysgo.IsOpRbuilder() {
-			t.Require().True(sys.RunKonaNative(agreedBlockChild-1, claimBlock))
-		}
+		t.Require().True(sys.RunKonaNative(agreedBlockChild-1, claimBlock))
 	})
 }
 
@@ -96,10 +94,7 @@ func TestEIP7883ModExpGasCostIncrease(gt *testing.T) {
 
 		agreedBlockChild, claimBlock, err := karsttest.CheckEIP7883(t.Ctx(), t.Logger(), eoa.Plan())
 		t.Require().NoError(err)
-		// kona-host cannot prefetch state proofs from op-rbuilder (no proofs-history ExEx).
-		if !sysgo.IsOpRbuilder() {
-			t.Require().True(sys.RunKonaNative(agreedBlockChild-1, claimBlock))
-		}
+		t.Require().True(sys.RunKonaNative(agreedBlockChild-1, claimBlock))
 	})
 }
 
@@ -155,10 +150,7 @@ func TestEIP7825TxGasLimitCap(gt *testing.T) {
 
 				agreedBlock := bigs.Uint64Strict(receipt.BlockNumber) - 1
 				claimBlock := bigs.Uint64Strict(receipt.BlockNumber)
-				// kona-host cannot prefetch state proofs from op-rbuilder (no proofs-history ExEx).
-				if !sysgo.IsOpRbuilder() {
-					t.Require().Equal(tc.konaAccepts, sys.RunKonaNative(agreedBlock, claimBlock))
-				}
+				t.Require().Equal(tc.konaAccepts, sys.RunKonaNative(agreedBlock, claimBlock))
 			})
 		}
 	})
@@ -230,10 +222,7 @@ func TestEIP7951P256VerifyGasCostIncrease(gt *testing.T) {
 
 				agreedBlock := bigs.Uint64Strict(receipt.BlockNumber) - 1
 				claimBlock := bigs.Uint64Strict(receipt.BlockNumber)
-				// kona-host cannot prefetch state proofs from op-rbuilder (no proofs-history ExEx).
-				if !sysgo.IsOpRbuilder() {
-					t.Require().Equal(tc.konaAccepts, sys.RunKonaNative(agreedBlock, claimBlock))
-				}
+				t.Require().Equal(tc.konaAccepts, sys.RunKonaNative(agreedBlock, claimBlock))
 			})
 		}
 	})
@@ -250,10 +239,7 @@ func TestEIP7951P256VerifyGasCostIncrease(gt *testing.T) {
 
 		agreedBlockChild, claimBlock, err := karsttest.CheckEIP7951(t.Ctx(), t.Logger(), eoa.Plan())
 		t.Require().NoError(err)
-		// kona-host cannot prefetch state proofs from op-rbuilder (no proofs-history ExEx).
-		if !sysgo.IsOpRbuilder() {
-			t.Require().True(sys.RunKonaNative(agreedBlockChild-1, claimBlock))
-		}
+		t.Require().True(sys.RunKonaNative(agreedBlockChild-1, claimBlock))
 	})
 }
 
@@ -316,10 +302,7 @@ func TestKarstBn256PairingInputSizeReduction(gt *testing.T) {
 
 				agreedBlock := bigs.Uint64Strict(receipt.BlockNumber) - 1
 				claimBlock := bigs.Uint64Strict(receipt.BlockNumber)
-				// kona-host cannot prefetch state proofs from op-rbuilder (no proofs-history ExEx).
-				if !sysgo.IsOpRbuilder() {
-					t.Require().Equal(tc.konaAccepts, sys.RunKonaNative(agreedBlock, claimBlock))
-				}
+				t.Require().Equal(tc.konaAccepts, sys.RunKonaNative(agreedBlock, claimBlock))
 			})
 		}
 	})
@@ -336,10 +319,7 @@ func TestKarstBn256PairingInputSizeReduction(gt *testing.T) {
 
 		agreedBlockChild, claimBlock, err := karsttest.CheckKarstBn256PairInputLimit(t.Ctx(), t.Logger(), eoa.Plan())
 		t.Require().NoError(err)
-		// kona-host cannot prefetch state proofs from op-rbuilder (no proofs-history ExEx).
-		if !sysgo.IsOpRbuilder() {
-			t.Require().True(sys.RunKonaNative(agreedBlockChild-1, claimBlock))
-		}
+		t.Require().True(sys.RunKonaNative(agreedBlockChild-1, claimBlock))
 	})
 }
 
@@ -374,10 +354,7 @@ func TestEIP7939CLZ(gt *testing.T) {
 
 		claimBlock, err := karsttest.CheckEIP7939(t.Ctx(), t.Logger(), sys.L2EL.EthClient(), eoa.Plan())
 		t.Require().NoError(err)
-		// kona-host cannot prefetch state proofs from op-rbuilder (no proofs-history ExEx).
-		if !sysgo.IsOpRbuilder() {
-			t.Require().True(sys.RunKonaNative(claimBlock-1, claimBlock))
-		}
+		t.Require().True(sys.RunKonaNative(claimBlock-1, claimBlock))
 	})
 }
 
@@ -411,10 +388,7 @@ func TestEIP7825DepositBypassesTxGasLimitCap(gt *testing.T) {
 		eth.OneHundredthEther,
 	)
 	t.Require().NoError(err)
-	// kona-host cannot prefetch state proofs from op-rbuilder (no proofs-history ExEx).
-	if !sysgo.IsOpRbuilder() {
-		t.Require().True(sys.RunKonaNative(claimBlock-1, claimBlock))
-	}
+	t.Require().True(sys.RunKonaNative(claimBlock-1, claimBlock))
 }
 
 // TestEIP7934BlockSizeLimitDisabled proves that EIP-7934 is disabled by building a single block
@@ -440,19 +414,19 @@ func TestEIP7934BlockSizeLimitDisabled(gt *testing.T) {
 // spamTxs floods L2 with large-calldata transactions to drive the L2 base fee up.
 func spamTxs(sys *presets.Minimal) {
 	l2BlockTime := time.Duration(sys.L2Chain.Escape().RollupConfig().BlockTime) * time.Second
-	eoas := loadtest.FundEOAs(sys.T, eth.HundredEther, 50, l2BlockTime, sys.L2EL, sys.Wallet, sys.FaucetL2)
+	eoas := loadtest.FundEOAs(sys.T, eth.HundredEther, 50, l2BlockTime, sys.L2EL, sys.Wallet, sys.FunderL2)
 	runSpam(sys.T, eoas, l2BlockTime, predeploys.L1BlockAddr)
 }
 
 // spamL1Txs floods L1 with large-calldata transactions to drive the L1 base fee up.
 func spamL1Txs(sys *presets.Minimal) {
 	l1BlockTime := sys.L1EL.EstimateBlockTime()
-	eoas := loadtest.FundEOAs(sys.T, eth.HundredEther, 50, l1BlockTime, sys.L1EL, sys.Wallet, sys.FaucetL1)
+	eoas := loadtest.FundEOAs(sys.T, eth.HundredEther, 50, l1BlockTime, sys.L1EL, sys.Wallet, sys.FunderL1)
 	// The target only needs to absorb calldata, so any address works.
 	runSpam(sys.T, eoas, l1BlockTime, common.Address{0x42})
 }
 
-func runSpam(t devtest.T, eoas []*loadtest.SyncEOA, blockTime time.Duration, to common.Address) {
+func runSpam(t devtest.T, eoas []*dsl.SyncEOA, blockTime time.Duration, to common.Address) {
 	eoasRR := loadtest.NewRoundRobin(eoas)
 	spammer := loadtest.SpammerFunc(func(t devtest.T) error {
 		// Max tx size in op-geth and op-reth mempools is 128 kB per tx.

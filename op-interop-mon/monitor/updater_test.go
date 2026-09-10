@@ -8,6 +8,7 @@ import (
 	"time"
 
 	messages "github.com/ethereum-optimism/optimism/op-core/interop/messages"
+	optypes "github.com/ethereum-optimism/optimism/op-core/types"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/locks"
 	"github.com/ethereum/go-ethereum/common"
@@ -279,11 +280,11 @@ func TestUpdaterJobStatusUpdate(t *testing.T) {
 			}
 
 			// Configure mock client to return the test receipts
-			client.fetchReceiptsByNumber = func(ctx context.Context, number uint64) (eth.BlockInfo, ethtypes.Receipts, error) {
+			client.fetchReceiptsByNumber = func(ctx context.Context, number uint64) (eth.BlockInfo, optypes.Receipts, error) {
 				if tt.receipts == nil {
 					return nil, nil, errors.New("mock error")
 				}
-				return eth.HeaderBlockInfo(&ethtypes.Header{}), tt.receipts, nil
+				return eth.HeaderBlockInfo(&ethtypes.Header{}), optypes.FromGethReceipts(tt.receipts), nil
 			}
 
 			// Update job status
@@ -342,6 +343,28 @@ func TestUpdaterValidityInvariants(t *testing.T) {
 			expectedStatus: []jobStatus{jobStatusTimestampMismatch},
 		},
 		{
+			// Executing exactly at the end of the window is still valid; only a strictly
+			// larger gap expires.
+			name:           "valid exactly at expiry boundary",
+			origin:         common.HexToAddress("0xabc"),
+			initTimestamp:  1000,
+			execTimestamp:  1000 + 604800,
+			blockTime:      1000,
+			expiryWindow:   604800,
+			payload:        validHash,
+			expectedStatus: []jobStatus{jobStatusValid},
+		},
+		{
+			name:           "valid with timestamps near max uint64",
+			origin:         common.HexToAddress("0xabc"),
+			initTimestamp:  ^uint64(0) - 10,
+			execTimestamp:  ^uint64(0),
+			blockTime:      ^uint64(0) - 10,
+			expiryWindow:   604800,
+			payload:        validHash,
+			expectedStatus: []jobStatus{jobStatusValid},
+		},
+		{
 			name:           "expired beyond window",
 			origin:         common.HexToAddress("0xabc"),
 			initTimestamp:  1000,
@@ -370,9 +393,9 @@ func TestUpdaterValidityInvariants(t *testing.T) {
 			expiry := locks.RWMapFromMap(map[eth.ChainID]eth.NumberAndHash{})
 			updater := NewUpdater(eth.ChainIDFromUInt64(1), client, expiry, tt.expiryWindow, logger)
 
-			client.fetchReceiptsByNumber = func(ctx context.Context, number uint64) (eth.BlockInfo, ethtypes.Receipts, error) {
+			client.fetchReceiptsByNumber = func(ctx context.Context, number uint64) (eth.BlockInfo, optypes.Receipts, error) {
 				blk := eth.HeaderBlockInfo(&ethtypes.Header{Number: big.NewInt(100), Time: tt.blockTime})
-				return blk, ethtypes.Receipts{{Logs: []*ethtypes.Log{validLog}}}, nil
+				return blk, optypes.FromGethReceipts(ethtypes.Receipts{{Logs: []*ethtypes.Log{validLog}}}), nil
 			}
 
 			job := &Job{

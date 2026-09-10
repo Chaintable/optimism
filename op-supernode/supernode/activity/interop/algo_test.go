@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	gethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/require"
 
+	optypes "github.com/ethereum-optimism/optimism/op-core/types"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-supernode/supernode/activity"
 	cc "github.com/ethereum-optimism/optimism/op-supernode/supernode/chain_container"
@@ -473,6 +473,65 @@ func TestVerifyInteropMessages(t *testing.T) {
 					BlockNum:  50,
 					LogIdx:    0,
 					Timestamp: initTimestamp, // Exactly at expiry boundary
+					Checksum:  messages.MessageChecksum{0x01},
+				}
+
+				sourceDB := &algoMockLogsDB{
+					openBlockRef: eth.BlockRef{Hash: sourceBlockHash, Number: 50, Time: initTimestamp},
+					containsSeal: messages.BlockSeal{Number: 50, Timestamp: initTimestamp},
+				}
+
+				destDB := &algoMockLogsDB{
+					openBlockRef: eth.BlockRef{Hash: destBlockHash, Number: 100, Time: execTimestamp},
+					openBlockExecMsg: map[uint32]*messages.ExecutingMessage{
+						0: execMsg,
+					},
+				}
+
+				interop := &Interop{
+					messageExpiryWindow: defaultMessageExpiryWindow,
+					log:                 gethlog.New(),
+					logsDBs: map[eth.ChainID]LogsDB{
+						sourceChainID: sourceDB,
+						destChainID:   destDB,
+					},
+					chains: map[eth.ChainID]cc.InteropChain{
+						sourceChainID: newMockChainWithL1(sourceChainID, l1Block),
+						destChainID:   newMockChainWithL1(destChainID, l1Block),
+					},
+				}
+
+				return interop, execTimestamp, map[eth.ChainID]eth.BlockID{
+					sourceChainID: sourceBlock,
+					destChainID:   destBlock,
+				}
+			},
+			validate: func(t *testing.T, result Result) {
+				require.True(t, result.IsValid())
+				require.Empty(t, result.InvalidHeads)
+			},
+		},
+		{
+			name: "ValidBlocks/TimestampsNearMaxUint64",
+			setup: func() (*Interop, uint64, map[eth.ChainID]eth.BlockID) {
+				sourceChainID := eth.ChainIDFromUInt64(10)
+				destChainID := eth.ChainIDFromUInt64(8453)
+
+				sourceBlockHash := common.HexToHash("0xSource")
+				destBlockHash := common.HexToHash("0xDest")
+
+				execTimestamp := ^uint64(0)
+				initTimestamp := execTimestamp - 10
+
+				sourceBlock := eth.BlockID{Number: 50, Hash: sourceBlockHash}
+				destBlock := eth.BlockID{Number: 100, Hash: destBlockHash}
+				l1Block := eth.BlockID{Number: 40, Hash: common.HexToHash("0xL1")}
+
+				execMsg := &messages.ExecutingMessage{
+					ChainID:   sourceChainID,
+					BlockNum:  50,
+					LogIdx:    0,
+					Timestamp: initTimestamp,
 					Checksum:  messages.MessageChecksum{0x01},
 				}
 
@@ -1109,8 +1168,8 @@ func (m *algoMockChain) OutputRootAtL2BlockHash(ctx context.Context, blockHash c
 func (m *algoMockChain) OptimisticOutputAtTimestamp(ctx context.Context, ts uint64) (*eth.OutputV0, error) {
 	return nil, nil
 }
-func (m *algoMockChain) FetchReceipts(ctx context.Context, blockID eth.BlockID) (eth.BlockInfo, types.Receipts, error) {
-	return nil, types.Receipts{}, nil
+func (m *algoMockChain) FetchReceipts(ctx context.Context, blockID eth.BlockID) (eth.BlockInfo, optypes.Receipts, error) {
+	return nil, optypes.Receipts{}, nil
 }
 func (m *algoMockChain) SyncStatus(ctx context.Context) (*eth.SyncStatus, error) {
 	return &eth.SyncStatus{}, nil

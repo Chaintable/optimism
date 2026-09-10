@@ -3,6 +3,7 @@ package embedded
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/ethereum-optimism/optimism/op-chain-ops/script"
@@ -35,7 +36,7 @@ var (
 	superPermEncoder = w3.MustNewFunc("dummy((address proposer))", "")
 
 	// This is used to encode the ZK dispute game config for the upgrade input
-	zkEncoder = w3.MustNewFunc("dummy((bytes32 absolutePrestate,address verifier,uint64 maxChallengeDuration,uint64 maxProveDuration,uint256 challengerBond))", "")
+	zkEncoder = w3.MustNewFunc("dummy((bytes32 absolutePrestate,uint64 maxChallengeDuration,uint64 maxProveDuration,uint256 challengerBond))", "")
 
 	// This is used to encode the upgrade input for the upgrade input
 	upgradeInputEncoder = w3.MustNewFunc("dummy((address systemConfig,(bool enabled,uint256 initBond,uint32 gameType,bytes gameArgs)[] disputeGameConfigs,(string key,bytes data)[] extraInstructions))",
@@ -102,13 +103,12 @@ type SuperPermissionedDisputeGameConfig struct {
 }
 
 // ZKDisputeGameConfig represents the configuration for a ZK dispute game.
-// It contains the absolute prestate, verifier address, challenge/prove durations, and challenger bond.
+// It contains the absolute prestate, challenge/prove durations, and challenger bond.
 type ZKDisputeGameConfig struct {
-	AbsolutePrestate     common.Hash    `json:"absolutePrestate"`
-	Verifier             common.Address `json:"verifier"`
-	MaxChallengeDuration uint64         `json:"maxChallengeDuration"`
-	MaxProveDuration     uint64         `json:"maxProveDuration"`
-	ChallengerBond       *big.Int       `json:"challengerBond"`
+	AbsolutePrestate     common.Hash `json:"absolutePrestate"`
+	MaxChallengeDuration uint64      `json:"maxChallengeDuration"`
+	MaxProveDuration     uint64      `json:"maxProveDuration"`
+	ChallengerBond       *big.Int    `json:"challengerBond"`
 }
 
 // EncodableUpgradeInput is an intermediate struct that matches the encoder expectation for the UpgradeInputV2 struct.
@@ -172,17 +172,22 @@ func (u *UpgradeOPChainInput) EncodedUpgradeInputV2() ([]byte, error) {
 					return nil, fmt.Errorf("zkDisputeGameConfig is required for game type %d", gameConfig.GameType)
 				}
 				zk := gameConfig.ZKDisputeGameConfig
-				if zk.Verifier == (common.Address{}) {
-					return nil, fmt.Errorf("ZKDisputeGameConfig.Verifier must not be zero address for game type %d", gameConfig.GameType)
-				}
 				if zk.AbsolutePrestate == (common.Hash{}) {
 					return nil, fmt.Errorf("ZKDisputeGameConfig.AbsolutePrestate must not be zero for game type %d", gameConfig.GameType)
 				}
 				if zk.MaxChallengeDuration == 0 {
 					return nil, fmt.Errorf("ZKDisputeGameConfig.MaxChallengeDuration must be > 0 for game type %d", gameConfig.GameType)
 				}
+				// Capped at uint32 max so block.timestamp + duration cannot overflow the game's
+				// uint64 deadline cast, which would place the deadline in the past.
+				if zk.MaxChallengeDuration > math.MaxUint32 {
+					return nil, fmt.Errorf("ZKDisputeGameConfig.MaxChallengeDuration must be <= %d seconds for game type %d, got %d", uint64(math.MaxUint32), gameConfig.GameType, zk.MaxChallengeDuration)
+				}
 				if zk.MaxProveDuration == 0 {
 					return nil, fmt.Errorf("ZKDisputeGameConfig.MaxProveDuration must be > 0 for game type %d", gameConfig.GameType)
+				}
+				if zk.MaxProveDuration > math.MaxUint32 {
+					return nil, fmt.Errorf("ZKDisputeGameConfig.MaxProveDuration must be <= %d seconds for game type %d, got %d", uint64(math.MaxUint32), gameConfig.GameType, zk.MaxProveDuration)
 				}
 				if zk.ChallengerBond == nil || zk.ChallengerBond.Sign() <= 0 {
 					return nil, fmt.Errorf("ZKDisputeGameConfig.ChallengerBond must be set to a positive value for game type %d", gameConfig.GameType)

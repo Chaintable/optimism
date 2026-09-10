@@ -34,22 +34,13 @@ main's CI actually validated.
    carried change is contained in, or explicitly superseded by, the target.
    Never silently drop a fix the pin was carrying.
 
-3. Update the pin. The ref is pinned in **four** manifests, not just the main
-   workspace: `op-rbuilder` and `rollup-boost` are separate Cargo workspaces
-   that path-depend on the op-reth crates while also pinning reth directly.
-   Bumping only `rust/Cargo.toml` leaves them on the old ref, so their
-   dependency graphs contain two reth versions and fail with E0308 type
-   mismatches, breaking the `op-rbuilder-checks` / `rollup-boost-checks` gates.
+3. Update the pin in `rust/Cargo.toml`.
 
    When moving to a release tag (the normal case):
 
    ```bash
    cd rust
-   sed -i 's/tag = "<OLD_TAG>"/tag = "<NEW_TAG>"/g' \
-     Cargo.toml \
-     op-rbuilder/Cargo.toml \
-     rollup-boost/crates/rollup-boost/Cargo.toml \
-     rollup-boost/crates/flashblocks-rpc/Cargo.toml
+   sed -i 's/tag = "<OLD_TAG>"/tag = "<NEW_TAG>"/g' Cargo.toml
    ```
 
    When pinning a non-release commit instead, use `rev = "<sha>"` in the same
@@ -70,11 +61,6 @@ main's CI actually validated.
    # from a reth checkout at the new rev:
    git show <NEW_REV>:Cargo.toml | grep -E '^(revm|alloy-|reth-)'
    ```
-
-   Apply the same bumps in `op-rbuilder/Cargo.toml` (which additionally pins
-   `revm-context`, `revm-context-interface`, and `revm-inspector` — take their
-   versions from reth's `Cargo.lock` at the new rev) and
-   `rollup-boost/crates/flashblocks-rpc/Cargo.toml`.
 
    Bump only these crates.io ecosystem crates. Leave the OP-internal path
    crates (`op-revm`, `op-alloy*`, `alloy-op-evm`, `alloy-op-hardforks`) alone —
@@ -97,28 +83,34 @@ main's CI actually validated.
    keeps the manifest honest about what we actually build against and signals
    the sync to downstream consumers (e.g. Hardhat tracking `op-revm`).
 
-5. Refresh the lockfiles — all three workspaces have their own. `cargo update
-   -p reth` does **not** work — there is no top-level crate literally named
-   `reth` in the dep graph; the workspace depends on `reth-*` subcrates. Pass
-   any real reth subcrate; cargo cascades to every git dep sharing the same
-   source:
+5. Refresh both lockfiles — the main workspace and the SP1 guest programs
+   workspace each have their own. `cargo update -p reth` does **not** work —
+   there is no top-level crate literally named `reth` in the dependency graph.
+   Pass any real reth subcrate in the main workspace, then refresh revm in the
+   SP1 guest workspace:
 
    ```bash
-   for d in . op-rbuilder rollup-boost; do
-     (cd $d && mise exec -- cargo update reth-chainspec)
-   done
+   mise exec -- cargo update reth-chainspec
+   (cd kona/sp1/programs && mise exec -- cargo update revm)
    ```
 
-6. Revisit the slot-preimage layout reference.
-   `op-reth/crates/cli/src/commands/slot_preimages_seed.rs` replicates reth's
-   private `SlotPreimages` MDBX layout and carries the rev it was copied from.
-   Diff the upstream source between the revs; if unchanged, just update the rev
-   in the comment, otherwise port the layout change:
+   A targeted cargo update can also advance unrelated dependencies that track a
+   branch. Inspect every changed git source in the lockfile delta. Restore
+   unrelated drift or replace its branch with an intentionally reviewed exact
+   revision before proceeding.
+
+6. Revisit the upstream slot-preimage seeding API.
+   `op-reth/crates/cli/src/commands/slot_preimages_seed.rs` uses reth's public
+   `SlotPreimages` helper directly. Review changes to that helper and its MDBX
+   layout between the old and new reth revisions:
 
    ```bash
    git -C <reth-checkout> diff <OLD_REV> <NEW_REV> -- \
      crates/stages/stages/src/stages/execution/slot_preimages.rs
    ```
+
+   Confirm the import and `open`/`insert_preimages` calls remain compatible. Do
+   not reintroduce a local copy of the MDBX layout.
 
 7. Compile and adapt:
 
@@ -141,13 +133,6 @@ main's CI actually validated.
    today) gets a unit test, verified red against a deliberately broken variant
    and green against the real code.
 
-   Then repeat for the vendored workspaces:
-
-   ```bash
-   (cd op-rbuilder && mise exec -- cargo check --workspace --tests)
-   (cd rollup-boost && mise exec -- cargo check --workspace --tests)
-   ```
-
 8. Build, format, and test before pushing:
 
    ```bash
@@ -160,6 +145,21 @@ main's CI actually validated.
    `cargo fmt` on the stable toolchain reformats unrelated files and fails
    CI's `rust-fmt` gate. Also run the test suites of any vendored-workspace
    crate whose source you touched.
+
+9. Regenerate the CLI surface snapshot. Most reth bumps add, remove, or
+   re-default upstream CLI flags, and op-reth inherits them silently. The
+   snapshot test `rust/op-reth/crates/cli/tests/cli_snapshot.rs` fails on any
+   such change so it gets reviewed instead of shipped unnoticed. If the diff
+   is intentional, regenerate and commit the snapshot:
+
+   ```bash
+   UPDATE_SNAPSHOT=1 cargo nextest run -p reth-optimism-cli --all-features cli_surface_snapshot
+   ```
+
+   Review the snapshot diff like code: it is the operator-facing surface of
+   the node. Upstream flags op-reth deliberately rejects (the `DENIED_ARGS`
+   deny-list in `op-reth/crates/cli/src/lib.rs`, e.g. `--minimal`) must stay
+   rejected — they render with a `[hidden]` marker in the snapshot.
 
 ## Expect upstream churn beyond your target change
 
@@ -219,11 +219,15 @@ onto an older base, or accept the broader catch-up work as part of the bump.
 
 ## See also
 
+- `docs/ai/reth-update-review.md` — the review guide for these bumps: the risk
+  taxonomy and the `reth-update-reviewer` agent that surfaces upstream changes
+  which should have forced an op- change but didn't.
 - `docs/ai/rust-dev.md` — broader Rust workflow (build, test, lint).
-- `rust/Cargo.toml` — where the pin lives (~70 occurrences), plus
-  `rust/op-rbuilder/Cargo.toml` and the two `rust/rollup-boost` crate
-  manifests.
+- `rust/Cargo.toml` — where the pin lives (~70 occurrences).
+- `rust/kona/sp1/programs/Cargo.lock` — the second lockfile; refresh it when
+  shared revm or alloy anchors move.
 - `rust/op-reth/crates/rpc/src/witness.rs` — example of vendoring a trait that
   upstream removed.
-- `rust/op-reth/crates/cli/src/commands/slot_preimages_seed.rs` — replicated
-  upstream MDBX layout; revisit on every bump.
+- `rust/op-reth/crates/cli/src/commands/slot_preimages_seed.rs` — caller of
+  reth's public `SlotPreimages` seeding API; review the upstream helper on every
+  bump.
