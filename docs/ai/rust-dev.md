@@ -4,13 +4,16 @@ Guidance for AI agents working with Rust code in the Optimism monorepo. See [dev
 
 ## Workspace Layout
 
-All Rust code lives under `rust/`. This is a unified Cargo workspace — always run Rust commands from this directory. The workspace contains three main component groups:
+All Rust code lives under `rust/`. This is a unified Cargo workspace — always run Rust commands from this directory. The workspace contains four main component groups:
 
 - **Kona** — Proof system and rollup node (`rust/kona/`)
 - **Op-Reth** — OP Stack execution client built on reth (`rust/op-reth/`)
 - **Op-Alloy / Alloy extensions** — OP Stack types and providers
+- **Lokahi** — Rust rewrite of the Go `op-supernode` multi-chain consensus-layer host (`rust/lokahi/`, binary `lokahi`). Early development: the crate currently builds a CLI skeleton only.
 
 Check `rust/Cargo.toml` for the full workspace member list, dependency versions, and lint configuration. The Rust toolchain version is pinned in `rust/rust-toolchain.toml`.
+
+Workspace tool config lives at **`rust/.config/`** — `nextest.toml` (test settings, JUnit output) and `zepter.yaml` (feature-propagation lint). `nextest`, `zepter`, and `cargo-release` discover config **only from the workspace root**, so per-component `rust/<crate>/.config/*.toml` files are *not* read and have no effect — put new test/lint config at `rust/.config/`.
 
 ### Migrated, not vendored
 
@@ -25,8 +28,6 @@ Most of the OP Stack Rust code here was **officially migrated** into the monorep
 These crates are owned and edited directly here — do not look upstream for their source. They still *depend on* generic upstream crates (e.g. reth's engine/provider crates, `alloy`, `revm`), which remain external and pinned in `rust/Cargo.toml`; a change to one of those generic APIs has to go upstream first and then be consumed via a version bump. When changing upstream behavior or API leads to a better overall solution than working around it locally, it is acceptable — and often preferable — to propose that change upstream (a PR to the respective repository); suggest this when it applies.
 
 **Known exception:** `op-alloy-flz` has not been migrated yet and is still an external dependency, tracked by [#21087](https://github.com/ethereum-optimism/optimism/issues/21087).
-
-**Still vendored:** `rust/op-rbuilder/` and `rust/rollup-boost/` are vendored copies, slated for deprecation.
 
 ## Build System
 
@@ -45,8 +46,9 @@ just build-no-examples
 just build-release
 
 # Build specific binaries
-just build-node      # kona-node
-just build-op-reth   # op-reth
+just build-node             # kona-node
+just build-op-reth          # op-reth
+just build-lokahi   # lokahi
 ```
 
 ### superchain-registry submodule (op-reth)
@@ -145,6 +147,11 @@ cd rust
 just deny
 ```
 
+When auditing behavior controlled by Cargo features, match the production package selection. The
+Rust image recipe builds several binaries in one Cargo invocation, so features can be unified across
+selected workspace roots; a `cargo tree -p <binary>` run may not describe the resulting image. Use
+the package list in `melange/op-stack-rust.yaml` when optional transports or TLS backends matter.
+
 ## Before Every Commit
 
 Run these checks from `rust/`. Fix all issues — CI enforces zero warnings.
@@ -174,6 +181,15 @@ Run these checks from `rust/`. Fix all issues — CI enforces zero warnings.
 
 Op-reth requires `clang` / `libclang-dev` for reth-mdbx-sys bindgen. CI installs this automatically — if you see bindgen errors locally, install clang.
 
+## Cross-implementation parity
+
+`rust/op-alloy` holds the OP transaction and receipt types that op-reth and kona consume; the Go
+services run the same formats through op-geth and `op-core/*`. A change to a wire format or hash
+rule on either side has to agree with the other, pinned by a shared golden vector asserted in both
+suites. The rule and the current
+example live in [opgeth-decoupling.md](opgeth-decoupling.md#cross-implementation-parity);
+batcher-controlled decoders are covered in [derivation.md](derivation.md).
+
 ## Hardforks
 
 The OP fork → implied L1 (Ethereum) fork mapping is defined once, in `OpHardfork::activates_l1_fork` in `rust/alloy-op-hardforks/src/lib.rs`. When a new OP hardfork rides an L1 fork (e.g. Isthmus → Prague, Karst → Osaka), add the single match arm there; the cumulative (`implied_l1_fork`) and inverse (`activating_op_fork`) views and all downstream consumers (op-revm, op-reth chainspec, kona) derive from it.
@@ -181,6 +197,8 @@ The OP fork → implied L1 (Ethereum) fork mapping is defined once, in `OpHardfo
 ## Updating the reth dependency
 
 The full guide lives at [`rust/UPDATING-RETH.md`](../../rust/UPDATING-RETH.md). Read it before bumping the reth pin in `rust/Cargo.toml` — or run the `/update-reth` skill (`.claude/skills/update-reth/`), which wraps the guide in an end-to-end agent workflow.
+
+When **reviewing** a bump (rather than performing one), use [reth-update-review.md](reth-update-review.md) and the `reth-update-reviewer` agent — they surface upstream `reth`/`revm`/`alloy` changes that should have forced a change in our in-tree op- forks but produced no diff in our tree.
 
 Agent-specific tips beyond what's in the guide:
 

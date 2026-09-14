@@ -197,7 +197,6 @@ func (n *L2Network) PrintChain() {
 	entries = append(entries, fmt.Sprintf("Safe L1:         %s", syncStatus.SafeL1))
 	entries = append(entries, fmt.Sprintf("Unsafe L2:       %s", syncStatus.UnsafeL2))
 	entries = append(entries, fmt.Sprintf("Local-Safe L2:   %s", syncStatus.LocalSafeL2))
-	entries = append(entries, fmt.Sprintf("Cross-Unsafe L2: %s", syncStatus.CrossUnsafeL2))
 	entries = append(entries, fmt.Sprintf("Cross-Safe L2:   %s", syncStatus.SafeL2))
 
 	n.log.Info("Printing block hashes and parent hashes", "network", n.String(), "chain", n.ChainID())
@@ -293,6 +292,17 @@ func (n *L2Network) DepositContractAddr() common.Address {
 }
 
 func (n *L2Network) DeriveData(blocks int) (channels []derive.ChannelID, channelFrames map[derive.ChannelID][]derive.Frame, l2Txs map[common.Address][]*ethtypes.Transaction) {
+	channels, channelFrames, l2Txs, _ = n.deriveData(blocks)
+	return
+}
+
+// DeriveSpanBatches monitors upcoming L1 blocks and returns the span batches submitted in them.
+func (n *L2Network) DeriveSpanBatches(blocks int) []*derive.SpanBatch {
+	_, _, _, spanBatches := n.deriveData(blocks)
+	return spanBatches
+}
+
+func (n *L2Network) deriveData(blocks int) (channels []derive.ChannelID, channelFrames map[derive.ChannelID][]derive.Frame, l2Txs map[common.Address][]*ethtypes.Transaction, spanBatches []*derive.SpanBatch) {
 	l := n.log
 	ctx := n.ctx
 
@@ -510,6 +520,7 @@ func (n *L2Network) DeriveData(blocks int) (channels []derive.ChannelID, channel
 					continue
 				}
 
+				spanBatches = append(spanBatches, spanBatch)
 				for blockIdx, batchElement := range spanBatch.Batches {
 					l.Debug("L2 block in span batch",
 						"channelID", channelID.String(),
@@ -543,5 +554,5 @@ func (n *L2Network) DeriveData(blocks int) (channels []derive.ChannelID, channel
 			"totalBatches", batchCount)
 	}
 
-	return channels, channelFrames, l2Txs
+	return channels, channelFrames, l2Txs, spanBatches
 }

@@ -2,9 +2,9 @@ package presets
 
 import (
 	"testing"
+	"time"
 
 	gameTypes "github.com/ethereum-optimism/optimism/op-challenger/game/types"
-	"github.com/ethereum-optimism/optimism/op-devstack/devtest"
 	"github.com/ethereum-optimism/optimism/op-devstack/sysgo"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/stretchr/testify/require"
@@ -39,7 +39,7 @@ func TestOptionKindsFromCompositeOptions(t *testing.T) {
 		require.Zero(t, WithGlobalL2CLOption(nil).optionKinds())
 		require.Zero(t, WithGlobalSyncTesterELOption(nil).optionKinds())
 		require.Zero(t, WithProposerOption(nil).optionKinds())
-		require.Zero(t, WithOPRBuilderOption(nil).optionKinds())
+		require.Zero(t, WithZKProposerOption(nil).optionKinds())
 		require.Zero(t, WithPreGenesisSuperGame().optionKinds())
 		require.Zero(t, AfterBuild(nil).optionKinds())
 	})
@@ -50,9 +50,38 @@ func TestWithLocalContractSourcesAt(t *testing.T) {
 	require.Equal(t, "/tmp/contracts-bedrock", cfg.LocalContractArtifactsPath)
 }
 
-func TestUnsupportedPresetOptionKinds(t *testing.T) {
-	builderOpt := sysgo.OPRBuilderNodeOptionFn(func(devtest.CommonT, sysgo.ComponentTarget, *sysgo.OPRBuilderNodeConfig) {})
+func TestWithZK(t *testing.T) {
+	want := sysgo.ZKDisputeGameConfig{
+		MaxChallengeDuration: 30 * time.Minute,
+		MaxProveDuration:     30 * time.Minute,
+	}
+	cfg, combined := collectPresetConfig([]Option{WithZK()})
+	require.Equal(t,
+		optionKindDeployer|optionKindTimeTravel|optionKindZKDisputeGame|optionKindZKProposer,
+		combined.optionKinds(),
+	)
+	require.Equal(t, &want, cfg.ZKDisputeGame)
+	require.Len(t, cfg.ZKProposerOptions, 1)
+	require.True(t, cfg.EnableTimeTravel)
+	require.Len(t, cfg.DeployerOptions, 2)
+}
 
+func TestWithZKChallengeDuration(t *testing.T) {
+	cfg, _ := collectPresetConfig([]Option{
+		WithZK(),
+		WithZKChallengeDuration(5 * time.Minute),
+	})
+	require.Equal(t, 5*time.Minute, cfg.ZKDisputeGame.MaxChallengeDuration)
+}
+
+func TestWithZKProposerOption(t *testing.T) {
+	opt := sysgo.WithZKProposalInterval(12 * time.Second)
+	cfg, combined := collectPresetConfig([]Option{WithZKProposerOption(opt)})
+	require.Equal(t, optionKindZKProposer, combined.optionKinds())
+	require.Len(t, cfg.ZKProposerOptions, 1)
+}
+
+func TestUnsupportedPresetOptionKinds(t *testing.T) {
 	tests := []struct {
 		name      string
 		supported optionKinds
@@ -75,14 +104,16 @@ func TestUnsupportedPresetOptionKinds(t *testing.T) {
 			want:      0,
 		},
 		{
-			name:      "flashblocks allows builder and deployer adapters",
-			supported: singleChainWithFlashblocksPresetSupportedOptionKinds,
-			opts: Combine(
-				WithLocalContractSourcesAt("/tmp/contracts-bedrock"),
-				WithOPRBuilderOption(builderOpt),
-				WithTimeTravelEnabled(),
-			),
-			want: optionKindTimeTravel,
+			name:      "minimal allows op-reth options",
+			supported: minimalPresetSupportedOptionKinds,
+			opts:      WithOpRethOption(sysgo.OpRethWithBinary("op-reth-superset")),
+			want:      0,
+		},
+		{
+			name:      "conductors allow op-reth options",
+			supported: minimalWithConductorsPresetSupportedOptionKinds,
+			opts:      WithOpRethOption(sysgo.OpRethWithBinary("op-reth-superset")),
+			want:      0,
 		},
 		{
 			name:      "shared supernode proofs reject pre-genesis super game",
@@ -101,6 +132,42 @@ func TestUnsupportedPresetOptionKinds(t *testing.T) {
 				WithPreGenesisSuperGame(eth.Bytes32{0x01}, eth.Bytes32{0x02}),
 			),
 			want: 0,
+		},
+		{
+			name:      "two l2 supernode proofs accept ZK",
+			supported: twoL2SupernodeProofsPresetSupportedOptionKinds,
+			opts:      WithZK(),
+			want:      0,
+		},
+		{
+			name:      "two l2 supernode proofs accept ZK proposer options",
+			supported: twoL2SupernodeProofsPresetSupportedOptionKinds,
+			opts:      WithZKProposerOption(sysgo.WithZKProposalInterval(time.Minute)),
+			want:      0,
+		},
+		{
+			name:      "single chain supernode proofs reject ZK",
+			supported: supernodeProofsPresetSupportedOptionKinds,
+			opts:      WithZK(),
+			want:      optionKindZKDisputeGame | optionKindZKProposer,
+		},
+		{
+			name:      "single chain supernode proofs reject ZK proposer options",
+			supported: supernodeProofsPresetSupportedOptionKinds,
+			opts:      WithZKProposerOption(sysgo.WithZKProposalInterval(time.Minute)),
+			want:      optionKindZKProposer,
+		},
+		{
+			name:      "single chain supernode proofs reject op-reth options",
+			supported: supernodeProofsPresetSupportedOptionKinds,
+			opts:      WithOpRethOption(sysgo.OpRethWithBinary("op-reth-sdm-fixture")),
+			want:      optionKindOpReth,
+		},
+		{
+			name:      "single chain no-supernode proofs accept op-reth options",
+			supported: singleChainInteropNoSupernodePresetSupportedOptionKinds,
+			opts:      WithOpRethOption(sysgo.OpRethWithBinary("op-reth-sdm-fixture")),
+			want:      0,
 		},
 		{
 			name:      "two l2 supernode rejects time travel",
@@ -130,4 +197,11 @@ func TestUnsupportedPresetOptionKinds(t *testing.T) {
 			require.Equal(t, tt.want, unsupportedPresetOptionKinds(tt.opts, tt.supported))
 		})
 	}
+}
+
+func TestValidatePresetConfigRejectsZKProposerOptionWithoutZK(t *testing.T) {
+	cfg, _ := collectPresetConfig([]Option{
+		WithZKProposerOption(sysgo.WithZKProposalInterval(time.Minute)),
+	})
+	require.EqualError(t, validatePresetConfig(cfg), "ZK proposer options require WithZK")
 }

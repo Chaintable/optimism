@@ -122,8 +122,8 @@ abstract contract OPContractsManagerMigrationValidator_TestInit is CommonTest {
     {
         // Get initial proposer/challenger from existing DGF.
         bool superRoot = isDevFeatureEnabled(DevFeatures.SUPER_ROOT_GAMES_MIGRATION);
-        address initialChallenger = _initialPermissionedGameChallenger(superRoot);
-        address initialProposer = _initialPermissionedGameProposer(superRoot);
+        address initialChallenger = _initialPermissionedGameChallenger();
+        address initialProposer = _initialPermissionedGameProposer();
 
         IOPContractsManagerUtils.DisputeGameConfig[] memory dgConfigs =
             new IOPContractsManagerUtils.DisputeGameConfig[](6);
@@ -202,16 +202,12 @@ abstract contract OPContractsManagerMigrationValidator_TestInit is CommonTest {
         cts_ = opcmV2.deploy(deployConfig);
     }
 
-    function _initialPermissionedGameChallenger(bool _superRoot) internal view returns (address challenger_) {
-        if (!_superRoot) return DisputeGames.permissionedGameChallenger(disputeGameFactory);
-
-        challenger_ = address(0);
+    function _initialPermissionedGameChallenger() internal view returns (address challenger_) {
+        challenger_ = DisputeGames.permissionedGameChallenger(disputeGameFactory);
     }
 
-    function _initialPermissionedGameProposer(bool _superRoot) internal view returns (address proposer_) {
-        if (!_superRoot) return DisputeGames.permissionedGameProposer(disputeGameFactory);
-
-        proposer_ = DisputeGames.superPermissionedGameProposer(disputeGameFactory);
+    function _initialPermissionedGameProposer() internal view returns (address proposer_) {
+        proposer_ = DisputeGames.permissionedGameProposer(disputeGameFactory);
     }
 
     /// @notice Creates the default migration input with both SPDG and SCKDG.
@@ -414,7 +410,24 @@ contract OPContractsManagerMigrationValidator_SPDG_Test is OPContractsManagerMig
             abi.encode(address(bad))
         );
 
-        assertEq("MIG-SPDG-20", _validateMigration(true));
+        // MIG-SPDG-150 fires because mocking the expected implementation getter also makes the
+        // registered implementation address mismatch.
+        assertEq("MIG-SPDG-20,MIG-SPDG-150", _validateMigration(true));
+    }
+
+    /// @notice MIG-SPDG-150: Registered SPDG implementation is a different contract with identical
+    ///         code and game args.
+    function test_validate_spdg150LookalikeImplementation_succeeds() public {
+        address spdgImpl = address(sharedDGF.gameImpls(GameTypes.SUPER_PERMISSIONED));
+        address lookalike = makeAddr("lookalikeSuperPermissionedDisputeGame");
+        vm.etch(lookalike, spdgImpl.code);
+        vm.mockCall(
+            address(sharedDGF),
+            abi.encodeCall(IDisputeGameFactory.gameImpls, (GameTypes.SUPER_PERMISSIONED)),
+            abi.encode(lookalike)
+        );
+
+        assertEq("MIG-SPDG-150", _validateMigration(true));
     }
 
     /// @notice MIG-SPDG-GARGS-10: Invalid game args length for SPDG.
@@ -457,6 +470,21 @@ contract OPContractsManagerMigrationValidator_SCKDG_Test is OPContractsManagerMi
         assertEq("MIG-SCKDG-GARGS-10", _validateMigration(true));
     }
 
+    /// @notice MIG-SCKDG-150: Registered SCKDG implementation is a different contract with identical
+    ///         code and game args.
+    function test_validate_sckdg150LookalikeImplementation_succeeds() public {
+        address sckdgImpl = address(sharedDGF.gameImpls(GameTypes.SUPER_CANNON_KONA));
+        address lookalike = makeAddr("lookalikeSuperCannonKonaDisputeGame");
+        vm.etch(lookalike, sckdgImpl.code);
+        vm.mockCall(
+            address(sharedDGF),
+            abi.encodeCall(IDisputeGameFactory.gameImpls, (GameTypes.SUPER_CANNON_KONA)),
+            abi.encode(lookalike)
+        );
+
+        assertEq("MIG-SCKDG-150", _validateMigration(true));
+    }
+
     /// @notice MIG-SCKDG-60: l2ChainId != 0 in SCKDG game args.
     function test_validate_sckdg60WrongL2ChainId_succeeds() public {
         DisputeGames.mockGameImplL2ChainId(sharedDGF, GameTypes.SUPER_CANNON_KONA, 42);
@@ -482,7 +510,8 @@ contract OPContractsManagerMigrationValidator_SCKDG_Test is OPContractsManagerMi
     function test_validate_sckdgGargs30WrongWeth_succeeds() public {
         address badWeth = address(0xbad);
         DisputeGames.mockGameImplWeth(sharedDGF, GameTypes.SUPER_CANNON_KONA, badWeth);
-        // Mock the bad WETH to satisfy drill-down so only GARGS-30 (the cross-chain check) fires.
+        // Mock the bad WETH to satisfy drill-down, leaving GARGS-30 (the cross-chain check) and
+        // DWETH-70 (the SystemConfig binding), which no mock on the WETH itself can satisfy.
         vm.mockCall(badWeth, abi.encodeCall(ISemver.version, ()), abi.encode(ISemver(sharedWETH).version()));
         vm.mockCall(
             sharedProxyAdmin,
@@ -499,7 +528,7 @@ contract OPContractsManagerMigrationValidator_SCKDG_Test is OPContractsManagerMi
         );
         vm.mockCall(badWeth, abi.encodeCall(IDelayedWETH.systemConfig, ()), abi.encode(chainContracts1.systemConfig));
         vm.mockCall(badWeth, abi.encodeCall(IProxyAdminOwnedBase.proxyAdmin, ()), abi.encode(sharedProxyAdmin));
-        assertEq("MIG-SCKDG-GARGS-30", _validateMigration(true));
+        assertEq("MIG-SCKDG-GARGS-30,MIG-SCKDG-DWETH-70", _validateMigration(true));
     }
 
     /// @notice MIG-SCKDG-100: Wrong maxGameDepth on SCKDG game impl.
