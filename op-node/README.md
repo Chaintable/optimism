@@ -22,6 +22,36 @@ The blocks are processed by an execution layer client, like [op-geth].
 [rollup-node spec]: https://github.com/ethereum-optimism/specs/blob/main/specs/protocol/rollup-node.md
 [op-geth]: https://github.com/ethereum-optimism/op-geth
 
+## Gossip diagnostics (debug build)
+
+Enable `--p2p.gossip.debug` (or `OP_NODE_P2P_GOSSIP_DEBUG=true`) to emit diagnostic
+events at INFO level. It is off by default. This patch observes the existing
+GossipSub processing path; it does not change validation, scoring, or reconnect policy.
+
+Logs marked `diagnostic=gossip` include decoded RPC metadata (subscriptions,
+IHAVE/IWANT/GRAFT/PRUNE including backoff, IDONTWANT, publish sizes), local mesh
+events, validation outcomes and reasons, duplicate/queue drops, and calls to the
+unsafe-payload handler. An accepted/handled payload is not proof of EL import.
+Existing validator warnings provide additional error details.
+
+Every 30 seconds a summary reports cumulative counts, receive/delivery/handler
+ages (`-1` means never observed), and sampled connections, scores and protocol
+streams. A latency of zero means no measurement yet. Counters are node-wide;
+event details identify the peer and topic. GossipSub streams also report opens,
+read/write errors (including EOF), close/reset calls and inbound handler exits.
+Byte counters measure decrypted GossipSub stream I/O, including RPC framing.
+Snapshots can miss short-lived streams of other protocols. Diagnostics do not
+expose Noise/Yamux frames, ping traffic, or the remote peer's mesh/reject reasons.
+
+Callbacks enqueue bounded metadata without writing logs. Detail budgets are
+2 control events/second (burst 32) and 8 data events/second (burst 16), with a
+128-record queue. Summaries report rate-limited and queue-dropped detail counts;
+event counts and ages continue updating when details are omitted. RPC lists,
+message-ID samples, connections and streams show at most four entries per category;
+strings and IDs are truncated. No raw block/transaction bodies or keys are logged.
+Use `--log.format=json` for structured metadata. Pending detail logs may be lost
+at shutdown. Disable the flag to return to normal logging.
+
 ## Quickstart
 
 ```bash

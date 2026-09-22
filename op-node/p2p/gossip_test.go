@@ -185,6 +185,12 @@ func createEnvelope(h *common.Hash, w types.Withdrawals, withdrawalsRoot *common
 
 // TestBlockValidator does some very basic tests of the p2p block validation logic
 func TestBlockValidator(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("diagnostics_%t", enabled), func(t *testing.T) { testBlockValidator(t, enabled) })
+	}
+}
+
+func testBlockValidator(t *testing.T, diagnostics bool) {
 	// Params Set 1: Create the validation function
 	cfg := &rollup.Config{
 		L2ChainID: big.NewInt(100),
@@ -197,7 +203,10 @@ func TestBlockValidator(t *testing.T) {
 	peerID := peer.ID("foo")
 
 	// Create a mock gossip configuration for testing
-	mockGossipConf := &mockGossipSetupConfigurablesWithThreshold{threshold: 60 * time.Second}
+	var mockGossipConf GossipSetupConfigurables = &mockGossipSetupConfigurablesWithThreshold{threshold: 60 * time.Second}
+	if diagnostics {
+		mockGossipConf = &gossipDebugConfig{mockGossipConf, newGossipDebug(testlog.Logger(t, log.LevelCrit), "self")}
+	}
 	v2Validator := BuildBlocksValidator(testlog.Logger(t, log.LevelCrit), cfg, runCfg, eth.BlockV2, mockGossipConf, clock.SystemClock)
 	v3Validator := BuildBlocksValidator(testlog.Logger(t, log.LevelCrit), cfg, runCfg, eth.BlockV3, mockGossipConf, clock.SystemClock)
 	v4Validator := BuildBlocksValidator(testlog.Logger(t, log.LevelDebug), cfg, runCfg, eth.BlockV4, mockGossipConf, clock.SystemClock)

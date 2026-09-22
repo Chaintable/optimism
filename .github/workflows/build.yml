@@ -1,0 +1,21 @@
+name: Build op-node debug (temporary)
+run-name: op-node gossip debug · ${{ github.ref_name }}
+
+# This path is already registered on main. Keep this manual entry point on the
+# debug branch so the temporary workflow can run without changing main.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  op-node-debug:
+    uses: ./.github/workflows/build-op-node-debug.yml
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}

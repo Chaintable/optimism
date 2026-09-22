@@ -120,6 +120,9 @@ type Config struct {
 	// FloodPublish publishes messages from ourselves to peers outside of the gossip topic mesh but supporting the same topic.
 	FloodPublish bool
 
+	// GossipDebug enables bounded, asynchronous diagnostic logging. Disabled by default.
+	GossipDebug bool
+
 	// GossipTimestampThreshold is the threshold for rejecting gossip messages with payload timestamps older than this duration
 	GossipTimestampThreshold time.Duration
 
@@ -182,6 +185,10 @@ func (conf *Config) ReqRespSyncEnabled() bool {
 
 func (conf *Config) GetGossipTimestampThreshold() time.Duration {
 	return conf.GossipTimestampThreshold
+}
+
+func (conf *Config) GossipDebugEnabled() bool {
+	return conf.GossipDebug
 }
 
 const maxMeshParam = 1000

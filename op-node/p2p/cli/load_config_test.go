@@ -2,13 +2,42 @@ package cli
 
 import (
 	"errors"
+	"flag"
 	"net"
 	"testing"
 
+	"github.com/ethereum-optimism/optimism/op-node/flags"
 	"github.com/ethereum-optimism/optimism/op-node/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/stretchr/testify/require"
+	urcli "github.com/urfave/cli/v2"
 )
+
+func TestGossipDebugFlag(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		env  string
+		args []string
+		want bool
+	}{
+		{"default_off", "", nil, false},
+		{"flag", "", []string{"--p2p.gossip.debug"}, true},
+		{"environment", "true", nil, true},
+		{"explicit_off", "true", []string{"--p2p.gossip.debug=false"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("GOSSIP_TEST_P2P_GOSSIP_DEBUG", tc.env)
+			set := flag.NewFlagSet("test", flag.ContinueOnError)
+			for _, f := range flags.P2PFlags("GOSSIP_TEST") {
+				require.NoError(t, f.Apply(set))
+			}
+			require.NoError(t, set.Parse(tc.args))
+			var cfg p2p.Config
+			require.NoError(t, loadGossipOptions(&cfg, urcli.NewContext(nil, set, nil)))
+			require.Equal(t, tc.want, cfg.GossipDebugEnabled())
+		})
+	}
+}
 
 func lookupIP(name string) ([]net.IP, error) {
 	if name == "bootnode.conduit.xyz" {

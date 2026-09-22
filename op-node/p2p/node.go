@@ -38,6 +38,7 @@ type NodeP2P struct {
 	store       store.ExtendedPeerstore        // peerstore of host, with extra bindings for scoring and banning
 	appScorer   ApplicationScorer
 	log         log.Logger
+	gossipDebug *gossipDebug
 	// the below components are all optional, and may be nil. They require the host to not be nil.
 	dv5Local *enode.LocalNode // p2p discovery identity
 	dv5Udp   *discover.UDPv5  // p2p discovery service
@@ -139,12 +140,24 @@ func (n *NodeP2P) init(
 	n.scorer = NewScorer(eps, metrics, n.appScorer, log)
 	// notify of any new connections/streams/etc.
 	n.host.Network().Notify(NewNetworkNotifier(log, metrics))
+	var diagnosticOpts []pubsub.Option
+	var gossipConf GossipSetupConfigurables = setup
+	gossipHost := n.host
+	// Optional so existing SetupP2P implementations do not need diagnostic support.
+	if conf, ok := setup.(interface{ GossipDebugEnabled() bool }); ok && conf.GossipDebugEnabled() {
+		n.gossipDebug = newGossipDebug(log, n.host.ID())
+		n.gossipDebug.start(resourcesCtx, n.host, n.GetPeerScore)
+		diagnosticOpts = n.gossipDebug.options()
+		gossipHost = &gossipDebugHost{Host: n.host, debug: n.gossipDebug}
+		gossipConf = &gossipDebugConfig{GossipSetupConfigurables: setup, debug: n.gossipDebug}
+		gossipIn = &debugGossipIn{next: gossipIn, debug: n.gossipDebug}
+	}
 	// note: the IDDelta functionality was removed from libP2P, and no longer needs to be explicitly disabled.
-	n.gs, err = NewGossipSub(resourcesCtx, n.host, rollupCfg, setup, n.scorer, metrics, log)
+	n.gs, err = NewGossipSub(resourcesCtx, gossipHost, rollupCfg, setup, n.scorer, metrics, log, diagnosticOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to start gossipsub router: %w", err)
 	}
-	n.gsOut, err = JoinGossip(n.host.ID(), n.gs, log, rollupCfg, runCfg, gossipIn, setup, clk)
+	n.gsOut, err = JoinGossip(n.host.ID(), n.gs, log, rollupCfg, runCfg, gossipIn, gossipConf, clk)
 	if err != nil {
 		return fmt.Errorf("failed to join blocks gossip topic: %w", err)
 	}
@@ -244,6 +257,9 @@ func (n *NodeP2P) BanIP(ip net.IP, expiration time.Time) error {
 }
 
 func (n *NodeP2P) Close() error {
+	if n.gossipDebug != nil {
+		defer n.gossipDebug.stop()
+	}
 	var result error
 	if n.peerMonitor != nil {
 		n.peerMonitor.Stop()

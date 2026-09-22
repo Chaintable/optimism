@@ -370,6 +370,7 @@ func parsePriv(data string) (*crypto.Secp256k1PrivateKey, error) {
 }
 
 func loadGossipOptions(conf *p2p.Config, ctx cliiface.Context) error {
+	conf.GossipDebug = ctx.Bool(flags.GossipDebugName)
 	conf.MeshD = ctx.Int(flags.GossipMeshDName)
 	conf.MeshDLo = ctx.Int(flags.GossipMeshDloName)
 	conf.MeshDHi = ctx.Int(flags.GossipMeshDhiName)

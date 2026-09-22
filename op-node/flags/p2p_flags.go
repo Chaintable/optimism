@@ -53,6 +53,7 @@ var (
 	GossipMeshDhiName            = "p2p.gossip.mesh.dhi"
 	GossipMeshDlazyName          = "p2p.gossip.mesh.dlazy"
 	GossipFloodPublishName       = "p2p.gossip.mesh.floodpublish"
+	GossipDebugName              = "p2p.gossip.debug"
 	GossipTimestampThresholdName = "p2p.gossip.timestamp.threshold"
 	SyncReqRespName              = "p2p.sync.req-resp"
 	SyncOnlyReqToStaticName      = "p2p.sync.onlyreqtostatic"
@@ -98,6 +99,12 @@ func deprecatedP2PFlags(envPrefix string) []cli.Flag {
 // Some are hidden if they are too technical, or not recommended.
 func P2PFlags(envPrefix string) []cli.Flag {
 	return append([]cli.Flag{
+		&cli.BoolFlag{
+			Name:     GossipDebugName,
+			Usage:    "Enable bounded GossipSub diagnostic logs at INFO level (RPC metadata, validation, mesh and connection snapshots)",
+			EnvVars:  p2pEnv(envPrefix, "GOSSIP_DEBUG"),
+			Category: P2PCategory,
+		},
 		&cli.BoolFlag{
 			Name:     DisableP2PName,
 			Usage:    "Completely disable the P2P stack",

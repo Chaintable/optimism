@@ -185,7 +185,7 @@ func BuildGlobalGossipParams(cfg *rollup.Config) pubsub.GossipSubParams {
 
 // NewGossipSub configures a new pubsub instance with the specified parameters.
 // PubSub uses a GossipSubRouter as it's router under the hood.
-func NewGossipSub(p2pCtx context.Context, h host.Host, cfg *rollup.Config, gossipConf GossipSetupConfigurables, scorer Scorer, m GossipMetricer, log log.Logger) (*pubsub.PubSub, error) {
+func NewGossipSub(p2pCtx context.Context, h host.Host, cfg *rollup.Config, gossipConf GossipSetupConfigurables, scorer Scorer, m GossipMetricer, log log.Logger, extraOpts ...pubsub.Option) (*pubsub.PubSub, error) {
 	denyList, err := pubsub.NewTimeCachedBlacklist(30 * time.Second)
 	if err != nil {
 		return nil, err
@@ -206,6 +206,7 @@ func NewGossipSub(p2pCtx context.Context, h host.Host, cfg *rollup.Config, gossi
 	}
 	gossipOpts = append(gossipOpts, ConfigurePeerScoring(gossipConf, scorer, log)...)
 	gossipOpts = append(gossipOpts, gossipConf.ConfigureGossip(cfg)...)
+	gossipOpts = append(gossipOpts, extraOpts...)
 	return pubsub.NewGossipSub(p2pCtx, h, gossipOpts...)
 }
 
@@ -279,19 +280,32 @@ func BuildBlocksValidator(log log.Logger, cfg *rollup.Config, runCfg GossipRunti
 		panic(fmt.Errorf("failed to set up block height LRU cache: %w", err))
 	}
 
-	return func(ctx context.Context, id peer.ID, message *pubsub.Message) pubsub.ValidationResult {
+	var debug *gossipDebug
+	if conf, ok := gossipConf.(*gossipDebugConfig); ok {
+		debug = conf.debug
+	}
+	return func(ctx context.Context, id peer.ID, message *pubsub.Message) (result pubsub.ValidationResult) {
+		var envelope eth.ExecutionPayloadEnvelope
+		reason := "validation_aborted"
+		result = pubsub.ValidationReject // also describes a panic caught by guardGossipValidator
+		if debug != nil {
+			defer func() { debug.validation(id, message, result, reason, &envelope) }()
+		}
 		// [REJECT] if the compression is not valid
 		outLen, err := snappy.DecodedLen(message.Data)
 		if err != nil {
 			log.Warn("invalid snappy compression length data", "err", err, "peer", id)
+			reason = "invalid_snappy_length"
 			return pubsub.ValidationReject
 		}
 		if outLen > maxGossipSize {
 			log.Warn("possible snappy zip bomb, decoded length is too large", "decoded_length", outLen, "peer", id)
+			reason = "snappy_size_limit"
 			return pubsub.ValidationReject
 		}
 		if outLen < minGossipSize {
 			log.Warn("rejecting undersized gossip payload")
+			reason = "undersized_payload"
 			return pubsub.ValidationReject
 		}
 
@@ -300,6 +314,7 @@ func BuildBlocksValidator(log log.Logger, cfg *rollup.Config, runCfg GossipRunti
 		data, err := snappy.Decode((*res)[:cap(*res)], message.Data)
 		if err != nil {
 			log.Warn("invalid snappy compression", "err", err, "peer", id)
+			reason = "invalid_snappy"
 			return pubsub.ValidationReject
 		}
 		// if we ended up growing the slice capacity, fine, keep the larger one.
@@ -312,23 +327,27 @@ func BuildBlocksValidator(log log.Logger, cfg *rollup.Config, runCfg GossipRunti
 		payloadBytes := data[65:]
 
 		// [REJECT] if the signature by the sequencer is not valid
-		result := verifyBlockSignature(log, cfg, runCfg, id, signature, payloadBytes)
-		if result != pubsub.ValidationAccept {
-			return result
+		signatureResult := verifyBlockSignature(log, cfg, runCfg, id, signature, payloadBytes)
+		if signatureResult != pubsub.ValidationAccept {
+			reason = "invalid_signature"
+			if signatureResult == pubsub.ValidationIgnore {
+				reason = "sequencer_address_unavailable"
+			}
+			return signatureResult
 		}
-
-		var envelope eth.ExecutionPayloadEnvelope
 
 		// [REJECT] if the block encoding is not valid
 		if blockVersion.HasParentBeaconBlockRoot() {
 			if err := envelope.UnmarshalSSZ(blockVersion, uint32(len(payloadBytes)), bytes.NewReader(payloadBytes)); err != nil {
 				log.Warn("invalid envelope payload", "err", err, "peer", id)
+				reason = "invalid_envelope_ssz"
 				return pubsub.ValidationReject
 			}
 		} else {
 			var payload eth.ExecutionPayload
 			if err := payload.UnmarshalSSZ(blockVersion, uint32(len(payloadBytes)), bytes.NewReader(payloadBytes)); err != nil {
 				log.Warn("invalid execution payload", "err", err, "peer", id)
+				reason = "invalid_payload_ssz"
 				return pubsub.ValidationReject
 			}
 			envelope = eth.ExecutionPayloadEnvelope{ExecutionPayload: &payload}
@@ -346,48 +365,56 @@ func BuildBlocksValidator(log log.Logger, cfg *rollup.Config, runCfg GossipRunti
 		threshold := uint64(gossipConf.GetGossipTimestampThreshold().Seconds())
 		if uint64(payload.Timestamp) < now-threshold {
 			log.Warn("payload is too old", "timestamp", uint64(payload.Timestamp), "threshold_seconds", threshold)
+			reason = "timestamp_too_old"
 			return pubsub.ValidationReject
 		}
 
 		// [REJECT] if the `payload.timestamp` is more than 5 seconds into the future
 		if uint64(payload.Timestamp) > now+5 {
 			log.Warn("payload is too new", "timestamp", uint64(payload.Timestamp))
+			reason = "timestamp_in_future"
 			return pubsub.ValidationReject
 		}
 
 		// [REJECT] if the `block_hash` in the `payload` is not valid
 		if actual, ok := envelope.CheckBlockHash(); !ok {
 			log.Warn("payload has bad block hash", "bad_hash", payload.BlockHash.String(), "actual", actual.String())
+			reason = "invalid_block_hash"
 			return pubsub.ValidationReject
 		}
 
 		// [REJECT] if a V1 Block has withdrawals
 		if !blockVersion.HasWithdrawals() && payload.Withdrawals != nil {
 			log.Warn("payload is on v1 topic, but has withdrawals", "bad_hash", payload.BlockHash.String())
+			reason = "unexpected_withdrawals"
 			return pubsub.ValidationReject
 		}
 
 		// [REJECT] if a >= V2 Block does not have withdrawals
 		if blockVersion.HasWithdrawals() && payload.Withdrawals == nil {
 			log.Warn("payload is on v2/v3 topic, but does not have withdrawals", "bad_hash", payload.BlockHash.String())
+			reason = "missing_withdrawals"
 			return pubsub.ValidationReject
 		}
 
 		// [REJECT] if a >= V2 Block has non-empty withdrawals
 		if blockVersion.HasWithdrawals() && len(*payload.Withdrawals) != 0 {
 			log.Warn("payload is on v2/v3 topic, but has non-empty withdrawals", "bad_hash", payload.BlockHash.String(), "withdrawal_count", len(*payload.Withdrawals))
+			reason = "nonempty_withdrawals"
 			return pubsub.ValidationReject
 		}
 
 		// [REJECT] if the block is on a topic <= V2 and has a blob gas value set
 		if !blockVersion.HasBlobProperties() && payload.BlobGasUsed != nil {
 			log.Warn("payload is on v1/v2 topic, but has blob gas used", "bad_hash", payload.BlockHash.String())
+			reason = "unexpected_blob_gas_used"
 			return pubsub.ValidationReject
 		}
 
 		// [REJECT] if the block is on a topic <= V2 and has an excess blob gas value set
 		if !blockVersion.HasBlobProperties() && payload.ExcessBlobGas != nil {
 			log.Warn("payload is on v1/v2 topic, but has excess blob gas", "bad_hash", payload.BlockHash.String())
+			reason = "unexpected_excess_blob_gas"
 			return pubsub.ValidationReject
 		}
 
@@ -395,11 +422,13 @@ func BuildBlocksValidator(log log.Logger, cfg *rollup.Config, runCfg GossipRunti
 			// [REJECT] if the block is on a topic >= V3 and has a nil blob gas used
 			if payload.BlobGasUsed == nil {
 				log.Warn("payload is on v3 topic, but has nil blob gas used", "bad_hash", payload.BlockHash.String())
+				reason = "missing_blob_gas_used"
 				return pubsub.ValidationReject
 				// [REJECT] if the block is on a topic >= V3 and has a non-zero blob gas used field pre-Jovian
 			} else if !cfg.IsJovian(uint64(payload.Timestamp)) && *payload.BlobGasUsed != 0 {
 				log.Warn("payload is on v3 topic, but has non-zero blob gas used",
 					"bad_hash", payload.BlockHash.String(), "blob_gas_used", *payload.BlobGasUsed)
+				reason = "nonzero_blob_gas_before_jovian"
 				return pubsub.ValidationReject
 			}
 
@@ -407,6 +436,7 @@ func BuildBlocksValidator(log log.Logger, cfg *rollup.Config, runCfg GossipRunti
 			if payload.ExcessBlobGas == nil || *payload.ExcessBlobGas != 0 {
 				log.Warn("payload is on v3 topic, but has non-zero excess blob gas",
 					"bad_hash", payload.BlockHash.String(), "excess_blob_gas", ptr.Str(payload.ExcessBlobGas))
+				reason = "invalid_excess_blob_gas"
 				return pubsub.ValidationReject
 			}
 		}
@@ -414,11 +444,13 @@ func BuildBlocksValidator(log log.Logger, cfg *rollup.Config, runCfg GossipRunti
 		// [REJECT] if the block is on a topic >= V3 and the parent beacon block root is nil
 		if blockVersion.HasParentBeaconBlockRoot() && envelope.ParentBeaconBlockRoot == nil {
 			log.Warn("payload is on v3 topic, but has nil parent beacon block root", "bad_hash", payload.BlockHash.String())
+			reason = "missing_parent_beacon_block_root"
 			return pubsub.ValidationReject
 		}
 
 		if blockVersion.HasWithdrawalsRoot() && payload.WithdrawalsRoot == nil {
 			log.Warn("payload is on v4 topic, but has nil withdrawals root", "bad_hash", payload.BlockHash.String())
+			reason = "missing_withdrawals_root"
 			return pubsub.ValidationReject
 		}
 
@@ -431,10 +463,12 @@ func BuildBlocksValidator(log log.Logger, cfg *rollup.Config, runCfg GossipRunti
 		if count, hasSeen := seen.hasSeen(payload.BlockHash); count > 5 {
 			// [REJECT] if more than 5 blocks have been seen with the same block height
 			log.Warn("seen too many different blocks at same height", "height", payload.BlockNumber)
+			reason = "too_many_blocks_at_height"
 			return pubsub.ValidationReject
 		} else if hasSeen {
 			// [IGNORE] if the block has already been seen
 			log.Warn("validated already seen message again")
+			reason = "already_seen_block"
 			return pubsub.ValidationIgnore
 		}
 
@@ -444,6 +478,7 @@ func BuildBlocksValidator(log log.Logger, cfg *rollup.Config, runCfg GossipRunti
 
 		// remember the decoded payload for later usage in topic subscriber.
 		message.ValidatorData = &envelope
+		reason = "accepted"
 		return pubsub.ValidationAccept
 	}
 }
