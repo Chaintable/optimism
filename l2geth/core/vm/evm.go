@@ -199,6 +199,21 @@ func (evm *EVM) Interpreter() Interpreter {
 	return evm.interpreter
 }
 
+// captureFailedCall balances the tracing hooks for failures before execution
+// starts. Keep the original validation order, return values and gas accounting.
+func (evm *EVM) captureFailedCall(typ OpCode, from, to common.Address, input []byte, gas uint64, value *big.Int, output []byte, gasUsed uint64, err error) {
+	if !evm.vmConfig.Debug {
+		return
+	}
+	if evm.depth == 0 && (typ == CALL || typ == CREATE) {
+		evm.vmConfig.Tracer.CaptureStart(evm, from, to, typ == CREATE, input, gas, value)
+		evm.vmConfig.Tracer.CaptureEnd(output, gasUsed, 0, err)
+	} else {
+		evm.vmConfig.Tracer.CaptureEnter(typ, from, to, input, gas, value)
+		evm.vmConfig.Tracer.CaptureExit(output, gasUsed, err)
+	}
+}
+
 // Call executes the contract associated with the addr with the given input as
 // parameters. It also handles any necessary value transfer required and takes
 // the necessary steps to create accounts and reverses the state in case of an
@@ -224,10 +239,12 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
+		evm.captureFailedCall(CALL, caller.Address(), addr, input, gas, value, nil, 0, ErrDepth)
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
 	if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
+		evm.captureFailedCall(CALL, caller.Address(), addr, input, gas, value, nil, 0, ErrInsufficientBalance)
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -312,10 +329,12 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
+		evm.captureFailedCall(CALLCODE, caller.Address(), addr, input, gas, value, nil, 0, ErrDepth)
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
 	if !evm.CanTransfer(evm.StateDB, caller.Address(), value) {
+		evm.captureFailedCall(CALLCODE, caller.Address(), addr, input, gas, value, nil, 0, ErrInsufficientBalance)
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -356,6 +375,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 	}
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
+		evm.captureFailedCall(DELEGATECALL, caller.Address(), addr, input, gas, nil, nil, 0, ErrDepth)
 		return nil, gas, ErrDepth
 	}
 
@@ -395,6 +415,7 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 	}
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
+		evm.captureFailedCall(STATICCALL, caller.Address(), addr, input, gas, nil, nil, 0, ErrDepth)
 		return nil, gas, ErrDepth
 	}
 
@@ -450,9 +471,11 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
 	if evm.depth > int(params.CallCreateDepth) {
+		evm.captureFailedCall(CREATE, caller.Address(), address, codeAndHash.code, gas, value, nil, 0, ErrDepth)
 		return nil, common.Address{}, gas, ErrDepth
 	}
 	if !evm.CanTransfer(evm.StateDB, caller.Address(), value) {
+		evm.captureFailedCall(CREATE, caller.Address(), address, codeAndHash.code, gas, value, nil, 0, ErrInsufficientBalance)
 		return nil, common.Address{}, gas, ErrInsufficientBalance
 	}
 	if rcfg.UsingOVM {
@@ -464,8 +487,10 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 			ret, err := util.EncodeSolidityError(solerr)
 			if err != nil {
 				// If we're unable to properly encode the error then just return the original message.
+				evm.captureFailedCall(CREATE, caller.Address(), address, codeAndHash.code, gas, value, nil, 0, solerr)
 				return nil, common.Address{}, gas, solerr
 			}
+			evm.captureFailedCall(CREATE, caller.Address(), address, codeAndHash.code, gas, value, ret, 0, errExecutionReverted)
 			return ret, common.Address{}, gas, errExecutionReverted
 		}
 
@@ -489,6 +514,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	// Ensure there's no existing contract already at the designated address
 	contractHash := evm.StateDB.GetCodeHash(address)
 	if evm.StateDB.GetNonce(address) != 0 || (contractHash != (common.Hash{}) && contractHash != emptyCodeHash) {
+		evm.captureFailedCall(CREATE, caller.Address(), address, codeAndHash.code, gas, value, nil, gas, ErrContractAddressCollision)
 		return nil, common.Address{}, 0, ErrContractAddressCollision
 	}
 	// Create a new account on the state

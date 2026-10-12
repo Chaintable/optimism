@@ -59,8 +59,8 @@ func (api *DebankAPI) DebankBlock(ctx context.Context, blockNr rpc.BlockNumber) 
 		return nil, fmt.Errorf("failed to get state at %s: %v", parentBlock.Root().Hex(), err)
 	}
 	receipts := blockchain.GetReceiptsByHash(block.Hash())
-	if len(receipts) == 0 && len(block.Transactions()) > 0 {
-		return nil, fmt.Errorf("receipts not found for block #%d", blockNr)
+	if len(receipts) != len(block.Transactions()) {
+		return nil, fmt.Errorf("receipt count mismatch for block #%d: got %d, want %d", blockNr, len(receipts), len(block.Transactions()))
 	}
 
 	// 使用 Pipeline 的 RPCTracer
@@ -72,6 +72,9 @@ func (api *DebankAPI) DebankBlock(ctx context.Context, blockNr rpc.BlockNumber) 
 	gasPool := new(core.GasPool).AddGas(block.GasLimit())
 
 	for i, tx := range block.Transactions() {
+		if receipts[i] == nil {
+			return nil, fmt.Errorf("receipt missing for tx %d (%s)", i, tx.Hash().Hex())
+		}
 		msg, err := tx.AsMessage(signer)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert tx %d to message: %v", i, err)
@@ -85,7 +88,12 @@ func (api *DebankAPI) DebankBlock(ctx context.Context, blockNr rpc.BlockNumber) 
 		vmenv := vm.NewEVM(evmContext, statedb, chainConfig, vmConfig)
 
 		_, _, _, err = core.ApplyMessage(vmenv, msg, gasPool)
-		tracer.OnTxEnd(receipts[i], err)
+		if err != nil {
+			return nil, fmt.Errorf("failed to replay tx %d (%s): %w", i, tx.Hash().Hex(), err)
+		}
+		if err := tracer.OnTxEnd(receipts[i], nil); err != nil {
+			return nil, fmt.Errorf("invalid trace for tx %d (%s): %w", i, tx.Hash().Hex(), err)
+		}
 		statedb.Finalise(chainConfig.IsEIP158(block.Number()))
 	}
 
